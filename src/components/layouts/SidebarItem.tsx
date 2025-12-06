@@ -1,15 +1,16 @@
 import type { ReactElement } from "react";
+import { Link } from "react-router";
 type SidebarItemProps = {
     icon: ReactElement;
     label: string;
     active: boolean;
-    onClick: () => void;
+    path: string;
 }
 
-function SidebarItem({ icon: IconElement, label, active, onClick }: SidebarItemProps){
+function SidebarItem({ icon: IconElement, label, active, path }: SidebarItemProps){
   return (
-  <button 
-    onClick={onClick}
+  <Link
+    to={ path }
     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-1 ${
       active 
         ? 'bg-indigo-50 text-indigo-700 font-medium' 
@@ -18,7 +19,7 @@ function SidebarItem({ icon: IconElement, label, active, onClick }: SidebarItemP
   >
     {IconElement}
     <span>{label}</span>
-  </button>
+  </Link>
 )}
 
 export default SidebarItem;

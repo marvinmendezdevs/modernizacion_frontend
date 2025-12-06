@@ -9,6 +9,7 @@ import { useState } from "react";
 import SpinnerUIComponent from "@/components/ui/SpinnerUIComponent";
 import AlertUIComponent from "@/components/ui/AlertUIComponent";
 import { useNavigate } from "react-router";
+import Env from "@/utils/index.utils";
 
 type AlertType = {
   activate: boolean
@@ -17,7 +18,7 @@ type AlertType = {
 }
 
 function Login() {
-  const appName = import.meta.env.VITE_APP_NAME || 'GestionPro';
+  const appName = Env.VITE_APP_NAME;
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginType>();
   const [alert, setAlert] = useState<AlertType>({

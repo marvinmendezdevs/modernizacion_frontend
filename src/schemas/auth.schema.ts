@@ -10,7 +10,18 @@ export const LoginResponseSchema = z.object({
     token: z.string(),
 });
 
+export const RoleSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+});
+
 export const UserSchema = z.object({
-    name: z.string(),
-    jobTitle: z.string(),
-})
+  name: z.string(),
+  email: z.string(),
+  username: z.string(),
+  telephone: z.string(),
+  dui: z.string(),
+  roleId: z.number(),
+  createAt: z.string(),
+  role: RoleSchema,
+});
