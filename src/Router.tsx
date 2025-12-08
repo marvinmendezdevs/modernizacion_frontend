@@ -4,6 +4,7 @@ import AppLayout from "./components/layouts/AppLayout"
 import ProtectedRoute from "./components/layouts/ProtectedRoute"
 import Home from "./pages/Home"
 import Tutorship from "./pages/Tutorship"
+import Diagnostic from "./pages/Diagnostic"
 
 function Router() {
 
@@ -15,6 +16,7 @@ function Router() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/tutoria" element={<Tutorship />} />
+            <Route path="/diagnostico/:teacher/:section" element={<Diagnostic />} />
           </Route>
         </Route>
       </Routes>

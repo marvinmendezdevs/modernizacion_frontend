@@ -8,7 +8,7 @@ function Tutorship() {
 
     if(!user) return <Navigate replace to="/login" />
 
-    if(user.role.name === 'Tutor') return <TutorshipTutor user={user} />
+    if(user.role.name === 'Tutor') return <TutorshipTutor />
 
     return <p>Acceso denegado</p>
 }
