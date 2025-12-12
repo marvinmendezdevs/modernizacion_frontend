@@ -20,6 +20,7 @@ function TutorshipTutor() {
     const handleRemoveFilter = () => {
         setReadOnly(false);
         setSearch('');
+        setSearchTerm('');
     }
 
     return (
@@ -30,7 +31,7 @@ function TutorshipTutor() {
                 <div className="flex gap-3 items-center">
                     {search && <FunnelX className="text-red-500" size={20} onClick={handleRemoveFilter} />}
                     <form className="flex border border-gray-200 rounded-full items-center overflow-hidden px-1" onSubmit={handleSearch}>
-                        <input className="p-2 outline-0" placeholder="Digite DUI del docente" type="text" name="search" id="search" readOnly={readOnly} onChange={handleSearchTerm} />
+                        <input className="p-2 outline-0" placeholder="Digite DUI del docente" type="text" name="search" id="search" readOnly={readOnly} onChange={handleSearchTerm} value={searchTerm} />
                         <button className="p-2">
                             <Search />
                         </button>
