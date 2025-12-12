@@ -2,6 +2,7 @@ import { getTeachersByTutors } from "@/services/tutorship.services";
 import type { TeacherTutorType } from "@/types/tutorship.types";
 import { getCategoryFromScore } from "@/utils/index.utils";
 import { useQuery } from "@tanstack/react-query"
+import { AxiosError } from "axios";
 import { Link } from "react-router";
 
 type SearchTutorType = {
@@ -9,7 +10,7 @@ type SearchTutorType = {
 }
 
 function SearchTutor({ search }: SearchTutorType) {
-    const { data, isLoading, isError } = useQuery<TeacherTutorType>({
+    const { data, isLoading, isError, error } = useQuery<TeacherTutorType, AxiosError>({
         queryKey: ['teachers-by-tutor', search],
         queryFn: () => getTeachersByTutors(search),
         retry: false,
@@ -23,11 +24,19 @@ function SearchTutor({ search }: SearchTutorType) {
         </p>
     );
 
-    if (isError) return (
-        <p className="text-xs text-red-600 text-center p-3">
-            ¡Error inespertado! contacte con soporte.
-        </p>
-    );
+    if (isError) {
+        if (error instanceof AxiosError && error.status === 404) return (
+            <p className="text-sm text-center p-3 text-slate-600">
+                ¡Docente no encontrado con el DUI ingresado!
+            </p>
+        )
+
+        return (
+            <p className="text-xs text-red-600 text-center p-3">
+                ¡Error inespertado! contacte con soporte.
+            </p>
+        );
+    }
 
     const verifyDiagnostics = () => {
         if(data){
@@ -97,8 +106,8 @@ function SearchTutor({ search }: SearchTutorType) {
                 ) : <p>No hay asignación...</p>}
             </div>
         </div>
-
     )
+    return <p className="text-sm text-center p-3 text-slate-600">No se encontró información para el DUI ingresado.</p>
 }
 
 export default SearchTutor
