@@ -21,7 +21,7 @@ export const getCategoryFromScore = (score: number): Category => {
     if (score >= 8) {
         return 'Alto';
     }
-    
+
     // Si no es Alto, pero es mayor o igual a 6, es Medio
     if (score >= 6) {
         return 'Medio';
@@ -38,5 +38,14 @@ export const formatDate = (date: string) => {
         year: 'numeric',
         month: 'long',
         day: '2-digit'
+    }).format(formatDate);
+}
+
+export const getHours = (date: string) => {
+    const formatDate = new Date(date);
+
+    return new Intl.DateTimeFormat('es-SV', {
+        hour: '2-digit',
+        minute: '2-digit'
     }).format(formatDate);
 }

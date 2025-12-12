@@ -4,6 +4,7 @@ import type { InstrumentContentSchema, SeccionSchema, IndicadorSchema, PreguntaS
 export type PayloadType = {
     answers: Record<string, string | number | null | undefined>;
     score: number;
+    subject: string;
 };
 
 export type DiagnosticMutationBody = {

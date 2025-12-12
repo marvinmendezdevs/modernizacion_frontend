@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { ResponseSchema } from "./tutorship.schema";
+import { ResponseSchema, SchoolSchema, TeacherSchema } from "./tutorship.schema";
 import { SectionSchema as SectionSchoolSchema } from "./school.schema";
+import { UserSchema } from "./auth.schema";
 
 // 1. Esquema para las Opciones (ej: Bajo, Medio, Alto)
 // Coincide con: { "valor": 1, "etiqueta": "Bajo" }
@@ -56,11 +57,20 @@ export const MultimediaSchema = z.object({
     id: z.number(),
     video: z.string(),
     transcription: z.string(),
-})
+});
+
+export const CoachingSessionSchema = z.object({
+    id: z.number()
+});
 
 
 // Schemas de las respuestas
 export const ResponseSectionSchema = ResponseSchema.extend({
     section: SectionSchoolSchema,
     utilitiesLink: MultimediaSchema.nullable(),
+    tutor: UserSchema,
+    teacher: TeacherSchema.extend({
+        coachingSessions: z.array(CoachingSessionSchema),
+    }),
+    school: SchoolSchema,
 });

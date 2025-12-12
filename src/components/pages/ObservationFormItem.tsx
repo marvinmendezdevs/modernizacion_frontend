@@ -55,6 +55,7 @@ function ObservationFormItem({ dataAccess }: ObservationFormItemType) {
             schoolCode: dataAccess.section.schoolCode,
             payload: {
                 answers,
+                subject: dataAccess.subject,
                 score: 0
             }
         });

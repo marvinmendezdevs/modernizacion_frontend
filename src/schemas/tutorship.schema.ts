@@ -4,6 +4,7 @@ import { DiagnosticResponseSchema } from "./instruments.schema";
 export const SchoolSchema = z.object({
     code: z.number(),
     name: z.string(),
+    directorName: z.string(),
 });
 
 export const SectionSchema = z.object({
@@ -50,7 +51,8 @@ export const ResponseSchema = z.object({
     tutorId: z.number(),
     payload: z.object({
         score: z.number(),
-        answers: DiagnosticResponseSchema
+        subject: z.string(),
+        answers: DiagnosticResponseSchema,
     }),
     submittedAt: z.string(),
 });

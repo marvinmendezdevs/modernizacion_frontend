@@ -19,7 +19,7 @@ export const getTeacherBySection = async (teacherId: TeacherType['id'], sectionI
 }
 
 export const getDiagnostic = async () => {
-    const { data } = await api.get('/tutorship/diagnostic');    
+    const { data } = await api.get('/tutorship/diagnostic');
     return data;
 }
 
@@ -29,12 +29,17 @@ export const setDiagnostic = async (formData: DiagnosticMutationBody) => {
 }
 
 export const getObservations = async (teacherDui: TeacherType['dui']) => {
-    const { data } = await api.get(`/tutorship/observation/${teacherDui}`);
+    const { data } = await api.get(`/tutorship/observations/${teacherDui}`);
     return data;
 }
 
 export const getObservation = async () => {
-    const { data } = await api.get('/tutorship/observation');    
+    const { data } = await api.get('/tutorship/observation');
+    return data;
+}
+
+export const getObservationById = async (observationId: number) => {
+    const { data } = await api.get(`/tutorship/observation/${observationId}`);
     return data;
 }
 

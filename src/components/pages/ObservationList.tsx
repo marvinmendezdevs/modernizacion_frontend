@@ -121,7 +121,7 @@ function ObservationList({ teacherDui }: ObservationListType) {
                   <div className="flex gap-3 items-center bg-gray-100 p-2 mt-3 text-indigo-700 text-sm">
                     <Link
                       className="py-1 px-3 rounded-lg flex items-center gap-1 hover:bg-gray-300/25"
-                      to={"/"}
+                      to={`/retroalimentacion/${observation.id}`}
                     >
                       <MessageCirclePlus size={15} />
                       Retroalimentación

@@ -7,6 +7,8 @@ import Tutorship from "./pages/Tutorship"
 import Diagnostic from "./pages/Diagnostic"
 import Observations from "./pages/Observations"
 import ObservationForm from "./components/pages/ObservationForm"
+import Feedback from "./pages/Feedback"
+import FeedBackCreate from "./components/pages/FeedBackCreate"
 
 function Router() {
 
@@ -18,9 +20,13 @@ function Router() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/tutoria" element={<Tutorship />} />
+
             <Route path="/diagnostico/:teacher/:section" element={<Diagnostic />} />
             <Route path="/observaciones/:teacherDui" element={<Observations />} />
             <Route path="/observaciones/:teacherId/:sectionId" element={<ObservationForm />} />
+
+            <Route path="/retroalimentacion/:observationId" element={<Feedback />} />
+            <Route path="/retroalimentacion/:observationId/create" element={<FeedBackCreate />} />
           </Route>
         </Route>
       </Routes>
