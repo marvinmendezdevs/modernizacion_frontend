@@ -1,6 +1,6 @@
 import { setFeedback } from "@/services/tutorship.services";
 import { useFeedbackStore } from "@/stores/tutorship.store";
-import type { CoachingSessionType, ResponseSectionSchema } from "@/types/intruments.types";
+import type { CoachingSessionCreateType, ResponseSectionSchema } from "@/types/intruments.types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -40,8 +40,8 @@ function FeedBackCreate() {
 
         if (!observation) return;
 
-        const formData: CoachingSessionType = {
-            responseId: observation.id,
+        const formData: CoachingSessionCreateType = {
+            responseId: observation.responseId,
             tutorId: observation.tutorId,
             teacherId: observation.teacherId,
             directorName: observation.school.directorName,

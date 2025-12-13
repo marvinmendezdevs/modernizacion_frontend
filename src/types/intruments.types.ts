@@ -28,3 +28,6 @@ export type ResponseSectionSchema = z.infer<typeof ResponseSectionSchema>
 export type MultimediaType = z.infer<typeof MultimediaSchema>
 
 export type CoachingSessionType = z.infer<typeof CoachingSessionSchema>
+
+// Payload used to create a coaching session (DB will set `id` and `createdAt`)
+export type CoachingSessionCreateType = Omit<CoachingSessionType, 'id' | 'createdAt'>
