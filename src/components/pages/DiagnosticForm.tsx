@@ -71,7 +71,7 @@ function DiagnosticForm({ dataAccess }: DiagnosticFormType) {
         mutation.mutate({
             teacherId: dataAccess.teacherId,
             sectionId: dataAccess.sectionId,
-            schoolCode: dataAccess.section.schoolCode,
+            schoolCode: Number(dataAccess.section.schoolCode),
             payload: {
                 answers,
                 score: finalScore,

@@ -1,12 +1,12 @@
 import { getTutorsInfo } from "@/services/tutorship.services";
-import type { UserType } from "@/types/auth.types";
+import type { TutorCountType } from "@/types/auth.types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import TutorshipCountVirtualPresencial from "./TutorshipCountVirtualPresencial";
 import TutorshipInfoTutores from "./TutorshipInfoTutores";
 
 type QueryType = {
-    data: UserType[]
+    data: TutorCountType[]
     meta: {
         page: number;
         hasNextPage: boolean;
@@ -40,7 +40,7 @@ function TutorLeader() {
     if (data) return (
         <>
             <h2 className="text-lg font-black text-indigo-600">Información de tutores</h2>
-            <TutorshipCountVirtualPresencial tutorType={tutorType} setTutorType={setTutorType}/>
+            <TutorshipCountVirtualPresencial tutorType={tutorType} setTutorType={setTutorType} />
             <TutorshipInfoTutores
                 tutor={data.data}
                 meta={data.meta}
