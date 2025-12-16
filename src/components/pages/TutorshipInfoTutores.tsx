@@ -12,9 +12,6 @@ type TutorshipInfoTutoresProps = {
 }
 
 function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProps) {
-
-  console.log(tutor[0].infoTutores.type)
-
   return (
     <>
       <div className="overflow-x-auto ">
