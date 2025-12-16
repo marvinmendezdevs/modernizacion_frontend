@@ -35,7 +35,7 @@ function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProp
               <tr key={index}>
                 <td className="w-76 px-4 py-4 whitespace-nowrap flex flex-col"><span className="text-xs font-medium text-gray-900">{tutor.name}</span><span className="text-xs text-gray-500">{tutor.email}</span></td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.telephone}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor?.infoTutores.districts.district ?? "-"}</td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.infoTutores.districts?.district ?? "-"}</td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countDiagnostico}</td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countObservaciones}</td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countRetroalimentaciones}</td>
