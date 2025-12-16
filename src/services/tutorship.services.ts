@@ -72,3 +72,8 @@ export const getTutorsCount = async () => {
     const { data } = await api.get('/tutorship/tutors-count');
     return data;
 }
+
+export const getTutorshipInfo = async (username: string) => {
+    const { data } = await api.get(`/tutorship/tutor/${username}`);
+    return data;
+}
