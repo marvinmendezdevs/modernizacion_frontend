@@ -40,7 +40,7 @@ function TutorshipInfoTutor() {
             Regresar
         </Link>
         <p className="text-2xl font-bold my-5">Información del tutor</p>
-        <div className="flex items-center gap-6 mb-5 border-b border-gray-200 pb-10">
+        <div className="flex flex-col md:flex-row items-center gap-6 mb-5 border-b border-gray-200 pb-10">
             <div className="w-24 h-24 rounded-full border border-blue-300 bg-blue-100 flex justify-center items-center shadow">
                 <p className="uppercase flex gap-1 font-bold text-blue-600 text-2xl">{nameSp?.[0] + lastNameSp?.[0]}</p>
             </div>
