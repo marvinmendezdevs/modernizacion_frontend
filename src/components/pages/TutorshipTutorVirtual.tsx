@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Funnel, Captions, Video, PencilLine, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
-import { getTutorshipInfo } from "@/services/tutorship.services";
+import { getTutorshipInfo, getTutorshipInfoVirtual } from "@/services/tutorship.services";
 import { useQuery } from "@tanstack/react-query";
 
 import useAuth from "@/hooks/useAuth.hooks";
@@ -89,6 +89,16 @@ function TutorshipTutorVirtual({
             today.getDate() === date.getDate()
         );
     };
+
+    const {isLoading, isError, data: dataVirtual} = useQuery({
+        queryKey: ["tutorship-info"],
+        queryFn: () => getTutorshipInfoVirtual(),
+        retry: false,
+        refetchOnWindowFocus: false,
+        enabled: !!user?.username,
+    });
+
+    console.log(dataVirtual);
 
     return (
         <div className="w-full max-w-6xl mx-auto">

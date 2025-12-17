@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { getTutorshipInfo } from "@/services/tutorship.services"
-import { Link, useParams } from "react-router"
+import { Navigate, useParams, Link } from "react-router"
 import { User, Phone, IdCard, Mail, Building2, MapPin, ArrowLeft, NotepadText, Eye, MessageSquare } from "lucide-react"
 
 function TutorshipInfoTutor() {
@@ -28,8 +28,12 @@ function TutorshipInfoTutor() {
             ¡Error inespertado! contacte con soporte.
         </p>
     );
-
-    if (!data) return (
+    if(!data){
+        return(
+            <Navigate to="/tutoria" />
+        )
+    }
+    if (data) return (
         <>
             <Link to="/tutoria" className="flex items-center justify-end gap-2">
                 <ArrowLeft className="size-5 text-blue-600" />

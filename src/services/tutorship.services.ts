@@ -77,3 +77,8 @@ export const getTutorshipInfo = async (username: string) => {
     const { data } = await api.get(`/tutorship/tutor/${username}`);
     return data;
 }
+
+export const getTutorshipInfoVirtual = async () => {
+    const { data } = await api.get(`/tutorship/virtual-session`);
+    return data;
+}

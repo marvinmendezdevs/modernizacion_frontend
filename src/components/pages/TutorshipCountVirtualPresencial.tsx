@@ -16,7 +16,6 @@ function TutorshipCountVirtualPresencial({tutorType, setTutorType}: Props) {
         refetchOnWindowFocus: false,
     });
 
-    console.log(tutorType);
     if (isLoading) return (
         <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
             <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
