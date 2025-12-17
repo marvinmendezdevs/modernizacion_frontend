@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Funnel, Captions, Video, PencilLine, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
-import { getTutorshipInfo, getTutorshipInfoVirtual } from "@/services/tutorship.services";
+import { getTutorshipInfo } from "@/services/tutorship.services";
 import { useQuery } from "@tanstack/react-query";
 
 import useAuth from "@/hooks/useAuth.hooks";
@@ -90,28 +90,7 @@ function TutorshipTutorVirtual({
         );
     };
 
-    const { isLoading, isError, data: dataVirtual } = useQuery({
-        queryKey: ["tutorship-info"],
-        queryFn: () => getTutorshipInfoVirtual(),
-        retry: false,
-        refetchOnWindowFocus: false,
-        enabled: !!user?.username,
-    });
-
-    if (isLoading) return (
-        <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
-            <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
-            Cargando retroalimentación...
-        </p>
-    )
-
-    if (isError) return (
-        <p className="text-xs text-red-600 text-center p-3">
-            ¡Error inespertado! contacte con soporte.
-        </p>
-    );
-
-    if (dataVirtual) return (
+    return (
         <div className="w-full max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-4 gap-2">
                 <h2 className="text-2xl text-indigo-700 font-bold mb-4">Calendario Semanal</h2>
