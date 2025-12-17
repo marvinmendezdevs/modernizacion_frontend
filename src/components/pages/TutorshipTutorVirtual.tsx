@@ -3,152 +3,13 @@ import { Link } from "react-router";
 import { Funnel, Captions, Video, PencilLine, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { getTutorshipInfo } from "@/services/tutorship.services";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
 
-const { data: user } = useAuth();
+import useAuth from "@/hooks/useAuth.hooks";
+
 const HOURS = Array.from({ length: 13 }, (_, i) => 7 + i);
 // export const calendarEvents = [
-//     {
-//         id: 1,
-//         subject: "Lenguaje",
-//         day: "lunes",
-//         date: "2025-12-08",
-//         time: 9,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/lenguaje-lunes-9.mp4",
-//         transcript: "Transcripción de lenguaje lunes 9 AM.",
-//         attendance: "https://asistencia.example.com/lenguaje-lunes-9",
-//         quiz: "https://quiz.example.com/lenguaje-lunes-9",
-//     },
-//     {
-//         id: 2,
-//         subject: "Lenguaje",
-//         day: "martes",
-//         date: "2025-12-09",
-//         time: 10,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/lenguaje-martes-10.mp4",
-//         transcript: "Transcripción de lenguaje martes 10 AM.",
-//         attendance: "https://asistencia.example.com/lenguaje-martes-10",
-//         quiz: "https://quiz.example.com/lenguaje-martes-10",
-//     },
-//     {
-//         id: 3,
-//         subject: "Lenguaje",
-//         day: "miercoles",
-//         date: "2025-12-10",
-//         time: 11,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/lenguaje-miercoles-11.mp4",
-//         transcript: "Transcripción de lenguaje miércoles 11 AM.",
-//         attendance: "https://asistencia.example.com/lenguaje-miercoles-11",
-//         quiz: "https://quiz.example.com/lenguaje-miercoles-11",
-//     },
-//     {
-//         id: 4,
-//         subject: "Lenguaje",
-//         day: "jueves",
-//         date: "2025-12-11",
-//         time: 14,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/lenguaje-jueves-14.mp4",
-//         transcript: "Transcripción de lenguaje jueves 2 PM.",
-//         attendance: "https://asistencia.example.com/lenguaje-jueves-14",
-//         quiz: "https://quiz.example.com/lenguaje-jueves-14",
-//     },
-//     {
-//         id: 5,
-//         subject: "Lenguaje",
-//         day: "viernes",
-//         date: "2025-12-12",
-//         time: 10,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/lenguaje-viernes-10.mp4",
-//         transcript: "Transcripción de lenguaje viernes 10 AM.",
-//         attendance: "https://asistencia.example.com/lenguaje-viernes-10",
-//         quiz: "https://quiz.example.com/lenguaje-viernes-10",
-//     },
-
-//     {
-//         id: 6,
-//         subject: "Matemática",
-//         day: "lunes",
-//         date: "2025-12-08",
-//         time: 13,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-lunes-13.mp4",
-//         transcript: "Transcripción de matemática lunes 1 PM.",
-//         attendance: "https://asistencia.example.com/mate-lunes-13",
-//         quiz: "https://quiz.example.com/mate-lunes-13",
-//     },
-//     {
-//         id: 7,
-//         subject: "Matemática",
-//         day: "martes",
-//         date: "2025-12-10",
-//         time: 8,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-martes-8.mp4",
-//         transcript: "Transcripción de matemática martes 8 AM.",
-//         attendance: "https://asistencia.example.com/mate-martes-8",
-//         quiz: "https://quiz.example.com/mate-martes-8",
-//     },
-//     {
-//         id: 8,
-//         subject: "Matemática",
-//         day: "miercoles",
-//         date: "2025-12-10",
-//         time: 15,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-miercoles-15.mp4",
-//         transcript: "Transcripción de matemática miércoles 3 PM.",
-//         attendance: "https://asistencia.example.com/mate-miercoles-15",
-//         quiz: "https://quiz.example.com/mate-miercoles-15",
-//     },
-//     {
-//         id: 9,
-//         subject: "Matemática",
-//         day: "jueves",
-//         date: "2025-12-11",
-//         time: 9,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-jueves-9.mp4",
-//         transcript: "Transcripción de matemática jueves 9 AM.",
-//         attendance: "https://asistencia.example.com/mate-jueves-9",
-//         quiz: "https://quiz.example.com/mate-jueves-9",
-//     },
-//     {
-//         id: 10,
-//         subject: "Matemática",
-//         day: "viernes",
-//         date: "2025-12-12",
-//         time: 14,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-viernes-14.mp4",
-//         transcript: "Transcripción de matemática viernes 2 PM.",
-//         attendance: "https://asistencia.example.com/mate-viernes-14",
-//         quiz: "https://quiz.example.com/mate-viernes-14",
-//     },
-//     {
-//         id: 11,
-//         subject: "Lenguaje",
-//         day: "viernes",
-//         date: "2025-12-15",
-//         time: 7,
-//         meet: "https://meet.google.com/landing",
-//         video: "https://videos.example.com/mate-viernes-14.mp4",
-//         transcript: "Transcripción de matemática viernes 2 PM.",
-//         attendance: "https://asistencia.example.com/mate-viernes-14",
-//         quiz: "https://quiz.example.com/mate-viernes-14",
-//     },
+// ... (omitted for brevity)
 // ];
-
-    const {isLoading, isError, data} = useQuery({
-        queryKey: ["tutorship-info"],
-        queryFn: () => getTutorshipInfo(),
-        retry: false,
-        refetchOnWindowFocus: false,
-    })
 
 function InicioSemana(date: string | number | Date, weekStartsOnMonday = true) {
     const d = new Date(date);
@@ -201,6 +62,16 @@ function TutorshipTutorVirtual({
     initialDate = new Date(),
     onSlotClick,
 }: { initialDate?: Date | string | number, onSlotClick?: (date: Date, hour: number) => void }) {
+    const { data: user } = useAuth();
+    const { isLoading, isError, data } = useQuery({
+        queryKey: ["tutorship-info", user?.username],
+        queryFn: () => getTutorshipInfo(user?.username || ""),
+        retry: false,
+        refetchOnWindowFocus: false,
+        enabled: !!user?.username,
+    });
+
+    const eventsCalendar = data || [];
     const [currentWeekStart, setCurrentWeekStart] = useState(
         InicioSemana(initialDate)
     );
