@@ -29,6 +29,11 @@ function DiagnosticForm({ dataAccess }: DiagnosticFormType) {
         }
     });
 
+    const SUBJECTSNAME = {
+        lenguaje: "lenguaje",
+        matem_tica: "matemática",
+    }
+
     if (isLoading) return (
         <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
             <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
@@ -110,7 +115,7 @@ function DiagnosticForm({ dataAccess }: DiagnosticFormType) {
                                         <td className="px-2 py-2 text-center font-semibold">Alto</td>
                                     </tr>
                                     {section.indicadores.map((indicator, index) => {
-                                        if (indicator.nombre_indicador.includes('Área') && !indicator.nombre_indicador.toLowerCase().includes(dataAccess.subject.toLowerCase())) {
+                                        if (indicator.nombre_indicador.includes('Área') && !indicator.nombre_indicador.toLowerCase().includes(SUBJECTSNAME[dataAccess.subject.toLowerCase() as keyof typeof SUBJECTSNAME])) {
                                             return null;
                                         }
 
