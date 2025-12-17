@@ -2,6 +2,7 @@ import TutorLeader from "@/components/pages/TutorLeader";
 import TutorshipTutor from "@/components/pages/TutorshipTutor";
 import useAuth from "@/hooks/useAuth.hooks"
 import { Navigate } from "react-router";
+import TutorshipTutorVirtual from "@/components/pages/TutorshipTutorVirtual";
 
 function Tutorship() {
 
@@ -9,7 +10,9 @@ function Tutorship() {
 
     if(!user) return <Navigate replace to="/login" />
     if(user.role.name === 'Tutor (Supervisor)') return <TutorLeader />
-    if(user.role.name === 'Tutor') {
+    if(user.infoTutores.type === 'VIRTUAL') {
+        return <TutorshipTutorVirtual />
+    }else{
         return <TutorshipTutor />
     }
 
