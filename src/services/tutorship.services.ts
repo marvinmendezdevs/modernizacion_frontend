@@ -15,6 +15,10 @@ export const getTeachersByTutors = async (search: string) => {
 export const getTeacherBySection = async (teacherId: TeacherType['id'], sectionId: SectionType['id']) => {
     const { data } = await api.get(`/tutorship/teacher/${teacherId}/${sectionId}`);
 
+    if (data.subject === "Matem_tica") {
+        data.subject = "Matemática";
+    }
+
     return data;
 }
 

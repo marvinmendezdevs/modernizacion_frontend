@@ -32,11 +32,6 @@ function ObservationFormItem({ dataAccess }: ObservationFormItemType) {
         onSuccess: () => navigate(-1),
     });
 
-    const SUBJECTSNAME = {
-        lenguaje: "lenguaje",
-        matem_tica: "matemática",
-    }
-
     if (isLoading)
         return (
             <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
@@ -90,7 +85,7 @@ function ObservationFormItem({ dataAccess }: ObservationFormItemType) {
                             </thead>
                             <tbody>
                                 {data.schema.map((section) => {
-                                    if (section.nombre_seccion.includes('Área') && !section.nombre_seccion.toLowerCase().includes(SUBJECTSNAME[dataAccess.subject.toLowerCase() as keyof typeof SUBJECTSNAME])) {
+                                    if (section.nombre_seccion.includes('Área') && !section.nombre_seccion.toLowerCase().includes(dataAccess.subject.toLowerCase())) {
                                         return null;
                                     }
 
