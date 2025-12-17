@@ -3,11 +3,10 @@ import type { TutorCountType } from "@/types/tutorship.types";
 import { useQuery } from "@tanstack/react-query";
 
 interface Props {
-    tutorType: string;
     setTutorType: (type: string) => void;
 }
 
-function TutorshipCountVirtualPresencial({tutorType, setTutorType}: Props) {
+function TutorshipCountVirtualPresencial({ setTutorType }: Props) {
 
     const { isLoading, isError, data } = useQuery<TutorCountType>({
         queryKey: ["tutor-count"],
@@ -28,20 +27,20 @@ function TutorshipCountVirtualPresencial({tutorType, setTutorType}: Props) {
             ¡Error inespertado! contacte con soporte.
         </p>
     );
-    if(data) return (
-            <div className="grid gap-4 md:grid-cols-3 my-3">
-                <button value="PRESENCIAL" onClick={() => setTutorType("PRESENCIAL")} className="shadow-inner p-4 bg-gray-50 rounded-lg text-start cursor-pointer">
-                    <p className="font-bold">Presenciales</p>
-                    <p className="font-bold text-5xl">{data.presenciales}</p>
-                    <p className="text-xs">Tutores</p>
-                </button>
+    if (data) return (
+        <div className="grid gap-4 md:grid-cols-3 my-3">
+            <button value="PRESENCIAL" onClick={() => setTutorType("PRESENCIAL")} className="shadow-inner p-4 bg-gray-50 rounded-lg text-start cursor-pointer">
+                <p className="font-bold">Presenciales</p>
+                <p className="font-bold text-5xl">{data.presenciales}</p>
+                <p className="text-xs">Tutores</p>
+            </button>
 
-                <button value="VIRTUAL" onClick={() => setTutorType("VIRTUAL")} className="shadow-inner p-4 bg-gray-50 rounded-lg text-start cursor-pointer">
-                    <p className="font-bold">Virtuales</p>
-                    <p className="font-bold text-5xl">{data.virtuales}</p>
-                    <p className="text-xs">Tutores</p>
-                </button>
-            </div>
+            <button value="VIRTUAL" onClick={() => setTutorType("VIRTUAL")} className="shadow-inner p-4 bg-gray-50 rounded-lg text-start cursor-pointer">
+                <p className="font-bold">Virtuales</p>
+                <p className="font-bold text-5xl">{data.virtuales}</p>
+                <p className="text-xs">Tutores</p>
+            </button>
+        </div>
     )
 }
 
