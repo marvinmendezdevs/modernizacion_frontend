@@ -14,8 +14,6 @@ type TutorshipInfoTutoresProps = {
 
 function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProps) {
 
-  console.log(tutor)
-
   return (
     <>
       <p className="text-indigo-600 font-bold my-5">Tutores {String(tutor[0].infoTutores.type) === "PRESENCIAL" ? "Presenciales" : "Virtuales"}</p>
