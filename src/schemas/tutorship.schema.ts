@@ -1,5 +1,5 @@
 import z from "zod";
-import { DiagnosticResponseSchema } from "./instruments.schema";
+import { DiagnosticResponseSchema } from "./common.schema";
 
 export const SchoolSchema = z.object({
     code: z.string(),

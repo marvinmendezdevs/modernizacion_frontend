@@ -47,11 +47,7 @@ export const InstrumentTableSchema = z.object({
     schema: InstrumentContentSchema, // Aquí validamos el JSON interno
 });
 
-export const DiagnosticResponseSchema = z.record(
-    // Key: Será el string "pregunta-ID"
-    z.string(),
-    z.union([z.string(), z.number(), z.null()]).optional()
-);
+// DiagnosticResponseSchema moved to common.schema to avoid circular imports
 
 export const MultimediaSchema = z.object({
     id: z.number(),
