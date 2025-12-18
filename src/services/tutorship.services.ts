@@ -1,6 +1,7 @@
 import { api } from "@/config/axios.config"
 import type { SectionType, TeacherType } from "@/types/index.types";
 import type { CoachingSessionType, CoachingSessionCreateType, DiagnosticMutationBody, MultimediaType } from "@/types/intruments.types";
+import { LinksSchema } from "@/schemas/instruments.schema";
 
 export const getMetricsTutorship = async () => {
     const { data } = await api.get('/tutorship');
@@ -83,6 +84,11 @@ export const getTutorshipInfo = async (username: string) => {
 }
 
 export const getTutorshipInfoVirtual = async () => {
-    const { data } = await api.get(`/tutorship/virtual-session`);
+    const { data } = await api.get(`/tutorship/virtual-sessions`);
+    return data;
+}
+
+export const updateVirtualSessionLinks = async (formData: LinksSchema) => {
+    const { data } = await api.patch('/tutorship/virtual-sessions', formData);
     return data;
 }

@@ -59,6 +59,17 @@ export const MultimediaSchema = z.object({
     transcription: z.string(),
 });
 
+export const LinksSchema = z.object({
+    id: z.number(),
+    meet: z.string(),
+    recording: z.string(),
+    transcription: z.string(),
+    attendance: z.string(),
+    quiz: z.string(),
+});
+
+export type LinksSchema = z.infer<typeof LinksSchema>;
+
 export const CoachingSessionSchema = z.object({
     id: z.number(),
     responseId: z.number(),
