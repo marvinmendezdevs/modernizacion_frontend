@@ -11,6 +11,8 @@ import Feedback from "./pages/Feedback"
 import FeedBackCreate from "./components/pages/FeedBackCreate"
 import FeedBackView from "./components/pages/FeedBackView"
 import TutorshipInfoTutor from "./components/pages/TutorshipInfoTutor"
+import Facilitadores from "./components/pages/Facilitadores"
+import Monitores from "./components/pages/Monitores"
 
 function Router() {
 
@@ -21,6 +23,8 @@ function Router() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/facilitadores" element={<Facilitadores />} />
+            <Route path="/monitores" element={<Monitores />} />
             <Route path="/tutoria" element={<Tutorship />} />
 
             <Route path="/diagnostico/:teacher/:section" element={<Diagnostic />} />
