@@ -15,7 +15,6 @@ function ObservationFormMultimedia({ creatingMultimedia, currentUtilitiesLink }:
     }
 
     const { register, handleSubmit, formState: { errors } } = useForm<MultimediaType>({ defaultValues });
-    console.log(currentUtilitiesLink)
     const queryClient = useQueryClient();
 
     const mutation = useMutation({

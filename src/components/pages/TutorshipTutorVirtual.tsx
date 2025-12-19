@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Funnel,
   Captions,
   PencilLine,
   UserCheck,
@@ -110,15 +109,6 @@ function TutorshipTutorVirtual({
     queryFn: () => getTutorshipInfoVirtual(),
   });
 
-  const [subject, setSubject] = useState("Todos");
-  const eventsCalendar = useMemo(() => {
-    if (!data) return [];
-    if (subject === "Todos") return data;
-    return data.filter(
-      (ev: VirtualTutorshipEvent) => ev.subject === subject
-    );
-  }, [data, subject]);
-
   const {
     register,
     handleSubmit,
@@ -223,34 +213,6 @@ function TutorshipTutorVirtual({
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center gap-1 mb-5">
-          <Funnel className="size-3" />
-          <p>Filtros</p>
-          <button
-            type="button"
-            onClick={() => setSubject("Todos")}
-            className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 shadow-inner cursor-pointer"
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubject("Lenguaje")}
-            className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-orange-50 text-orange-700 hover:bg-orange-100 shadow-inner cursor-pointer"
-          >
-            Lenguaje
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubject("Matemática")}
-            className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-inner cursor-pointer"
-          >
-            Matemática
-          </button>
-        </div>
-      </div>
-
       <div className="border border-gray-200 rounded-lg overflow-hidden text-xs md:text-sm">
         <div className="max-h-[600px] overflow-y-auto">
           <div className="grid grid-cols-8 bg-gray-50 sticky top-0 border-b border-gray-200">
@@ -286,14 +248,18 @@ function TutorshipTutorVirtual({
                     onClick={() => onSlotClick && onSlotClick(day, hour)}
                     className="h-15 border-r border-b border-gray-200 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-colors"
                   >
-                    {eventsCalendar.map((event: VirtualTutorshipEvent) => {
+                    {data.map((event: VirtualTutorshipEvent) => {
                       const [actualyHour] = event.hour.split(":");
                       const formattedDate = `${String(day.getDate()).padStart(2, "0")}-${String(
                         day.getMonth() + 1
                       ).padStart(2, "0")}-${day.getFullYear()}`;
 
+                      const normalizeDate = (d: string) => d.replace(/\//g, "-");
+                      const eventDate = normalizeDate(event.date);
+                      const targetDate = normalizeDate(formattedDate);
+
                       return (
-                        event.date === formattedDate &&
+                        eventDate === targetDate &&
                         Number(actualyHour) === Number(hour) && (
                           <div
                             key={event.id}
