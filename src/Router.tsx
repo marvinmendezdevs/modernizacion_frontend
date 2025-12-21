@@ -12,7 +12,7 @@ import FeedBackCreate from "./components/pages/FeedBackCreate"
 import FeedBackView from "./components/pages/FeedBackView"
 import TutorshipInfoTutor from "./components/pages/TutorshipInfoTutor"
 import Facilitadores from "./components/pages/Facilitadores"
-import Monitores from "./components/pages/Monitores"
+import Monitores from "./pages/Monitores"
 import AppRoleValidator from "./components/layouts/AppRoleValidator"
 
 function Router() {

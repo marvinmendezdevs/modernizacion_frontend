@@ -1,11 +1,6 @@
 import z from "zod";
 import { DiagnosticResponseSchema } from "./common.schema";
-
-export const SchoolSchema = z.object({
-    code: z.string(),
-    name: z.string(),
-    directorName: z.string(),
-});
+import { SchoolSchema } from "./school.schema";
 
 export const SectionSchema = z.object({
     id: z.number(),

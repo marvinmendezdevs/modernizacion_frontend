@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { ResponseSchema, ResponseTableSchema, SchoolSchema, TeacherSchema } from "./tutorship.schema";
-import { SectionSchema as SectionSchoolSchema } from "./school.schema";
+import { ResponseSchema, ResponseTableSchema, TeacherSchema } from "./tutorship.schema";
+import { SchoolSchema, SectionSchema as SectionSchoolSchema } from "./school.schema";
 import { DistrictShema, InfoTutor, UserSchema } from "./auth.schema";
 
 // 1. Esquema para las Opciones (ej: Bajo, Medio, Alto)

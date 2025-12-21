@@ -1,5 +1,15 @@
 import z from "zod";
-import { SchoolSchema } from "./tutorship.schema";
+
+export const SchoolSchema = z.object({
+    code: z.string(),
+    name: z.string(),
+    directorName: z.string(),
+    address: z.string(),
+    block: z.number(),
+    phase: z.number(),
+    directorPhone: z.string(),
+    districtId: z.number()
+});
 
 export const SectionSchema = z.object({
     grade: z.string(),

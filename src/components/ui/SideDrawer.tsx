@@ -18,7 +18,7 @@ function SideDrawer({ children, setActive }: SideDrawerType) {
                     </button>
                 </div>
                 <div className="flex-1">
-                    <div className="w-11/12 mx-auto">
+                    <div className="w-11/12 mx-auto h-full">
                         {children}
                     </div>
                 </div>
