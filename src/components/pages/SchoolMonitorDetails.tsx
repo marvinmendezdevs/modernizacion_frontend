@@ -1,7 +1,7 @@
 import { getSchoolByMonitor } from "@/services/schoolmanagement.services";
 import type { SchoolByMonitorType } from "@/types/schoolmanagement.type";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Phone, School, User } from "lucide-react";
+import { Edit, MapPin, Phone, School, User } from "lucide-react";
 import { Link } from "react-router";
 
 type SchoolMonitorDetailsType = {
@@ -70,6 +70,12 @@ function SchoolMonitorDetails({ active }: SchoolMonitorDetailsType) {
             <p className="mt-3 font-bold border-t border-gray-300 border-dashed pt-3">
                 Captura de información escolar
             </p>
+
+            <Link className="text-xs flex items-center bg-gray-100 p-2 my-3 justify-center border border-gray-300 gap-2 hover:bg-gray-300" to={`/schools/${schoolDetails.schoolCode}/update`}>
+                <Edit className="size-4" />
+                Editar datos del centro escolar
+            </Link>
+
             <div className="flex gap-1">
                 <Link className="py-1 px-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-700" to={`/monitores/formulario/${schoolDetails.schoolCode}/optimizacion`}>
                     Optimización
