@@ -49,3 +49,15 @@ export const getHours = (date: string) => {
         minute: '2-digit'
     }).format(formatDate);
 }
+
+
+type SchoolAnswers = Record<string, string | null | undefined>;
+
+export function percentYes(rows: SchoolAnswers[], key: string): number {
+    if (!rows?.length) return 0;
+
+    return rows.filter(r => {
+        const v = (r?.[key] ?? "").toString().trim().toLowerCase();
+        return v === "si";
+    }).length;
+}
