@@ -33,7 +33,8 @@ export const UserSchema = z.object({
   roleId: z.number(),
   createdAt: z.string(),
   role: RoleSchema,
-  infoTutores: InfoTutor
+  infoTutores: InfoTutor,
+  verified: z.boolean(),
 });
 
 export const DistrictShema = z.object({

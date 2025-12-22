@@ -7,6 +7,7 @@ import AsideLayout from './AsideLayout';
 import { useActiveNavItem, useNavbar } from '@/stores/index.store';
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
+import UpdatePassword from '../pages/UpdatePassword';
 
 function AppLayout(){
   const isOpen = useNavbar(state => state.isOpen);
@@ -21,7 +22,11 @@ function AppLayout(){
 
   const { data: user } = useAuth();
 
-  if(user) return (
+  if(!user) return <p>Error de plataforma contacte con soporte...</p>
+
+  if(!user.verified) return <UpdatePassword />
+
+  return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Mobile Sidebar Overlay */}
       {isOpen && (
