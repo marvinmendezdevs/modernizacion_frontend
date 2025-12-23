@@ -1,5 +1,5 @@
 import type { SchoolByMonitorSchema } from "@/schemas/schoolmanagement.schema";
-import type z from "zod";
+import z from "zod";
 
 export type SchoolByMonitorType = z.infer<typeof SchoolByMonitorSchema>
 
@@ -47,3 +47,13 @@ export type TableRow = {
     municipality: string;
     department: string;
 };
+
+export type Subdirector = {
+    name: string;
+    email: string;
+    telephone: string;
+    dui: string;
+    username?: string;
+    password?: string;
+};
+
