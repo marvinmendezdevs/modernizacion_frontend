@@ -7,17 +7,18 @@ import { useState } from "react";
 
 type DashboardTab = 'directores' | 'docentes';
 
-function CallSMDashboard() {
+function CallSMDashboard({ startDate, endDate }: { startDate: string, endDate: string }) {
 
     const [page, setPage] = useState<DashboardTab>("directores");
 
     const { isLoading, isError, data } = useQuery<DashboardPublicGS[]>({
-        queryKey: ["dashboard-school-management"],
-        queryFn: getPublicMetrics
+        queryKey: ["dashboard-school-management", startDate, endDate],
+        queryFn: () => getPublicMetrics(startDate, endDate)
     });
 
     const currentData = data?.[0]?.json[page];
 
+    console.log(data)
 
     if (isLoading) {
         return (
