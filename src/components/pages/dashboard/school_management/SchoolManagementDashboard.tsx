@@ -1,31 +1,44 @@
-import { Calendar } from "lucide-react"
 import CallSMDashboard from "./CallSMDashboard"
 import { useState } from "react";
 
+type DashboardTab = 'directores' | 'docentes';
+
 function SchoolManagementDashboard() {
-      const getTodayDate = () => new Date().toLocaleDateString('sv-SE');
-  
-      const [startDate, setStartDate] = useState(getTodayDate());
-      const [endDate, setEndDate] = useState(getTodayDate());
+
+        const getTodayDate = () => new Date().toLocaleDateString('sv-SE');
+
+    const [today, setToday] = useState(getTodayDate());
+
+    const [page, setPage] = useState<DashboardTab>("directores");
+
+    
+
   return (
-    <div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 hidden items-center justify-end gap-4">
-            <p className="text-gray-600 text-sm">Desde</p>
-            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                <Calendar size={16} className="text-slate-400" />
-                <input className="bg-transparent text-sm text-slate-600 outline-none" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} id="start" />
+    <>
+
+        <div className="flex items-center justify-between mb-5 flex-col gap-3 md:flex-row">
+                <div>
+                    <p className="text-xl font-black">Registro de llamadas</p>
+                    <p className="text-xs text-gray-600">Centro escolares del grupo 1, fase 2</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <input className="p-2 bg-white border border-gray-200 rounded-lg" type="date" value={today} onChange={ e => setToday(e.target.value) } />
+                    <div className="bg-white w-42 p-2 flex gap-3 justify-center rounded-lg text-xs border border-gray-200">
+                        <button className={`${page === "directores" ? "bg-gray-100 font-bold" : ""} cursor-pointer px-2 p-1 rounded-lg`} onClick={() => setPage("directores")}>Directores</button>
+                        <button className={`${page === "docentes" ? "bg-gray-100 font-bold" : ""} cursor-pointer px-"docentes" p-1 rounded-lg`} onClick={() => setPage("docentes")}>Docentes</button>
+                    </div>
+                </div>
             </div>
-            <p className="text-gray-600 text-sm">Hasta</p>
-            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                <Calendar size={16} className="text-slate-400" />
-                <input className="bg-transparent text-sm text-slate-600 outline-none" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} id="end" />
-            </div>
-        </div>
-        <CallSMDashboard 
-          startDate={startDate}
-          endDate={endDate}
+
+
+            <h2 className="text-xl font-black text-gray-600">Métricas de llamadas</h2>
+
+        <CallSMDashboard
+            today={today}
+            page={ page }
         />
-    </div>
+    </>
   )
 }
 
