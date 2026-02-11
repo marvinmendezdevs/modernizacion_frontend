@@ -38,12 +38,12 @@ function Router() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<Dahsboard />}>
-          <Route path="dashboard" element={<TeacherDashboard />} />
+          <Route index path="dashboard" element={<SchoolsDashboard />} />
+          <Route path="dashboard/teachers" element={<TeacherDashboard />} />
           <Route path="dashboard/secciones" element={<SectionDashboard />} />
           <Route path="dashboard/estudiantes" element={<StudentDashboard />} />
           <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
           <Route path="dashboard/gestion-escolar" element={<SchoolManagementDashboard />} />
-          <Route path="dashboard/centros-escolares" element={<SchoolsDashboard />} />
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>

@@ -56,7 +56,7 @@ function SchoolsDashboard() {
   return (
     <div>
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
-        <StatCard title="Total de Centros Escolares" value={Number(totalSchools?.length)} icon={School} color="emerald"/>
+        <StatCard title="Total de Centros Educativos" value={Number(totalSchools?.length)} icon={School} color="emerald"/>
         <StatCard title="Grupo 1" value={Number(grupo1?.length)} icon={School} color="blue" />
         <StatCard title="Grupo 2" value={Number(grupo2?.length)} icon={School} color="blue" />
       </div>
@@ -66,12 +66,12 @@ function SchoolsDashboard() {
           <div className="w-full">
             <div className="flex items-center text-gray-600 my-2">
               <Funnel className="size-5" />
-              <p className="w-auto">Filtrar por Centro Escolar</p>
+              <p className="w-auto">Filtrar por Centro Educativo</p>
             </div>
             <input
               className="p-2 border border-gray-300 rounded-lg block mb-3 outline-0 w-full md:ms-auto"
               type="search"
-              placeholder="Ingrese el código o nombre del centro escolar"
+              placeholder="Ingrese el código o nombre del centro educativo"
               onChange={(e) => {
                 handleSetSearchTerm(e);
                 setPage(1);
@@ -105,7 +105,7 @@ function SchoolsDashboard() {
             <thead className="bg-slate-50 border-b border-gray-200">
               <tr className="text-left text-xs uppercase tracking-wider text-slate-600">
                 <th className="p-3 font-bold">Código</th>
-                <th className="p-3 font-bold">Nombre del Centro</th>
+                <th className="p-3 font-bold">Nombre del Centro Educativo</th>
                 <th className="p-3 font-bold text-center">Grupo</th>
               </tr>
             </thead>
