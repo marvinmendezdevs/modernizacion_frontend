@@ -46,7 +46,7 @@ function CallSMDashboard({ startDate, endDate }: { startDate: string, endDate: s
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <input className="p-2 bg-white border border-gray-200 rounded-lg" type="date" />
+                    {/* <input className="p-2 bg-white border border-gray-200 rounded-lg" type="date" /> */}
                     <div className="bg-white w-42 p-2 flex gap-3 justify-center rounded-lg text-xs border border-gray-200">
                         <button className={`${page === "directores" ? "bg-gray-100 font-bold" : ""} cursor-pointer px-2 p-1 rounded-lg`} onClick={() => setPage("directores")}>Directores</button>
                         <button className={`${page === "docentes" ? "bg-gray-100 font-bold" : ""} cursor-pointer px-"docentes" p-1 rounded-lg`} onClick={() => setPage("docentes")}>Docentes</button>
