@@ -22,6 +22,9 @@ function Dahsboard() {
                         <X />
                     </button>
                 </div>
+                <Link className={`${pathname === "/dashboard/centros-escolares" ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600" : ""} p-2 rounded-lg font-semibold`} to={"/dashboard/centros-escolares"}>
+                    Centros Educativos
+                </Link>
                 <Link className={`${pathname === "/dashboard" ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600" : ""} p-2 rounded-lg font-semibold`} to={"/dashboard"}>
                     Docentes
                 </Link>

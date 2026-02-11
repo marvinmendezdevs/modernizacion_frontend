@@ -34,12 +34,13 @@ export type teacherDataProps = {
 
 
 function GeneralInformation({ teacherData, title }: teacherDataProps) {
+    const newTeacherData = teacherData.filter((item) => item.group !== 3)
     // const currentDate = teacherData[0].dateReported;
 
     const [, , type] = title.split(" ");
-    const sumTotal = teacherData.map(item => item.total);
-    const sumAcess = teacherData.map(item => item.access);
-    const sumDemo = teacherData.map(item => item.demo);
+    const sumTotal = newTeacherData.map(item => item.total);
+    const sumAcess = newTeacherData.map(item => item.access);
+    const sumDemo = newTeacherData.map(item => item.demo);
 
     const options = {
   responsive: true,
@@ -47,7 +48,7 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
   // 1. Evita que las barras toquen los bordes laterales
   layout: {
     padding: {
-      top: 35,    // Espacio extra arriba para los números
+      top: 5,    // Espacio extra arriba para los números
       right: 20,
       left: 10,
       bottom: 10
@@ -131,7 +132,7 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
 
     const data = {
         // ESTOS SON TUS ITEMS (Eje X)
-        labels: teacherData.map(item => `Grupo ${item.group}`),
+        labels: newTeacherData.map(item => `Grupo ${item.group}`),
 
         // AQUÍ ESTÁN LAS 3 BARRAS POR CADA ITEM
         datasets: [
@@ -173,7 +174,7 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {teacherData.map((row) => (
+                            {newTeacherData.map((row) => (
                                 <tr key={row.group} className="hover:bg-slate-50/80 transition-colors group">
                                     <td className="px-6 py-4 font-semibold text-slate-900">
                                         Grupo {row.group}
