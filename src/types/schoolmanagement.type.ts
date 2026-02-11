@@ -22,6 +22,7 @@ export type SchoolInfo = {
   schoolEnrollment: boolean;
   schoolSchedule: boolean;
   teachingAssignment: boolean;
+  block: string;
   Districts: DistrictInfo;
   sections: SectionItem[];
 };
