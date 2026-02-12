@@ -23,11 +23,19 @@ function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProp
             className="bg-gray-50">
             <tr>
               <th className="w-76 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">TUTOR</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TELÉFONO</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">DISTRITO</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">DIAGNÓSTICO</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">OBSERVACIONES</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">RETROALIMENTACIONES</th>
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-center">TELÉFONO</th>
+              {String(tutor[0].infoTutores.type) !== "VIRTUAL" && (
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">DISTRITO</th>
+              )}
+              {String(tutor[0].infoTutores.type) !== "VIRTUAL" && (
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">DIAGNÓSTICO</th>
+              )}
+              {String(tutor[0].infoTutores.type) !== "VIRTUAL" && (
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">OBSERVACIONES</th>
+              )}
+              {String(tutor[0].infoTutores.type) !== "VIRTUAL" && (
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">RETROALIMENTACIONES</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -35,10 +43,18 @@ function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProp
               <tr key={index}>
                 <td className="w-76 px-4 py-4 whitespace-nowrap flex flex-col"><Link to={`/tutoria/tutor/${tutor.username}`} className="flex flex-col"><span className="text-xs font-medium text-gray-900">{tutor.name}</span><span className="text-xs text-gray-500">{tutor.email}</span></Link></td>
                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.telephone}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.infoTutores.districts?.district ?? "-"}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countDiagnostico}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countObservaciones}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countRetroalimentaciones}</td>
+                {String(tutor.infoTutores.type) !== "VIRTUAL" && (
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.infoTutores.districts?.district ?? "-"}</td>
+                )}
+                {String(tutor.infoTutores.type) !== "VIRTUAL" && (
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countDiagnostico}</td>
+                )}
+                {String(tutor.infoTutores.type) !== "VIRTUAL" && (
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countObservaciones}</td>
+                )}
+                {String(tutor.infoTutores.type) !== "VIRTUAL" && (
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{tutor.countRetroalimentaciones}</td>
+                )}
               </tr>
             ))}
           </tbody>
