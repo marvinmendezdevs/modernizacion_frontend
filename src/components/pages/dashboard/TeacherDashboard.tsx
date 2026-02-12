@@ -52,7 +52,7 @@ function TeacherDashboard() {
 
     return (
         <div>
-            <div className="hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 items-center justify-end gap-4">
+            <div className="flex flex-wrap bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 items-center justify-end gap-4">
                 <p className="text-gray-600 text-sm">Desde</p>
                 <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
                     <Calendar size={16} className="text-slate-400" />
