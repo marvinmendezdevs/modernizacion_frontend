@@ -6,6 +6,7 @@ import StatCard from "./StatCard";
 import { Calendar, Key, ShieldCheck, User } from "lucide-react";
 import GeneralInformation from "./GeneralInformation";
 import { useMemo, useState } from "react";
+import SectionsGrafics from "./accesos/SectionsGrafics";
 
 type DashboardJsonApi = {
   docentes: DashboardRecord[];
@@ -27,9 +28,17 @@ type TeacherInfoResponse = {
 };
 
 function SectionDashboard() {
-  const getTodayDate = () => new Date().toLocaleDateString("sv-SE");
+  const formatDate = (date: Date) => date.toLocaleDateString("sv-SE");
 
-  const [startDate, setStartDate] = useState(getTodayDate());
+  const getTodayDate = () => formatDate(new Date());
+
+  const getDaysAgoDate = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return formatDate(d);
+  };
+
+  const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
   const [endDate, setEndDate] = useState(getTodayDate());
 
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
@@ -55,9 +64,8 @@ function SectionDashboard() {
     );
   }, [data]);
 
-  const newData = seccionesData.filter((item) => item.group !== 3);
 
-  const { totalInfo, calculateTotals } = useDashboard(newData, "Secciones");
+  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(seccionesData, "Secciones", startDate, endDate);
 
   if (isLoading) {
     return (
@@ -129,7 +137,8 @@ function SectionDashboard() {
         />
       </div>
 
-      <GeneralInformation title="Información de secciones" teacherData={totalInfo} />
+        <GeneralInformation title="Información de secciones" teacherData={totalInfo} />
+        <SectionsGrafics onTimeInfo={onTimeInfo} />
     </div>
   );
 }

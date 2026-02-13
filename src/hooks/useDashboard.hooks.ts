@@ -8,9 +8,9 @@ type UseDashboardTypeReturn = {
 };
 
 const toISODate = (value: string): string | null => {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString().split("T")[0];
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toISOString().split("T")[0];
 };
 
 const toTime = (value: string): number | null => {
@@ -20,47 +20,40 @@ const toTime = (value: string): number | null => {
 
 export default function useDashboard(
   data: DashboardRecord[],
-  type: string
+  type: string,
+  startDate: string,
+  endDate: string
 ): UseDashboardTypeReturn {
-  const hoy = new Date().toISOString().split("T")[0];
+  const startISO = toISODate(startDate) ?? startDate;
+  const endISO = toISODate(endDate) ?? endDate;
 
-  // 1) Solo registros con fecha válida
   const dataWithValidDate = data.filter((item) => toTime(item.dateReported) !== null);
 
-  // 2) Intenta mostrar los de "hoy"
-  let datosParaMostrar: DashboardRecord[] = dataWithValidDate.filter((item) => {
-    const fechaItem = toISODate(item.dateReported);
-    return fechaItem === hoy;
+  const inRange = dataWithValidDate.filter((item) => {
+    const d = toISODate(item.dateReported);
+    if (!d) return false;
+    return d >= startISO && d <= endISO;
   });
 
-  // 3) Si no hay de hoy, usa la última fecha disponible
-  if (datosParaMostrar.length === 0 && dataWithValidDate.length > 0) {
-    const ultimoRegistro = [...dataWithValidDate].sort((a, b) => {
-      const tb = toTime(b.dateReported) ?? 0;
-      const ta = toTime(a.dateReported) ?? 0;
-      return tb - ta;
-    })[0];
+  const onTimeInfo = inRange
+    .filter((item) => item.type === type)
+    .sort((a, b) => (toTime(a.dateReported) ?? 0) - (toTime(b.dateReported) ?? 0));
+
+  let datosParaMostrar = inRange.filter((item) => toISODate(item.dateReported) === startISO);
+
+  if (datosParaMostrar.length === 0 && inRange.length > 0) {
+    const ultimoRegistro = [...inRange].sort(
+      (a, b) => (toTime(b.dateReported) ?? 0) - (toTime(a.dateReported) ?? 0)
+    )[0];
 
     const ultimaFechaDisponible = toISODate(ultimoRegistro.dateReported);
 
-    if (ultimaFechaDisponible) {
-      datosParaMostrar = dataWithValidDate.filter(
-        (item) => toISODate(item.dateReported) === ultimaFechaDisponible
-      );
-    } else {
-      datosParaMostrar = [];
-    }
+    datosParaMostrar = ultimaFechaDisponible
+      ? inRange.filter((item) => toISODate(item.dateReported) === ultimaFechaDisponible)
+      : [];
   }
 
   const totalInfo = datosParaMostrar.filter((item) => item.type === type);
-
-  const onTimeInfo = dataWithValidDate
-    .filter((item) => item.type === type)
-    .sort((a, b) => {
-      const ta = toTime(a.dateReported) ?? 0;
-      const tb = toTime(b.dateReported) ?? 0;
-      return ta - tb;
-    });
 
   const calculateTotals = (category: "total" | "demo" | "access") =>
     totalInfo.reduce((acc, item) => acc + item[category], 0);

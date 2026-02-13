@@ -9,8 +9,6 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
@@ -28,141 +26,24 @@ export type teacherDataProps = {
     title: string
 }
 
-/* type GeneralInformationType = teacherDataProps & {
-    filterByDate: (date: string) => void
-} */
 
 
 function GeneralInformation({ teacherData, title }: teacherDataProps) {
     const newTeacherData = teacherData.filter((item) => item.group !== 3)
-    // const currentDate = teacherData[0].dateReported;
 
-    const [, , type] = title.split(" ");
+    const [, ,] = title.split(" ");
     const sumTotal = newTeacherData.map(item => item.total);
     const sumAcess = newTeacherData.map(item => item.access);
     const sumDemo = newTeacherData.map(item => item.demo);
-
-    const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  // 1. Evita que las barras toquen los bordes laterales
-  layout: {
-    padding: {
-      top: 5,    // Espacio extra arriba para los números
-      right: 20,
-      left: 10,
-      bottom: 10
-    }
-  },
-  // 2. Ajuste de ancho de barras para que se vean agrupadas
-  barPercentage: 0.8,      // Ancho de la barra individual
-  categoryPercentage: 0.6, // Espacio del grupo (ajusta para separar más los grupos)
-  
-  plugins: {
-    datalabels: {
-      anchor: 'end' as const,
-      align: 'top' as const,
-      offset: 8,           // Separación entre el número y la barra
-      color: '#1e293b',    // Color oscuro para legibilidad
-      font: {
-        size: 13,
-        weight: 700 as const,
-      },
-      // Formateador por si quieres añadir separador de miles
-      formatter: (value: number) => value.toLocaleString(),
-    },
-    legend: {
-      display: true,
-      position: 'top' as const,
-      labels: {
-        usePointStyle: true,
-        pointStyle: 'rect', // Hace que el icono sea un cuadrado como en la imagen
-        padding: 25,
-        color: '#64748b',
-        font: {
-          size: 12,
-          weight: 500 as const
-        }
-      },
-    },
-    tooltip: {
-      enabled: true,
-      backgroundColor: '#1e293b',
-      padding: 12,
-      borderRadius: 8,
-    },
-  },
-  scales: {
-    x: {
-      grid: {
-        display: false, // Sin líneas verticales
-      },
-      border: {
-        display: false, // Quita la línea del eje
-      },
-      ticks: {
-        color: '#94a3b8',
-        font: {
-          size: 12,
-        },
-      },
-    },
-    y: {
-      // 3. LA CLAVE: Añade un margen porcentual automático al tope del eje
-      grace: '15%', 
-      beginAtZero: true,
-      border: {
-        display: false,
-      },
-      grid: {
-        color: '#f1f5f9',
-        drawTicks: false,
-      },
-      ticks: {
-        color: '#94a3b8',
-        stepSize: 600,
-        padding: 15,
-        font: {
-          size: 11,
-        },
-      },
-    },
-  },
-};
-
-    const data = {
-        // ESTOS SON TUS ITEMS (Eje X)
-        labels: newTeacherData.map(item => `Grupo ${item.group}`),
-
-        // AQUÍ ESTÁN LAS 3 BARRAS POR CADA ITEM
-        datasets: [
-            {
-                label: `TOTAL ${type.toUpperCase()}`, // Barra 1
-                data: sumTotal,       // Valores para cada escuela
-                backgroundColor: 'rgba(53, 162, 235, 0.7)', // Azul
-            },
-            {
-                label: `${type.toUpperCase()} CON ACCESO`, // Barra 2
-                data: sumAcess,       // Valores para cada escuela
-                backgroundColor: 'rgba(75, 192, 192, 0.7)', // Verde azulado
-            },
-            {
-                label: `${type.toUpperCase()} DEMO`,      // Barra 3
-                data: sumDemo,        // Valores para cada escuela
-                backgroundColor: 'rgba(255, 99, 132, 0.7)', // Rojo/Rosado
-            },
-        ],
-    };
 
     return (
         <div className="bg-white p-5 border border-gray-200 rounded-lg my-5">
             <div>
                 <h2 className="font-bold text-slate-600 uppercase">{title}</h2>
 
-                {/* <input type="date" value={currentDate} onChange={e => filterByDate(e.target.value)} /> */}
             </div>
 
-            <div className="grid gap-5 mt-3 items-center lg:grid-cols-2">
+            <div className="gap-5 mt-3 items-center w-full">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
@@ -217,9 +98,6 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-                <div className="overflow-x-auto h-full">
-                    <Bar options={options} data={data} />
                 </div>
             </div>
         </div>

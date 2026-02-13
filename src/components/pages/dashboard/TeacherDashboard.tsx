@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, Key, ShieldCheck, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DashboardRecord } from "@/types/dashboard.types";
+import TeachersGrafics1 from "./accesos/TeachersGrafics";
 
 type DashboardJsonApi = {
   docentes: DashboardRecord[];
@@ -27,10 +28,18 @@ type TeacherInfoResponse = {
 };
 
 function TeacherDashboard() {
-  const getTodayDate = () => new Date().toLocaleDateString("sv-SE");
+  const formatDate = (date: Date) => date.toLocaleDateString("sv-SE");
 
-  const [startDate, setStartDate] = useState(getTodayDate());
-  const [endDate, setEndDate] = useState(getTodayDate());
+  const getTodayDate = () => formatDate(new Date());
+
+  const getDaysAgoDate = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return formatDate(d);
+  };
+
+  const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
+  const [endDate, setEndDate] = useState(() => getTodayDate());
 
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
@@ -40,11 +49,7 @@ function TeacherDashboard() {
   });
 
   const docentesData = useMemo<DashboardRecord[]>(() => {
-    const source = data?.cumulative?.length
-      ? data.cumulative
-      : data?.last
-      ? [data.last]
-      : [];
+    const source = data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
       (report.json.docentes ?? []).map((row) => ({
@@ -55,7 +60,12 @@ function TeacherDashboard() {
     );
   }, [data]);
 
-  const { totalInfo, calculateTotals } = useDashboard(docentesData, "Docentes");
+  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(
+    docentesData,
+    "Docentes",
+    startDate,
+    endDate
+  );
 
   if (isLoading) {
     return (
@@ -128,6 +138,7 @@ function TeacherDashboard() {
       </div>
 
       <Teacher title="Información de Docentes" teacherData={totalInfo} />
+      <TeachersGrafics1  onTimeInfo={onTimeInfo}/>
     </div>
   );
 }

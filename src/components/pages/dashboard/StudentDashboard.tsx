@@ -6,6 +6,7 @@ import useDashboard from "@/hooks/useDashboard.hooks";
 import { useQuery } from "@tanstack/react-query";
 import GeneralInformation from "./GeneralInformation";
 import { useMemo, useState } from "react";
+import StudentsGrafics from "./accesos/StudentsGrafics";
 
 type DashboardJsonApi = {
   docentes: DashboardRecord[];
@@ -27,9 +28,17 @@ type TeacherInfoResponse = {
 };
 
 function StudentDashboard() {
-  const getTodayDate = () => new Date().toLocaleDateString("sv-SE");
+  const formatDate = (date: Date) => date.toLocaleDateString("sv-SE");
 
-  const [startDate, setStartDate] = useState(getTodayDate());
+  const getTodayDate = () => formatDate(new Date());
+
+  const getDaysAgoDate = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return formatDate(d);
+  };
+
+  const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
   const [endDate, setEndDate] = useState(getTodayDate());
 
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
@@ -55,9 +64,8 @@ function StudentDashboard() {
     );
   }, [data]);
 
-  const newData = estudiantesData.filter((item) => item.group !== 3);
 
-  const { totalInfo, calculateTotals } = useDashboard(newData, "Estudiantes");
+  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(estudiantesData, "Estudiantes", startDate, endDate);
 
   if (isLoading) {
     return (
@@ -133,6 +141,8 @@ function StudentDashboard() {
         title="Información de estudiantes"
         teacherData={totalInfo}
       />
+
+      <StudentsGrafics onTimeInfo={onTimeInfo} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ function CallSMDashboard({ startDate, endDate }: { startDate: string, endDate: s
 
     const [page, setPage] = useState<DashboardTab>("directores");
 
-    const { isLoading, isError, data } = useQuery<DashboardPublicGS[]>({
+    const { isError, data } = useQuery<DashboardPublicGS[]>({
         queryKey: ["dashboard-school-management", startDate, endDate],
         queryFn: () => getPublicMetrics(startDate, endDate)
     });
@@ -20,16 +20,16 @@ function CallSMDashboard({ startDate, endDate }: { startDate: string, endDate: s
 
     console.log(data)
 
-    if (isLoading) {
-        return (
-            <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
-                <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
-                Cargando información...
-            </p>
-        );
-    }
+    // if (isLoading) {
+    //     return (
+    //         <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
+    //             <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
+    //             Cargando información...
+    //         </p>
+    //     );
+    // }
 
-    if (isError || !data) {
+    if (isError) {
         return (
             <p className="text-xs text-red-600 text-center p-3">
                 ¡Error inespertado! contacte con soporte.

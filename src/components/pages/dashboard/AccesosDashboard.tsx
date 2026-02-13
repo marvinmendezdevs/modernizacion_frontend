@@ -5,7 +5,7 @@ import SectionDashboard from "./SectionDashboard"
 function AccesosDashboard() {
 
   return (
-    <div>
+    <div className="flex flex-col gap-3">
         <TeacherDashboard/>
         <StudentDashboard/> 
         <SectionDashboard/>
