@@ -47,37 +47,14 @@ function Dahsboard() {
 
         <Link
           className={`${
-            pathname === "/dashboard/teachers"
+            pathname === "/dashboard/accesos"
               ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
               : ""
           } p-2 rounded-lg font-semibold`}
-          to={"/dashboard/teachers"}
+          to={"/dashboard/accesos"}
         >
-          Docentes
+          Accesos
         </Link>
-
-        <Link
-          className={`${
-            pathname === "/dashboard/secciones"
-              ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
-              : ""
-          } p-2 rounded-lg font-semibold`}
-          to={"/dashboard/secciones"}
-        >
-          Secciones
-        </Link>
-
-        <Link
-          className={`${
-            pathname === "/dashboard/estudiantes"
-              ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
-              : ""
-          } p-2 rounded-lg font-semibold`}
-          to={"/dashboard/estudiantes"}
-        >
-          Estudiantes
-        </Link>
-
         <Link
           className={`${
             pathname === "/dashboard/tutoria"

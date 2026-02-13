@@ -24,12 +24,10 @@ import BaseFormRemediation from "./components/pages/BaseFormRemediation"
 import FacilitatorTeacherList from "./pages/FacilitatorTeacherList"
 import FacilitadoresHome from "./pages/FacilitadoresHome"
 import Dahsboard from "./pages/Dahsboard"
-import TeacherDashboard from "./components/pages/dashboard/TeacherDashboard"
-import SectionDashboard from "./components/pages/dashboard/SectionDashboard"
-import StudentDashboard from "./components/pages/dashboard/StudentDashboard"
 import TutorshipDashboard from "./components/pages/dashboard/TutorshipDashboard"
 import SchoolManagementDashboard from "./components/pages/dashboard/school_management/SchoolManagementDashboard"
 import SchoolsDashboard from "./components/pages/dashboard/SchoolsDashboard"
+import AccesosDashboard from "./components/pages/dashboard/AccesosDashboard"
 
 function Router() {
 
@@ -39,9 +37,7 @@ function Router() {
         <Route path="/login" element={<Login />} />
         <Route element={<Dahsboard />}>
           <Route index path="dashboard" element={<SchoolsDashboard />} />
-          <Route path="dashboard/teachers" element={<TeacherDashboard />} />
-          <Route path="dashboard/secciones" element={<SectionDashboard />} />
-          <Route path="dashboard/estudiantes" element={<StudentDashboard />} />
+          <Route path="/dashboard/accesos" element={<AccesosDashboard />} />
           <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
           <Route path="dashboard/gestion-escolar" element={<SchoolManagementDashboard />} />
         </Route>

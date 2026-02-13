@@ -5,22 +5,59 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import useDashboard from "@/hooks/useDashboard.hooks";
 import { useQuery } from "@tanstack/react-query";
 import GeneralInformation from "./GeneralInformation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+type DashboardJsonApi = {
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
+};
+
+type DashboardReportApi = {
+  id: number;
+  category: string;
+  dateReported: string;
+  type: string;
+  json: DashboardJsonApi;
+};
+
+type TeacherInfoResponse = {
+  last: DashboardReportApi | null;
+  cumulative: DashboardReportApi[];
+};
 
 function StudentDashboard() {
-  const getTodayDate = () => new Date().toLocaleDateString('sv-SE');
+  const getTodayDate = () => new Date().toLocaleDateString("sv-SE");
 
   const [startDate, setStartDate] = useState(getTodayDate());
   const [endDate, setEndDate] = useState(getTodayDate());
-  const { isLoading, isError, data } = useQuery<DashboardRecord[]>({
+
+  const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
-    queryFn:() => getTeacherInfo(startDate, endDate),
+    queryFn: () => getTeacherInfo(startDate, endDate),
     retry: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
-  const newData = data?.filter((item) => item.group !== 3)
-  const { totalInfo, calculateTotals } = useDashboard(newData || [], "Estudiantes")
+  const estudiantesData = useMemo<DashboardRecord[]>(() => {
+    const source = data?.cumulative?.length
+      ? data.cumulative
+      : data?.last
+      ? [data.last]
+      : [];
+
+    return source.flatMap((report) =>
+      (report.json.estudiantes ?? []).map((row) => ({
+        ...row,
+        type: "Estudiantes",
+        dateReported: report.dateReported,
+      }))
+    );
+  }, [data]);
+
+  const newData = estudiantesData.filter((item) => item.group !== 3);
+
+  const { totalInfo, calculateTotals } = useDashboard(newData, "Estudiantes");
 
   if (isLoading) {
     return (
@@ -31,28 +68,46 @@ function StudentDashboard() {
     );
   }
 
-  if (isError || !data) {
+  if (isError || !data?.last) {
     return (
       <p className="text-xs text-red-600 text-center p-3">
-        ¡Error inespertado! contacte con soporte.
+        ¡Error inesperado! contacte con soporte.
       </p>
     );
   }
 
   return (
     <div>
-      <div className="flex flex-wrap bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8 items-center justify-end gap-4">
-        <p className="text-gray-600 text-sm">Desde</p>
-        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+        <h1 className="text-indigo-700 text-3xl font-semibold">
+          Accesos de estudiantes
+        </h1>
+        <div className="flex flex-col md:flex-row w-full md:w-auto bg-white p-4 rounded-2xl shadow-sm border border-slate-100 items-center justify-end gap-4">
+          <p className="text-gray-600 text-sm w-full">Desde</p>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
             <Calendar size={16} className="text-slate-400" />
-            <input className="bg-transparent text-sm text-slate-600 outline-none" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} id="start" />
-        </div>
-        <p className="text-gray-600 text-sm">Hasta</p>
-        <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+            <input
+              className="bg-transparent text-sm text-slate-600 outline-none w-full"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              id="start"
+            />
+          </div>
+          <p className="text-gray-600 text-sm w-full">Hasta</p>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
             <Calendar size={16} className="text-slate-400" />
-            <input className="bg-transparent text-sm text-slate-600 outline-none" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} id="end" />
+            <input
+              className="bg-transparent text-sm text-slate-600 outline-none w-full"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              id="end"
+            />
+          </div>
         </div>
       </div>
+
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
         <StatCard
           title="Total estudiantes"
@@ -74,9 +129,12 @@ function StudentDashboard() {
         />
       </div>
 
-      <GeneralInformation title="Información de estudiantes" teacherData={totalInfo}  />
+      <GeneralInformation
+        title="Información de estudiantes"
+        teacherData={totalInfo}
+      />
     </div>
-  )
+  );
 }
 
-export default StudentDashboard
+export default StudentDashboard;
