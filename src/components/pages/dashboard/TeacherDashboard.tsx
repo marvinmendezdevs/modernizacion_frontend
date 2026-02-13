@@ -1,6 +1,5 @@
 import StatCard from "@/components/pages/dashboard/StatCard"
 import Teacher from "@/components/pages/dashboard/GeneralInformation"
-import TeachersOnTime from "@/components/pages/dashboard/TeachersOnTime";
 import useDashboard from "@/hooks/useDashboard.hooks";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import { useQuery } from "@tanstack/react-query"
@@ -31,7 +30,7 @@ function TeacherDashboard() {
     });
 
     const newData = data?.filter((item) => item.group !== 3)
-    const {totalInfo, onTimeInfo, calculateTotals } = useDashboard(newData || [], "Docentes")
+    const {totalInfo, calculateTotals } = useDashboard(newData || [], "Docentes")
 
     if (isLoading) {
         return (
@@ -87,7 +86,6 @@ function TeacherDashboard() {
 
             <Teacher title="Información de Docentes" teacherData={totalInfo} />
 
-            <TeachersOnTime title="Histórico de Docentes" teacherData={onTimeInfo} />
         </div>
     )
 }

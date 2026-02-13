@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import StatCard from "./StatCard";
 import { Calendar, Key, ShieldCheck, User } from "lucide-react";
 import GeneralInformation from "./GeneralInformation";
-import TeachersOnTime from "./TeachersOnTime";
 import { useState } from "react";
 
 function SectionDashboard() {
@@ -22,7 +21,7 @@ function SectionDashboard() {
     });
 
     const newData = data?.filter((item) => item.group !== 3)
-    const { totalInfo, onTimeInfo, calculateTotals } = useDashboard(newData || [], "Secciones")
+    const { totalInfo, calculateTotals } = useDashboard(newData || [], "Secciones")
 
     if (isLoading) {
         return (
@@ -78,7 +77,6 @@ function SectionDashboard() {
 
             <GeneralInformation title="Información de secciones" teacherData={totalInfo} />
 
-            <TeachersOnTime title="Histórico de secciones" teacherData={onTimeInfo} />
         </div>
     )
 }
