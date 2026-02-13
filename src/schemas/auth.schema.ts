@@ -1,4 +1,5 @@
 import z from "zod";
+import { VirtualSessionShema } from "./tutorship.schema";
 
 export const LoginSchema = z.object({
   email: z.string(),
@@ -53,4 +54,5 @@ export const InfoTutorCountResponseSchema = UserSchema.extend({
   countObservaciones: z.number(),
   countRetroalimentaciones: z.number(),
   infoTutores: InfoTutorCountSchema,
+  virtualSesions: VirtualSessionShema.array(),
 });
