@@ -60,7 +60,6 @@ function GeneralInfo({ startDate, endDate }: { startDate: string, endDate: strin
     });
 
 
-    console.log(data)
     if (isLoading) {
         return (
             <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
