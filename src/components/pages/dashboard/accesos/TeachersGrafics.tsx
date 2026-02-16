@@ -8,6 +8,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
+  LabelList,
+  type LabelProps,
 } from "recharts";
 
 type TeachersGraficsProps = {
@@ -15,10 +18,8 @@ type TeachersGraficsProps = {
 };
 
 type ChartRow = {
-  name: string;
-  Total: number;
-  Acceso: number;
-  Demo: number;
+  name: "Acceso" | "Demo" | "Total";
+  value: number;
 };
 
 const isoDay = (value: string) => {
@@ -28,12 +29,9 @@ const isoDay = (value: string) => {
 };
 
 const buildBars = (g: DashboardRecord): ChartRow[] => [
-  {
-    name: "Datos",
-    Total: g.total,
-    Acceso: g.access,
-    Demo: g.demo,
-  },
+  { name: "Acceso", value: g.access },
+  { name: "Demo", value: g.demo },
+  { name: "Total", value: g.total },
 ];
 
 function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
@@ -86,10 +84,10 @@ function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
             type="button"
             onClick={() => setActiveGroup(1)}
             className={[
-              "px-3 py-1.5 text-sm rounded-lg transition",
+              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
               activeGroup === 1
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-800",
+                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
+                : "text-slate-600 hover:text-slate-800 cursor-pointer",
             ].join(" ")}
           >
             Grupo 1
@@ -98,10 +96,10 @@ function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
             type="button"
             onClick={() => setActiveGroup(2)}
             className={[
-              "px-3 py-1.5 text-sm rounded-lg transition",
+              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
               activeGroup === 2
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-800",
+                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
+                : "text-slate-600 hover:text-slate-800 cursor-pointer",
             ].join(" ")}
           >
             Grupo 2
@@ -119,16 +117,81 @@ function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
               <h3 className="text-sm font-semibold text-slate-700 mb-3">
                 {day}
               </h3>
-              <div className="h-[300px]">
+
+              <div className="h-[300px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data}>
+                  <BarChart data={data} barCategoryGap="25%" margin={{ top: 25 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="Total" fill="#4f46e5" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="Acceso" fill="#10b981" radius={[6, 6, 0, 0]} />
-                    <Bar dataKey="Demo" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+
+                    <Bar dataKey="value" barSize={70} radius={[6, 6, 0, 0]}>
+                      <LabelList
+                        dataKey="value"
+                        position="top"
+                        content={(props: LabelProps) => {
+                          const { x, y, width, value, index } = props;
+
+                          if (
+                            typeof x !== "number" ||
+                            typeof y !== "number" ||
+                            typeof width !== "number" ||
+                            typeof index !== "number" ||
+                            typeof value !== "number"
+                          ) {
+                            return null;
+                          }
+
+                          const entry = data[index];
+
+                          const textColor =
+                            entry.name === "Total"
+                              ? "rgb(54, 162, 235)"
+                              : entry.name === "Acceso"
+                              ? "rgb(75, 192, 192)"
+                              : "rgb(255, 99, 132)";
+
+                          return value > 0 ? (
+                            <text
+                              x={x + width / 2}
+                              y={y - 8}
+                              fill={textColor}
+                              textAnchor="middle"
+                              fontSize={13}
+                              fontWeight={600}
+                            >
+                              {value.toLocaleString("en-US")}
+                            </text>
+                          ) : null;
+                        }}
+                      />
+
+                      {data.map((entry) => {
+                        const fillColor =
+                          entry.name === "Total"
+                            ? "rgba(54, 162, 235, 0.5)"
+                            : entry.name === "Acceso"
+                            ? "rgba(75, 192, 192, 0.5)"
+                            : "rgba(255, 99, 132, 0.5)";
+
+                        const strokeColor =
+                          entry.name === "Total"
+                            ? "rgb(54, 162, 235)"
+                            : entry.name === "Acceso"
+                            ? "rgb(75, 192, 192)"
+                            : "rgb(255, 99, 132)";
+
+                        return (
+                          <Cell
+                            key={entry.name}
+                            fill={fillColor}
+                            stroke={strokeColor}
+                            strokeWidth={2}
+                          />
+                        );
+                      })}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
