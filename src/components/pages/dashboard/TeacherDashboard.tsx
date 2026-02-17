@@ -48,8 +48,9 @@ function TeacherDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  const docentesData = useMemo<DashboardRecord[]>(() => {
-    const source = data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
+  const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
+    const source =
+      data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
       (report.json.docentes ?? []).map((row) => ({
@@ -60,8 +61,30 @@ function TeacherDashboard() {
     );
   }, [data]);
 
-  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(
-    docentesData,
+  const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
+    const report =
+      data?.cumulative?.length
+        ? data.cumulative.at(-1) ?? null
+        : data?.last ?? null;
+
+    if (!report) return [];
+
+    return (report.json.docentes ?? []).map((row) => ({
+      ...row,
+      type: "Docentes",
+      dateReported: report.dateReported,
+    }));
+  }, [data]);
+
+  const { totalInfo, calculateTotals } = useDashboard(
+    docentesLastDayData,
+    "Docentes",
+    startDate,
+    endDate
+  );
+
+  const { onTimeInfo } = useDashboard(
+    docentesSeriesData,
     "Docentes",
     startDate,
     endDate
@@ -138,7 +161,7 @@ function TeacherDashboard() {
       </div>
 
       <Teacher title="Información de Docentes" teacherData={totalInfo} />
-      <TeachersGrafics1  onTimeInfo={onTimeInfo}/>
+      <TeachersGrafics1 onTimeInfo={onTimeInfo} />
     </div>
   );
 }

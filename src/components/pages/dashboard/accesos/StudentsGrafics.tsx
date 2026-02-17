@@ -1,17 +1,8 @@
 import { useMemo, useState } from "react";
 import type { DashboardRecord } from "@/types/dashboard.types";
 import type { LabelProps } from "recharts";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, } from "recharts";
+import { formatFullDate } from "@/utils/index.utils";
 
 type StudentsGraficsProps = {
   onTimeInfo: DashboardRecord[];
@@ -115,7 +106,7 @@ function StudentsGrafics({ onTimeInfo }: StudentsGraficsProps) {
               className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 min-w-[360px]"
             >
               <h3 className="text-sm font-semibold text-slate-700 mb-3">
-                {day}
+                {formatFullDate(day)}
               </h3>
 
               <div className="h-[300px]">

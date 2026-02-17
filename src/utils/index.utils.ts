@@ -99,3 +99,16 @@ export const formatNumber = (quantity: string | number) => {
         style: "decimal"
     }).format(Number(quantity));
 }
+export const formatFullDate = (iso: string) => {
+  const date = new Date(iso);
+
+  const text = date.toLocaleDateString("es-ES", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return text.replace(/^./, (c) => c.toUpperCase());
+};

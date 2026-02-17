@@ -39,7 +39,7 @@ function SectionDashboard() {
   };
 
   const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
-  const [endDate, setEndDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(() => getTodayDate());
 
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
@@ -48,12 +48,9 @@ function SectionDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  const seccionesData = useMemo<DashboardRecord[]>(() => {
-    const source = data?.cumulative?.length
-      ? data.cumulative
-      : data?.last
-      ? [data.last]
-      : [];
+  const seccionesSeriesData = useMemo<DashboardRecord[]>(() => {
+    const source =
+      data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
       (report.json.secciones ?? []).map((row) => ({
@@ -64,8 +61,34 @@ function SectionDashboard() {
     );
   }, [data]);
 
+  const seccionesLastDayData = useMemo<DashboardRecord[]>(() => {
+    const report =
+      data?.cumulative?.length
+        ? data.cumulative.at(-1) ?? null
+        : data?.last ?? null;
 
-  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(seccionesData, "Secciones", startDate, endDate);
+    if (!report) return [];
+
+    return (report.json.secciones ?? []).map((row) => ({
+      ...row,
+      type: "Secciones",
+      dateReported: report.dateReported,
+    }));
+  }, [data]);
+
+  const { totalInfo, calculateTotals } = useDashboard(
+    seccionesLastDayData,
+    "Secciones",
+    startDate,
+    endDate
+  );
+
+  const { onTimeInfo } = useDashboard(
+    seccionesSeriesData,
+    "Secciones",
+    startDate,
+    endDate
+  );
 
   if (isLoading) {
     return (
@@ -86,34 +109,34 @@ function SectionDashboard() {
 
   return (
     <div>
-        <div className="flex flex-col md:flex-row justify-between items-center gap-2">
-            <h1 className="text-indigo-700 text-3xl font-semibold">
-            Accesos de secciones
-            </h1>
-            <div className="flex flex-col md:flex-row w-full md:w-auto bg-white p-4 rounded-2xl shadow-sm border border-slate-100 items-center justify-end gap-4">
-                <p className="text-gray-600 text-sm w-full">Desde</p>
-                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
-                    <Calendar size={16} className="text-slate-400" />
-                    <input
-                    className="bg-transparent text-sm text-slate-600 outline-none w-full"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    id="start"
-                    />
-                </div>
-                <p className="text-gray-600 text-sm w-full">Hasta</p>
-                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
-                    <Calendar size={16} className="text-slate-400" />
-                    <input
-                    className="bg-transparent text-sm text-slate-600 outline-none w-full"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    id="end"
-                    />
-                </div>
-            </div>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+        <h1 className="text-indigo-700 text-3xl font-semibold">
+          Accesos de secciones
+        </h1>
+        <div className="flex flex-col md:flex-row w-full md:w-auto bg-white p-4 rounded-2xl shadow-sm border border-slate-100 items-center justify-end gap-4">
+          <p className="text-gray-600 text-sm w-full">Desde</p>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
+            <Calendar size={16} className="text-slate-400" />
+            <input
+              className="bg-transparent text-sm text-slate-600 outline-none w-full"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              id="start"
+            />
+          </div>
+          <p className="text-gray-600 text-sm w-full">Hasta</p>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
+            <Calendar size={16} className="text-slate-400" />
+            <input
+              className="bg-transparent text-sm text-slate-600 outline-none w-full"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              id="end"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
@@ -137,8 +160,11 @@ function SectionDashboard() {
         />
       </div>
 
-        <GeneralInformation title="Información de secciones" teacherData={totalInfo} />
-        <SectionsGrafics onTimeInfo={onTimeInfo} />
+      <GeneralInformation
+        title="Información de secciones"
+        teacherData={totalInfo}
+      />
+      <SectionsGrafics onTimeInfo={onTimeInfo} />
     </div>
   );
 }

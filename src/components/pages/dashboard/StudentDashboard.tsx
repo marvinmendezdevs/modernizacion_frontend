@@ -39,7 +39,7 @@ function StudentDashboard() {
   };
 
   const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
-  const [endDate, setEndDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(() => getTodayDate());
 
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
@@ -48,12 +48,9 @@ function StudentDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  const estudiantesData = useMemo<DashboardRecord[]>(() => {
-    const source = data?.cumulative?.length
-      ? data.cumulative
-      : data?.last
-      ? [data.last]
-      : [];
+  const estudiantesSeriesData = useMemo<DashboardRecord[]>(() => {
+    const source =
+      data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
       (report.json.estudiantes ?? []).map((row) => ({
@@ -64,8 +61,34 @@ function StudentDashboard() {
     );
   }, [data]);
 
+  const estudiantesLastDayData = useMemo<DashboardRecord[]>(() => {
+    const report =
+      data?.cumulative?.length
+        ? data.cumulative.at(-1) ?? null
+        : data?.last ?? null;
 
-  const { totalInfo, calculateTotals, onTimeInfo } = useDashboard(estudiantesData, "Estudiantes", startDate, endDate);
+    if (!report) return [];
+
+    return (report.json.estudiantes ?? []).map((row) => ({
+      ...row,
+      type: "Estudiantes",
+      dateReported: report.dateReported,
+    }));
+  }, [data]);
+
+  const { totalInfo, calculateTotals } = useDashboard(
+    estudiantesLastDayData,
+    "Estudiantes",
+    startDate,
+    endDate
+  );
+
+  const { onTimeInfo } = useDashboard(
+    estudiantesSeriesData,
+    "Estudiantes",
+    startDate,
+    endDate
+  );
 
   if (isLoading) {
     return (
@@ -83,7 +106,7 @@ function StudentDashboard() {
       </p>
     );
   }
-
+  console.log(data)
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
