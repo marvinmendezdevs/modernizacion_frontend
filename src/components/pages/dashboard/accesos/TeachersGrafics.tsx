@@ -1,12 +1,22 @@
 import type { DashboardRecord } from "@/types/dashboard.types";
 import { formatFullDate } from "@/utils/index.utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { LabelProps } from "recharts";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, } from "recharts";
-
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LabelList,
+} from "recharts";
 
 type TeachersGraficsProps = {
   onTimeInfo: DashboardRecord[];
+  activeGroup: 1 | 2;
 };
 
 type ChartRow = {
@@ -21,14 +31,12 @@ const isoDay = (value: string) => {
 };
 
 const buildBars = (g: DashboardRecord): ChartRow[] => [
+  { name: "Total", value: g.total },
   { name: "Acceso", value: g.access },
   { name: "Demo", value: g.demo },
-  { name: "Total", value: g.total },
 ];
 
-function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
-  const [activeGroup, setActiveGroup] = useState<1 | 2>(1);
-
+function TeachersGrafics({ onTimeInfo, activeGroup }: TeachersGraficsProps) {
   const { group1Cards, group2Cards } = useMemo(() => {
     const byDayGroup = new Map<string, DashboardRecord>();
 
@@ -70,33 +78,6 @@ function TeachersGrafics({ onTimeInfo }: TeachersGraficsProps) {
     <div className="border-b-2 border-gray-300 pb-8">
       <div className="flex items-center justify-between gap-4 mb-4">
         <h2 className="text-lg font-semibold text-indigo-700">{title}</h2>
-
-        <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setActiveGroup(1)}
-            className={[
-              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-              activeGroup === 1
-                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
-                : "text-slate-600 hover:text-slate-800 cursor-pointer",
-            ].join(" ")}
-          >
-            Grupo 1
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveGroup(2)}
-            className={[
-              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-              activeGroup === 2
-                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
-                : "text-slate-600 hover:text-slate-800 cursor-pointer",
-            ].join(" ")}
-          >
-            Grupo 2
-          </button>
-        </div>
       </div>
 
       <div className="overflow-x-auto">

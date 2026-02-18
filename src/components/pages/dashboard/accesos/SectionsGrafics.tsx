@@ -1,11 +1,22 @@
-import { useMemo, useState } from "react";
-import {type LabelProps } from "recharts";
+import { useMemo } from "react";
+import { type LabelProps } from "recharts";
 import type { DashboardRecord } from "@/types/dashboard.types";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList, } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LabelList,
+} from "recharts";
 import { formatFullDate } from "@/utils/index.utils";
 
 type SectionsGraficsProps = {
   onTimeInfo: DashboardRecord[];
+  activeGroup: 1 | 2;
 };
 
 type ChartRow = {
@@ -20,14 +31,12 @@ const isoDay = (value: string) => {
 };
 
 const buildBars = (g: DashboardRecord): ChartRow[] => [
+  { name: "Total", value: g.total },
   { name: "Acceso", value: g.access },
   { name: "Demo", value: g.demo },
-  { name: "Total", value: g.total },
 ];
 
-function SectionsGrafics({ onTimeInfo }: SectionsGraficsProps) {
-  const [activeGroup, setActiveGroup] = useState<1 | 2>(1);
-
+function SectionsGrafics({ onTimeInfo, activeGroup }: SectionsGraficsProps) {
   const { group1Cards, group2Cards } = useMemo(() => {
     const byDayGroup = new Map<string, DashboardRecord>();
 
@@ -69,33 +78,6 @@ function SectionsGrafics({ onTimeInfo }: SectionsGraficsProps) {
     <div className="border-b-2 border-gray-300 pb-8">
       <div className="flex items-center justify-between gap-4 mb-4">
         <h2 className="text-lg font-semibold text-indigo-700">{title}</h2>
-
-        <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setActiveGroup(1)}
-            className={[
-              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-              activeGroup === 1
-                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
-                : "text-slate-600 hover:text-slate-800 cursor-pointer",
-            ].join(" ")}
-          >
-            Grupo 1
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveGroup(2)}
-            className={[
-              "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-              activeGroup === 2
-                ? "bg-white text-indigo-700 shadow-sm cursor-pointer"
-                : "text-slate-600 hover:text-slate-800 cursor-pointer",
-            ].join(" ")}
-          >
-            Grupo 2
-          </button>
-        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -109,7 +91,7 @@ function SectionsGrafics({ onTimeInfo }: SectionsGraficsProps) {
                 {formatFullDate(day)}
               </h3>
 
-              <div className="h-[300px]">
+              <div className="h-[300px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} barCategoryGap="25%" margin={{ top: 25 }}>
                     <CartesianGrid strokeDasharray="3 3" />

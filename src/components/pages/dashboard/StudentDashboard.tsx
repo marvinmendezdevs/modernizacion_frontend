@@ -1,12 +1,12 @@
-import { Calendar, Key, ShieldCheck, User } from "lucide-react";
-import StatCard from "./StatCard";
-import { getTeacherInfo } from "@/services/dashboard.services";
-import type { DashboardRecord } from "@/types/dashboard.types";
+import StatCard from "@/components/pages/dashboard/StatCard";
+import GeneralInformation from "@/components/pages/dashboard/GeneralInformation";
 import useDashboard from "@/hooks/useDashboard.hooks";
+import { getTeacherInfo } from "@/services/dashboard.services";
 import { useQuery } from "@tanstack/react-query";
-import GeneralInformation from "./GeneralInformation";
-import { useMemo, useState } from "react";
-import StudentsGrafics from "./accesos/StudentsGrafics";
+import { Key, ShieldCheck, Users } from "lucide-react";
+import { useMemo } from "react";
+import type { DashboardRecord } from "@/types/dashboard.types";
+import StudentsGrafics1 from "./accesos/StudentsGrafics";
 
 type DashboardJsonApi = {
   docentes: DashboardRecord[];
@@ -27,20 +27,15 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function StudentDashboard() {
-  const formatDate = (date: Date) => date.toLocaleDateString("sv-SE");
-
-  const getTodayDate = () => formatDate(new Date());
-
-  const getDaysAgoDate = (days: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return formatDate(d);
-  };
-
-  const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
-  const [endDate, setEndDate] = useState(() => getTodayDate());
-
+function StudentDashboard({
+  startDate,
+  endDate,
+  activeGroup,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+}) {
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -48,7 +43,7 @@ function StudentDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  const estudiantesSeriesData = useMemo<DashboardRecord[]>(() => {
+  const studentsSeriesData = useMemo<DashboardRecord[]>(() => {
     const source =
       data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
@@ -61,7 +56,7 @@ function StudentDashboard() {
     );
   }, [data]);
 
-  const estudiantesLastDayData = useMemo<DashboardRecord[]>(() => {
+  const studentsLastDayData = useMemo<DashboardRecord[]>(() => {
     const report =
       data?.cumulative?.length
         ? data.cumulative.at(-1) ?? null
@@ -77,14 +72,14 @@ function StudentDashboard() {
   }, [data]);
 
   const { totalInfo, calculateTotals } = useDashboard(
-    estudiantesLastDayData,
+    studentsLastDayData,
     "Estudiantes",
     startDate,
     endDate
   );
 
   const { onTimeInfo } = useDashboard(
-    estudiantesSeriesData,
+    studentsSeriesData,
     "Estudiantes",
     startDate,
     endDate
@@ -106,44 +101,20 @@ function StudentDashboard() {
       </p>
     );
   }
-  console.log(data)
+
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
         <h1 className="text-indigo-700 text-3xl font-semibold">
           Accesos de estudiantes
         </h1>
-        <div className="flex flex-col md:flex-row w-full md:w-auto bg-white p-4 rounded-2xl shadow-sm border border-slate-100 items-center justify-end gap-4">
-          <p className="text-gray-600 text-sm w-full">Desde</p>
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
-            <Calendar size={16} className="text-slate-400" />
-            <input
-              className="bg-transparent text-sm text-slate-600 outline-none w-full"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              id="start"
-            />
-          </div>
-          <p className="text-gray-600 text-sm w-full">Hasta</p>
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 w-full">
-            <Calendar size={16} className="text-slate-400" />
-            <input
-              className="bg-transparent text-sm text-slate-600 outline-none w-full"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              id="end"
-            />
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
         <StatCard
-          title="Total estudiantes"
+          title="Total Estudiantes"
           value={calculateTotals("total")}
-          icon={User}
+          icon={Users}
           color="blue"
         />
         <StatCard
@@ -153,19 +124,15 @@ function StudentDashboard() {
           color="emerald"
         />
         <StatCard
-          title="Estudiantes con Demo"
+          title="Estudiantes Demo"
           value={calculateTotals("demo")}
           icon={ShieldCheck}
           color="rose"
         />
       </div>
 
-      <GeneralInformation
-        title="Información de estudiantes"
-        teacherData={totalInfo}
-      />
-
-      <StudentsGrafics onTimeInfo={onTimeInfo} />
+      <GeneralInformation title="Información de Estudiantes" teacherData={totalInfo} />
+      <StudentsGrafics1 onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
     </div>
   );
 }

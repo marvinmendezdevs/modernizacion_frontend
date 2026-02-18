@@ -1,5 +1,5 @@
 import type { DashboardRecord } from '@/types/dashboard.types';
-import { formatNumber } from '@/utils/index.utils';
+import {  formatNumber } from '@/utils/index.utils';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -29,18 +29,16 @@ export type teacherDataProps = {
 
 
 function GeneralInformation({ teacherData, title }: teacherDataProps) {
-    const newTeacherData = teacherData.filter((item) => item.group !== 3)
 
     const [, ,] = title.split(" ");
-    const sumTotal = newTeacherData.map(item => item.total);
-    const sumAcess = newTeacherData.map(item => item.access);
-    const sumDemo = newTeacherData.map(item => item.demo);
+    const sumTotal = teacherData.map(item => item.total);
+    const sumAcess = teacherData.map(item => item.access);
+    const sumDemo = teacherData.map(item => item.demo);
 
     return (
         <div className="bg-white p-5 border border-gray-200 rounded-lg my-5">
-            <div>
-                <h2 className="font-bold text-slate-600 uppercase">{title}</h2>
-
+            <div className='font-bold text-slate-600 uppercase'>
+                <h2>{title}</h2>
             </div>
 
             <div className="gap-5 mt-3 items-center w-full">
@@ -55,7 +53,7 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {newTeacherData.map((row) => (
+                            {teacherData.map((row) => (
                                 <tr key={row.group} className="hover:bg-slate-50/80 transition-colors group">
                                     <td className="px-6 py-4 font-semibold text-slate-900">
                                         Grupo {row.group}
