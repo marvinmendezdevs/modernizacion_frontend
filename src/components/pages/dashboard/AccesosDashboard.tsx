@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Check, Clock } from "lucide-react";
+import { Calendar, Check, Clock, Clock1 } from "lucide-react";
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
 import SectionDashboard from "./SectionDashboard";
@@ -99,7 +99,7 @@ if (hourBd) {
       <div className="mb-5">
         {!mostrarPendiente ? (
           <div className="flex flex-col md:flex-row justify-center md:justify-between bg-emerald-50 border border-emerald-100 p-5 rounded-xl shadow-sm gap-3 items-center">
-            <div className="flex flex-col md:flex-row items-center gap-3">
+            <div className="flex flex-col md:flex-row items-center gap-3 text-center md:text-left">
               <div className="rounded-xl bg-emerald-100 p-2 shadow-inner">
                 <Check className="size-8 text-emerald-600" />
               </div>
@@ -112,11 +112,14 @@ if (hourBd) {
                 </p>
               </div>
             </div>
-            <div>
-              <div className="rounded-xl bg-emerald-100 p-2 shadow-inner">
-                <p className="text-emerald-700 font-bold">
-                  {formatFullDate(actualyDateSV)}
-                  <span className="text-sm font-semibold"> {hourReport}</span>
+            <div className="w-full md:w-auto">
+              <div className="w-full rounded-xl bg-emerald-100 p-2 shadow-inner">
+                <p className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 text-emerald-700 font-semibold text-xs w-full">
+                  <span className="flex gap-1 text-xs font-semibold">
+                    <Calendar className="size-4 text-emerald-800"/>
+                    {formatFullDate(actualyDateSV)}
+                  </span>
+                  <span className="flex gap-1 text-xs font-normal"> <Clock1 className="size-4 text-emerald-700"/> {hourReport}</span>
                 </p>
               </div>
             </div>
@@ -145,7 +148,7 @@ if (hourBd) {
         )}
       </div>
 
-      <div className="sticky top-0 z-40 backdrop-blur bg-white/90 border-b border-slate-200 rounded-md">
+      <div className="sticky top-0 z-10 backdrop-blur bg-white/90 border-b border-slate-200 rounded-md mb-5">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 rounded-md shadow-sm">
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <div className="w-full md:w-auto">
@@ -176,28 +179,10 @@ if (hourBd) {
           </div>
 
           <div className="inline-flex justify-center md:justify-start bg-slate-100 p-1 rounded-xl border border-slate-200 w-full md:w-auto">
-            <button
-              type="button"
-              onClick={() => setActiveGroup(1)}
-              className={[
-                "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-                activeGroup === 1
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-800",
-              ].join(" ")}
-            >
+            <button type="button" onClick={() => setActiveGroup(1)} className={["px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",activeGroup === 1 ? "bg-white text-indigo-700 shadow-sm": "text-slate-600 hover:text-slate-800",].join(" ")}>
               Grupo 1
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveGroup(2)}
-              className={[
-                "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
-                activeGroup === 2
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-800",
-              ].join(" ")}
-            >
+            <button type="button" onClick={() => setActiveGroup(2)} className={["px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",activeGroup === 2 ? "bg-white text-indigo-700 shadow-sm": "text-slate-600 hover:text-slate-800",].join(" ")}>
               Grupo 2
             </button>
           </div>

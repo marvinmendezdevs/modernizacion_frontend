@@ -1,5 +1,5 @@
 import type { DashboardRecord } from '@/types/dashboard.types';
-import {  formatNumber } from '@/utils/index.utils';
+import { calculatePercentage, formatNumber } from '@/utils/index.utils';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -26,14 +26,20 @@ export type teacherDataProps = {
     title: string
 }
 
-
-
 function GeneralInformation({ teacherData, title }: teacherDataProps) {
 
-    const [, ,] = title.split(" ");
-    const sumTotal = teacherData.map(item => item.total);
-    const sumAcess = teacherData.map(item => item.access);
-    const sumDemo = teacherData.map(item => item.demo);
+    const totals = teacherData.reduce(
+        (acc, item) => {
+            acc.total += item.total;
+            acc.access += item.access;
+            acc.demo += item.demo;
+            return acc;
+        },
+        { total: 0, access: 0, demo: 0 }
+    );
+
+    const percentageAccess = calculatePercentage(totals.total, totals.access);
+    const percentageDemo = calculatePercentage(totals.total, totals.demo);
 
     return (
         <div className="bg-white p-5 border border-gray-200 rounded-lg my-5">
@@ -52,49 +58,81 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Demo</th>
                             </tr>
                         </thead>
+
                         <tbody className="divide-y divide-slate-100">
                             {teacherData.map((row) => (
-                                <tr key={row.group} className="hover:bg-slate-50/80 transition-colors group">
-                                    <td className="px-6 py-4 font-semibold text-slate-900">
-                                        Grupo {row.group}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="text-slate-600 font-medium">{formatNumber(row.total)}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                                            {formatNumber(row.access)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                                            {formatNumber(row.demo)}
-                                        </span>
-                                    </td>
+                                <tr key={row.group} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="px-6 py-4 font-semibold text-slate-900">
+                                    Grupo {row.group}
+                                </td>
+
+                                <td className="px-6 py-4 text-center">
+                                    <span className="text-slate-600 font-medium">
+                                    {formatNumber(row.total)}
+                                    </span>
+                                </td>
+
+                                <td className="px-6 py-4 text-center align-middle">
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                        {formatNumber(row.access)}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-emerald-700">
+                                        ({calculatePercentage(row.total, row.access)}%)
+                                    </span>
+                                    </div>
+                                </td>
+
+                                <td className="px-6 py-4 text-center align-middle">
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                        {formatNumber(row.demo)}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-amber-700">
+                                        ({calculatePercentage(row.total, row.demo)}%)
+                                    </span>
+                                    </div>
+                                </td>
                                 </tr>
                             ))}
                         </tbody>
 
                         <tfoot className="border-t-2">
-                            <tr className="hover:bg-slate-50/80 transition-colors group">
-                                <td className="px-6 py-4 font-semibold text-slate-900">
-                                    Total
+                            <tr className="hover:bg-slate-50/80 transition-colors group font-semibold">
+                                <td className="px-6 py-4 text-slate-900 align-middle">
+                                Total
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="text-slate-600 font-medium">{formatNumber(sumTotal.reduce((acc, item) => acc + item, 0))}</span>
+
+                                <td className="px-6 py-4 text-center align-middle">
+                                <span className="text-slate-600 font-medium">
+                                    {formatNumber(totals.total)}
+                                </span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                                        {formatNumber(sumAcess.reduce((acc, item) => acc + item, 0))}
+
+                                <td className="px-6 py-4 text-center align-middle">
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                                    {formatNumber(totals.access)}
                                     </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                                        {formatNumber(sumDemo.reduce((acc, item) => acc + item, 0))}
+                                    <span className="text-[10px] font-semibold text-emerald-700">
+                                    ({percentageAccess}%)
                                     </span>
+                                </div>
+                                </td>
+
+                                <td className="px-6 py-4 text-center align-middle">
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                        {formatNumber(totals.demo)}
+                                        </span>
+                                        <span className="text-[10px] font-semibold text-amber-700">
+                                        ({percentageDemo}%)
+                                        </span>
+                                    </div>
                                 </td>
                             </tr>
                         </tfoot>
+
                     </table>
                 </div>
             </div>
@@ -102,4 +140,4 @@ function GeneralInformation({ teacherData, title }: teacherDataProps) {
     )
 }
 
-export default GeneralInformation
+export default GeneralInformation;

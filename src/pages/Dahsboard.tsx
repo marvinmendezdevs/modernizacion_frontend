@@ -23,16 +23,32 @@ function Dahsboard() {
 
   return (
     <div className="bg-linear-to-br from-indigo-50 via-white to-indigo-50 h-screen overflow-hidden flex flex-col lg:grid lg:grid-cols-[200px_1fr]">
+      
+      {isOpenNavBar && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={setClose}
+        />
+      )}
+
       <aside
-        className={`fixed inset-0 flex flex-col gap-4 p-4 bg-linear-to-br from-indigo-50 via-white to-indigo-50 transition lg:bg-none lg:static lg:translate-0 ${
-          isOpenNavBar ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={[
+          "flex flex-col gap-4 p-4 bg-linear-to-br from-indigo-50 via-white to-indigo-50",
+
+          "fixed inset-y-0 left-0 w-72 max-w-[85vw] z-50",
+          "transition-transform duration-200 ease-out",
+          isOpenNavBar ? "translate-x-0" : "-translate-x-full",
+
+          "lg:static lg:inset-auto lg:z-auto",
+          "lg:w-[200px] lg:max-w-none lg:translate-x-0",
+          "lg:bg-none lg:transition-none",
+        ].join(" ")}
       >
-        <div className="flex justify-end lg:hidden">
-          <button onClick={toggleNavBar}>
-            <X />
-          </button>
-        </div>
+      <div className="flex justify-end lg:hidden">
+        <button onClick={setClose} aria-label="Cerrar menú">
+          <X />
+        </button>
+      </div>
 
         <Link
           className={`${
@@ -55,6 +71,7 @@ function Dahsboard() {
         >
           Accesos
         </Link>
+
         <Link
           className={`${
             pathname === "/dashboard/tutoria"
@@ -79,7 +96,7 @@ function Dahsboard() {
       </aside>
 
       <div className="flex justify-end p-3 mb-3 lg:hidden">
-        <button onClick={toggleNavBar}>
+        <button onClick={toggleNavBar} aria-label="Abrir menú">
           <Menu />
         </button>
       </div>
