@@ -66,3 +66,47 @@ export const VirtualSessionShema = z.object({
     quizz: z.string(),
     subject: z.string(),
 });
+
+
+export const ObservationSchema = z.object({
+  id: z.number(),
+  instrumentId: z.number(),
+  payload: z.object({
+    score: z.number(),
+    answers: z.string(),
+    subject: z.string(),
+  }),
+  school: z.object({
+    code: z.string(),
+    name: z.string(),
+    address: z.string(),
+    block: z.string(),
+    phase: z.string(),
+  }),
+  schoolCode: z.string(),
+  sectionId: z.number(),
+  submittedAt: z.string().datetime(),
+  teacherId: z.number(),
+  tutorId: z.number(),
+  utilitiesLink: z.object({
+    id: z.string(),
+    video: z.string(),
+    transcription: z.string(),
+  }),
+});
+
+
+export const FeedbackSchema = z.object({
+  id: z.number(),
+  responseId: z.number(),
+  commitments: z.string(),
+  recommendations: z.string(),
+  directorName: z.string(),
+  directorObservation: z.boolean(),
+  selectedCriteria: z.array(z.string()),
+  tracking: z.string(),
+  teacherId: z.number(),
+  tutorId: z.number(),
+  createdAt: z.date()
+});
+

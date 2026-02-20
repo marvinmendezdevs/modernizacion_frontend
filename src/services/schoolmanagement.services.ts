@@ -1,9 +1,10 @@
 import { api } from "@/config/axios.config"
 
-export const getPublicMetrics = async (today: string) => {
+export const getPublicMetrics = async (startDate: string, endDate: string) => {
     const { data } = await api.get("/schoolmanagement/public-dashboard", {
         params: {
-            today
+            startDate,
+            endDate
         }
     });
     return data;

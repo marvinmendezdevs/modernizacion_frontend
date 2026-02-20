@@ -5,11 +5,13 @@ import type { ResponseSectionSchema } from "@/types/intruments.types";
 import { Laptop, ListTodo, School } from "lucide-react";
 import { useMemo } from "react";
 import { usePagination } from "@/hooks/usePagination";
-import type { VirtualSessionType } from "@/types/tutorship.types";
+import type { FeedbackSchema, ObservationSchema, VirtualSessionType } from "@/types/tutorship.types";
 
 type QueryResponse = {
     diagnostic: ResponseSectionSchema[]
     virtualSessions: VirtualSessionType[]
+    observations: ObservationSchema[]
+    feedback: FeedbackSchema[]
 }
 
 type NewSchoolType = {
@@ -79,7 +81,7 @@ function GeneralInfo({ startDate, endDate }: { startDate: string, endDate: strin
 
     return (
         <div>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 <StatCard
                     title="Diagnósticos realizados"
                     icon={ListTodo}
@@ -90,13 +92,25 @@ function GeneralInfo({ startDate, endDate }: { startDate: string, endDate: strin
                     title="Centros escolares atendidos"
                     icon={School}
                     color="blue"
-                    value={diagnosticsArray.length} // Usamos la longitud del array procesado
+                    value={diagnosticsArray.length}
                 />
                 <StatCard
                     title="Tutorías virtuales"
                     icon={Laptop}
                     color="blue"
-                    value={data.virtualSessions.length} // Usamos la longitud del array procesado
+                    value={data.virtualSessions.length}
+                />
+                <StatCard
+                    title="Observaciones realizadas"
+                    icon={Laptop}
+                    color="blue"
+                    value={data.observations.length}
+                />
+                <StatCard
+                    title="Retroalimentaciones realizadas"
+                    icon={Laptop}
+                    color="blue"
+                    value={data.feedback.length}
                 />
             </div>
 

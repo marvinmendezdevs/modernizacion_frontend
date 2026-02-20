@@ -178,7 +178,7 @@ if (hourBd) {
             </div>
           </div>
 
-          <div className="inline-flex justify-center md:justify-start bg-slate-100 p-1 rounded-xl border border-slate-200 w-full md:w-auto">
+          <div className="inline-flex w-auto mx-auto  md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
             <button type="button" onClick={() => setActiveGroup(1)} className={["px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",activeGroup === 1 ? "bg-white text-indigo-700 shadow-sm": "text-slate-600 hover:text-slate-800",].join(" ")}>
               Grupo 1
             </button>
