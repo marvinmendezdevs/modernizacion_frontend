@@ -79,6 +79,7 @@ function AccesosDashboard() {
   }
 
 const hourBd = data?.last?.dateReported;
+const fechaLastReport = data?.last?.dateReported ?? "Pendiente."
 let hourReport = "";
 
 if (hourBd) {
@@ -117,7 +118,7 @@ if (hourBd) {
                 <p className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 text-emerald-700 font-semibold text-xs w-full">
                   <span className="flex gap-1 text-xs font-semibold">
                     <Calendar className="size-4 text-emerald-800"/>
-                    {formatFullDate(actualyDateSV)}
+                    {formatFullDate(fechaLastReport)}
                   </span>
                   <span className="flex gap-1 text-xs font-normal"> <Clock1 className="size-4 text-emerald-700"/> {hourReport}</span>
                 </p>

@@ -43,33 +43,47 @@ function TeacherDashboard({
     refetchOnWindowFocus: false,
   });
 
-  const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
-    const source =
-      data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
+  // Fuente de datos “según filtros”: si hay cumulative úsalo, si no, fallback a last
+  const sourceReports = useMemo<DashboardReportApi[]>(() => {
+    if (!data) return [];
+    if (data.cumulative?.length) return data.cumulative;
+    return data.last ? [data.last] : [];
+  }, [data]);
 
-    return source.flatMap((report) =>
+  // Para la gráfica: ordenado por fecha
+  const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
+    const ordered = sourceReports
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+      );
+
+    return ordered.flatMap((report) =>
       (report.json.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
         dateReported: report.dateReported,
       }))
     );
-  }, [data]);
+  }, [sourceReports]);
 
+  // Para tabla/cards: “último dentro del rango” (más reciente por dateReported)
   const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
-    const report =
-      data?.cumulative?.length
-        ? data.cumulative.at(-1) ?? null
-        : data?.last ?? null;
+    if (!sourceReports.length) return [];
 
-    if (!report) return [];
+    const latest = sourceReports.reduce((acc, r) => {
+      return new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
+        ? r
+        : acc;
+    }, sourceReports[0]);
 
-    return (report.json.docentes ?? []).map((row) => ({
+    return (latest.json.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
-      dateReported: report.dateReported,
+      dateReported: latest.dateReported,
     }));
-  }, [data]);
+  }, [sourceReports]);
 
   const { totalInfo, calculateTotals } = useDashboard(
     docentesLastDayData,
@@ -94,10 +108,20 @@ function TeacherDashboard({
     );
   }
 
-  if (isError || !data?.last) {
+  // ✅ ya NO dependemos de data.last para renderizar
+  if (isError) {
     return (
       <p className="text-xs text-red-600 text-center p-3">
         ¡Error inesperado! contacte con soporte.
+      </p>
+    );
+  }
+
+  // ✅ si el filtro no trae nada, mostramos mensaje y no “se jode”
+  if (!sourceReports.length) {
+    return (
+      <p className="text-xs text-slate-600 text-center p-3">
+        No hay datos para el rango seleccionado.
       </p>
     );
   }
