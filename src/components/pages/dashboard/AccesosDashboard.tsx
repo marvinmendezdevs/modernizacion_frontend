@@ -7,8 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import type { DashboardRecord } from "@/types/dashboard.types";
 import { formatFullDate } from "@/utils/index.utils";
+import RemediacionAccess from "./RemediacionAccess";
+import RefuerzoAccess from "./RefuerzoAccess";
 
 type GroupTab = 1 | 2;
+
+type NavAcces = "clases" | "remediacion" | "refuerzo";
 
 type DashboardJsonApi = {
   docentes: DashboardRecord[];
@@ -91,10 +95,11 @@ if (hourBd) {
   });
 }
 
+const [ activeView, setActiveView] = useState<NavAcces>("clases")
 
 
   const mostrarPendiente = hora4pm && !esMismaFecha;
-
+  
   return (
     <div className="flex flex-col p-2">
       <div className="mb-5">
@@ -189,10 +194,27 @@ if (hourBd) {
           </div>
         </div>
       </div>
+      <div className="flex justify-evenly my-5 w-full">
+        <button type="button" onClick={() => setActiveView("clases")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+          Clases
+        </button>
+        <button type="button" onClick={() => setActiveView("remediacion")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "remediacion" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}>
+          Remediación
+        </button>
+        <button type="button" onClick={() => setActiveView("refuerzo")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "refuerzo" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+          Refuerzo
+        </button>
+      </div>
 
-      <TeacherDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup} />
-      <StudentDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup} />
-      <SectionDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup} />
+      {activeView === "clases" && (
+        <div>
+          <TeacherDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+          <StudentDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+          <SectionDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+        </div>
+      )}
+      {activeView === "remediacion" && (<RemediacionAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
+      {activeView === "refuerzo" && (<RefuerzoAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
     </div>
   );
 }

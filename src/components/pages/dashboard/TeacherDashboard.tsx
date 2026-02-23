@@ -9,9 +9,11 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import TeachersGrafics1 from "./accesos/TeachersGrafics";
 
 type DashboardJsonApi = {
-  docentes: DashboardRecord[];
-  secciones: DashboardRecord[];
-  estudiantes: DashboardRecord[];
+  clases: {
+    docentes: DashboardRecord[];
+    secciones: DashboardRecord[];
+    estudiantes: DashboardRecord[];
+  }
 };
 
 type DashboardReportApi = {
@@ -43,14 +45,14 @@ function TeacherDashboard({
     refetchOnWindowFocus: false,
   });
 
-  // Fuente de datos “según filtros”: si hay cumulative úsalo, si no, fallback a last
+  console.log(data)
+
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
     if (data.cumulative?.length) return data.cumulative;
     return data.last ? [data.last] : [];
   }, [data]);
 
-  // Para la gráfica: ordenado por fecha
   const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
     const ordered = sourceReports
       .slice()
@@ -60,7 +62,7 @@ function TeacherDashboard({
       );
 
     return ordered.flatMap((report) =>
-      (report.json.docentes ?? []).map((row) => ({
+      (report.json.clases.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
         dateReported: report.dateReported,
@@ -68,7 +70,6 @@ function TeacherDashboard({
     );
   }, [sourceReports]);
 
-  // Para tabla/cards: “último dentro del rango” (más reciente por dateReported)
   const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
     if (!sourceReports.length) return [];
 
@@ -78,7 +79,7 @@ function TeacherDashboard({
         : acc;
     }, sourceReports[0]);
 
-    return (latest.json.docentes ?? []).map((row) => ({
+    return (latest.json.clases.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
       dateReported: latest.dateReported,
@@ -108,7 +109,6 @@ function TeacherDashboard({
     );
   }
 
-  // ✅ ya NO dependemos de data.last para renderizar
   if (isError) {
     return (
       <p className="text-xs text-red-600 text-center p-3">
@@ -117,7 +117,6 @@ function TeacherDashboard({
     );
   }
 
-  // ✅ si el filtro no trae nada, mostramos mensaje y no “se jode”
   if (!sourceReports.length) {
     return (
       <p className="text-xs text-slate-600 text-center p-3">
