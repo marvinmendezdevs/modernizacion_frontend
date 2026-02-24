@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Check, Clock, Clock1 } from "lucide-react";
+import { BookOpen, Calendar, Check, ClipboardCheck, Clock, Clock1, Zap } from "lucide-react";
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
 import SectionDashboard from "./SectionDashboard";
@@ -194,14 +194,17 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
           </div>
         </div>
       </div>
-      <div className="flex justify-evenly my-5 w-full">
-        <button type="button" onClick={() => setActiveView("clases")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+      <div className="flex flex-col md:flex-row md:justify-evenly my-5 w-full md:w-10/12 md:mx-auto">
+        <button type="button" onClick={() => setActiveView("clases")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+          <BookOpen className="size-5" />
           Clases
         </button>
-        <button type="button" onClick={() => setActiveView("remediacion")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "remediacion" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}>
+        <button type="button" onClick={() => setActiveView("remediacion")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "remediacion" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}>
+          <ClipboardCheck className="size-5"/>
           Remediación
         </button>
-        <button type="button" onClick={() => setActiveView("refuerzo")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "refuerzo" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+        <button type="button" onClick={() => setActiveView("refuerzo")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "refuerzo" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+          <Zap className="size-5" />
           Refuerzo
         </button>
       </div>

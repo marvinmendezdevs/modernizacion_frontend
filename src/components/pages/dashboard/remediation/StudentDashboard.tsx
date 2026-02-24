@@ -1,19 +1,23 @@
 import StatCard from "@/components/pages/dashboard/StatCard";
-import Teacher from "@/components/pages/dashboard/GeneralInformation";
+import GeneralInformation from "@/components/pages/dashboard/GeneralInformation";
 import useDashboard from "@/hooks/useDashboard.hooks";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import { useQuery } from "@tanstack/react-query";
 import { Key, ShieldCheck, Users } from "lucide-react";
 import { useMemo } from "react";
 import type { DashboardRecord } from "@/types/dashboard.types";
-import TeachersGrafics1 from "./accesos/TeachersGrafics";
+import StudentsGrafics from "../accesos/StudentsGrafics";
+
+type SubtypeBlock = {
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
+};
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  }
+  clases?: SubtypeBlock;
+  refuerzo?: SubtypeBlock;
+  remediacion?: SubtypeBlock;
 };
 
 type DashboardReportApi = {
@@ -29,7 +33,7 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
+function StudentDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
   
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
@@ -38,14 +42,15 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     refetchOnWindowFocus: false,
   });
 
-
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
     if (data.cumulative?.length) return data.cumulative;
     return data.last ? [data.last] : [];
   }, [data]);
 
-  const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
+  const getBlock = (report: DashboardReportApi) => report.json?.remediacion;
+
+  const studentsSeriesData = useMemo<DashboardRecord[]>(() => {
     const ordered = sourceReports
       .slice()
       .sort(
@@ -54,40 +59,40 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
       );
 
     return ordered.flatMap((report) =>
-      (report.json.clases.docentes ?? []).map((row) => ({
+      (getBlock(report)?.estudiantes ?? []).map((row) => ({
         ...row,
-        type: "Docentes",
+        type: "Estudiantes",
         dateReported: report.dateReported,
       }))
     );
   }, [sourceReports]);
 
-  const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
+  const studentsLastDayData = useMemo<DashboardRecord[]>(() => {
     if (!sourceReports.length) return [];
 
-    const latest = sourceReports.reduce((acc, r) => {
-      return new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
+    const latest = sourceReports.reduce((acc, r) =>
+      new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
         ? r
-        : acc;
-    }, sourceReports[0]);
+        : acc
+    , sourceReports[0]);
 
-    return (latest.json.clases.docentes ?? []).map((row) => ({
+    return (getBlock(latest)?.estudiantes ?? []).map((row) => ({
       ...row,
-      type: "Docentes",
+      type: "Estudiantes",
       dateReported: latest.dateReported,
     }));
   }, [sourceReports]);
 
   const { totalInfo, calculateTotals } = useDashboard(
-    docentesLastDayData,
-    "Docentes",
+    studentsLastDayData,
+    "Estudiantes",
     startDate,
     endDate
   );
 
   const { onTimeInfo } = useDashboard(
-    docentesSeriesData,
-    "Docentes",
+    studentsSeriesData,
+    "Estudiantes",
     startDate,
     endDate
   );
@@ -109,47 +114,48 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     );
   }
 
-  if (!sourceReports.length) {
-    return (
-      <p className="text-xs text-slate-600 text-center p-3">
-        No hay datos para el rango seleccionado.
-      </p>
-    );
+  const hasRealData = studentsSeriesData.length > 0;
+
+  if (!hasRealData) {
+    return;
   }
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-2 pt-5">
         <h1 className="text-indigo-700 text-3xl font-semibold">
-          Accesos de docentes
+          Accesos de estudiantes
         </h1>
       </div>
 
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
         <StatCard
-          title="Total Docentes"
+          title="Total Estudiantes"
           value={calculateTotals("total")}
           icon={Users}
           color="blue"
         />
         <StatCard
-          title="Docentes con Acceso"
+          title="Estudiantes con Acceso"
           value={calculateTotals("access")}
           icon={Key}
           color="emerald"
         />
         <StatCard
-          title="Docentes Demo"
+          title="Estudiantes Demo"
           value={calculateTotals("demo")}
           icon={ShieldCheck}
           color="rose"
         />
       </div>
 
-      <Teacher title="Información de Docentes" teacherData={totalInfo} />
-      <TeachersGrafics1 onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
+      <GeneralInformation
+        title="Información de Estudiantes"
+        teacherData={totalInfo}
+      />
+      <StudentsGrafics onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
     </div>
   );
 }
 
-export default TeacherDashboard;
+export default StudentDashboard;

@@ -1,7 +1,21 @@
-function RemediacionAccess() {
+import SectionDashboard from "./remediation/SectionDashboard";
+import StudentDashboard from "./remediation/StudentDashboard";
+import TeacherDashboard from "./remediation/TeacherDashboard";
+
+function RemediacionAccess({
+  startDate,
+  endDate,
+  activeGroup,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+}) {
   return (
     <div>
-        <p className="border-l-3 border-blue-600 bg-blue-50 text-blue-800 text-center font-semibold p-2">¡Próximamente!</p>
+          <TeacherDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+          <StudentDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+          <SectionDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
     </div>
   )
 }

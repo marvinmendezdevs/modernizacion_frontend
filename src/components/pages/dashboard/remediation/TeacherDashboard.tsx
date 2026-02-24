@@ -6,14 +6,18 @@ import { useQuery } from "@tanstack/react-query";
 import { Key, ShieldCheck, Users } from "lucide-react";
 import { useMemo } from "react";
 import type { DashboardRecord } from "@/types/dashboard.types";
-import TeachersGrafics1 from "./accesos/TeachersGrafics";
+import TeachersGrafics from "../accesos/TeachersGrafics";
+
+type SubtypeBlock = {
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
+};
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  }
+  clases?: SubtypeBlock;
+  refuerzo?: SubtypeBlock;
+  remediacion?: SubtypeBlock;
 };
 
 type DashboardReportApi = {
@@ -38,12 +42,13 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     refetchOnWindowFocus: false,
   });
 
-
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
     if (data.cumulative?.length) return data.cumulative;
     return data.last ? [data.last] : [];
   }, [data]);
+
+  const getBlock = (report: DashboardReportApi) => report.json?.remediacion;
 
   const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
     const ordered = sourceReports
@@ -54,7 +59,7 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
       );
 
     return ordered.flatMap((report) =>
-      (report.json.clases.docentes ?? []).map((row) => ({
+      (getBlock(report)?.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
         dateReported: report.dateReported,
@@ -65,13 +70,13 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
   const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
     if (!sourceReports.length) return [];
 
-    const latest = sourceReports.reduce((acc, r) => {
-      return new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
+    const latest = sourceReports.reduce((acc, r) =>
+      new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
         ? r
-        : acc;
-    }, sourceReports[0]);
+        : acc
+    , sourceReports[0]);
 
-    return (latest.json.clases.docentes ?? []).map((row) => ({
+    return (getBlock(latest)?.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
       dateReported: latest.dateReported,
@@ -109,7 +114,9 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     );
   }
 
-  if (!sourceReports.length) {
+  const hasRealData = docentesSeriesData.length > 0;
+
+  if (!hasRealData) {
     return (
       <p className="text-xs text-slate-600 text-center p-3">
         No hay datos para el rango seleccionado.
@@ -147,7 +154,7 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
       </div>
 
       <Teacher title="Información de Docentes" teacherData={totalInfo} />
-      <TeachersGrafics1 onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
+      <TeachersGrafics onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
     </div>
   );
 }

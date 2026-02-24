@@ -29,15 +29,8 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function SectionDashboard({
-  startDate,
-  endDate,
-  activeGroup,
-}: {
-  startDate: string;
-  endDate: string;
-  activeGroup: 1 | 2;
-}) {
+function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
+  
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -106,7 +99,7 @@ function SectionDashboard({
 
   return (
     <div>
-      <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-2 pt-5">
         <h1 className="text-indigo-700 text-3xl font-semibold">
           Accesos de secciones
         </h1>

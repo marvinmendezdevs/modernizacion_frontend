@@ -75,7 +75,7 @@ function StudentsGrafics({ onTimeInfo, activeGroup }: StudentsGraficsProps) {
       : "Grupo 2 - Acumulado por día";
 
   return (
-    <div className="border-b-2 border-gray-300 pb-8">
+    <div className="border-b border-gray-200 pb-8">
       <div className="flex items-center justify-between gap-4 mb-4">
         <h2 className="text-lg font-semibold text-indigo-700">{title}</h2>
       </div>
