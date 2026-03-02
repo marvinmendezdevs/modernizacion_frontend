@@ -7,8 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import type { DashboardRecord } from "@/types/dashboard.types";
 import { formatFullDate } from "@/utils/index.utils";
-import RemediacionAccess from "./RemediacionAccess";
-import RefuerzoAccess from "./RefuerzoAccess";
 
 type GroupTab = 1 | 2;
 
@@ -194,7 +192,7 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
           </div>
         </div>
       </div>
-      <div className="flex justify-evenly my-5 w-full">
+      <div className="hidden justify-evenly my-5 w-full">
         <button type="button" onClick={() => setActiveView("clases")} className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
           Clases
         </button>
@@ -213,8 +211,6 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
           <SectionDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
         </div>
       )}
-      {activeView === "remediacion" && (<RemediacionAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
-      {activeView === "refuerzo" && (<RefuerzoAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
     </div>
   );
 }

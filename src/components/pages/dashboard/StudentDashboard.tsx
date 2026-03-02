@@ -9,11 +9,9 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import StudentsGrafics1 from "./accesos/StudentsGrafics";
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  }
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
 };
 
 type DashboardReportApi = {
@@ -50,7 +48,7 @@ function StudentDashboard({
       data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
-      (report.json.clases.estudiantes ?? []).map((row) => ({
+      (report.json.estudiantes ?? []).map((row) => ({
         ...row,
         type: "Estudiantes",
         dateReported: report.dateReported,
@@ -66,7 +64,7 @@ function StudentDashboard({
 
     if (!report) return [];
 
-    return (report.json.clases.estudiantes ?? []).map((row) => ({
+    return (report.json.estudiantes ?? []).map((row) => ({
       ...row,
       type: "Estudiantes",
       dateReported: report.dateReported,

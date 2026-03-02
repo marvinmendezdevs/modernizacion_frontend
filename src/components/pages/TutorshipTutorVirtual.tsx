@@ -30,7 +30,7 @@ interface VirtualTutorshipEvent {
   recording?: string;
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => 7 + i);
+const HOURS = Array.from({ length: 14 }, (_, i) => 6 + i);
 
 function InicioSemana(date: string | number | Date, weekStartsOnMonday = true) {
   const d = new Date(date);

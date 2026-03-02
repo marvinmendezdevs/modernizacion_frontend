@@ -9,11 +9,9 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import TeachersGrafics1 from "./accesos/TeachersGrafics";
 
 type DashboardJsonApi = {
-  clases: {
     docentes: DashboardRecord[];
     secciones: DashboardRecord[];
     estudiantes: DashboardRecord[];
-  }
 };
 
 type DashboardReportApi = {
@@ -45,8 +43,6 @@ function TeacherDashboard({
     refetchOnWindowFocus: false,
   });
 
-  console.log(data)
-
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
     if (data.cumulative?.length) return data.cumulative;
@@ -62,7 +58,7 @@ function TeacherDashboard({
       );
 
     return ordered.flatMap((report) =>
-      (report.json.clases.docentes ?? []).map((row) => ({
+      (report.json.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
         dateReported: report.dateReported,
@@ -79,7 +75,7 @@ function TeacherDashboard({
         : acc;
     }, sourceReports[0]);
 
-    return (latest.json.clases.docentes ?? []).map((row) => ({
+    return (latest.json.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
       dateReported: latest.dateReported,

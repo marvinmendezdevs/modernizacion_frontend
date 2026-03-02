@@ -9,11 +9,9 @@ import { useMemo } from "react";
 import SectionsGrafics from "./accesos/SectionsGrafics";
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  }
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
 };
 
 type DashboardReportApi = {
@@ -50,7 +48,7 @@ function SectionDashboard({
       data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
 
     return source.flatMap((report) =>
-      (report.json.clases.secciones ?? []).map((row) => ({
+      (report.json.secciones ?? []).map((row) => ({
         ...row,
         type: "Secciones",
         dateReported: report.dateReported,
@@ -66,7 +64,7 @@ function SectionDashboard({
 
     if (!report) return [];
 
-    return (report.json.clases.secciones ?? []).map((row) => ({
+    return (report.json.secciones ?? []).map((row) => ({
       ...row,
       type: "Secciones",
       dateReported: report.dateReported,
