@@ -127,7 +127,7 @@ function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     <div>
       <div className="flex flex-col md:flex-row justify-between items-center gap-2 pt-5">
         <h1 className="text-indigo-700 text-3xl font-semibold">
-          Accesos de secciones
+          Accesos de clases
         </h1>
       </div>
 
