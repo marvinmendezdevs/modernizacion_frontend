@@ -3,6 +3,7 @@ import { useFeedbackStore } from "@/stores/tutorship.store";
 import type { CoachingSessionCreateType, ResponseSectionSchema } from "@/types/intruments.types";
 import { formatFullDate } from "@/utils/index.utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Clock, SquarePen } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
@@ -56,6 +57,9 @@ function FeedBackCreate() {
         mutation.mutate(formData);
     }
 
+    const lastFeedback = observation?.teacher.coachingSessions.at(-1)
+
+    console.log(observation)
     if (observation) return (
         <div>
             <h2 className="text-2xl font-black text-indigo-600">Generador de reportes de retroalimentación docente</h2>
@@ -99,29 +103,79 @@ function FeedBackCreate() {
 
                     {observation.teacher.coachingSessions.length > 0 && (
                         <fieldset className="mt-5">
-                            <legend className="text-lg text-indigo-600 mb-3">Progreso de observaciones</legend>
+                            <legend className="text-lg text-indigo-600 mb-3">
+                                Progreso de observaciones
+                            </legend>
 
-                            <div className="flex items-center gap-2">
-                                <label htmlFor="directorObservation">Chequeo observación de clase Director/Subdirector</label>
-                                <input type="checkbox" id="directorObservation"
-                                    {...register('directorObservation')}
-                                />
-                            </div>
+                            <div className="space-y-6 relative mt-5">
+                                <div className="absolute left-[19px] top-2 bottom-0 w-0.5 bg-slate-200 hidden sm:block"></div>
 
-                            <div className="my-3 grid gap-1">
-                                <label htmlFor="tracking">Seguimiento al ciclo anterior: </label>
-                                <textarea className="p-2 border border-gray-200 rounded" id="tracking" placeholder="Seguimiento al ciclo anterior"
-                                    {...register('tracking')}
-                                ></textarea>
-                            </div>
-                                {observation.teacher.coachingSessions.map((feedback, index) => (
-                                    feedback.tracking !== "" && (                                        
-                                        <div key={index} className="my-3 grid gap-1">
-                                            <p className="text-gray-600 font-semibold">Seguimiento del {formatFullDate(feedback.createdAt)}</p>
-                                            <textarea className="border border-gray-200 p-2 rounded-sm text-gray-700" disabled>{feedback.tracking}</textarea>
+                                <div className="relative pl-0 sm:pl-12">
+                                    <div className="absolute left-0 top-1 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 border-2 border-white ring-4 ring-white z-10 shadow-lg shadow-indigo-200">
+                                        <SquarePen className="text-white size-5" />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                            <input
+                                                type="checkbox"
+                                                id="directorObservation"
+                                                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                {...register("directorObservation")}
+                                            />
+                                            <label
+                                                htmlFor="directorObservation"
+                                                className="text-sm font-medium text-slate-700"
+                                            >
+                                                Chequeo observación de clase Director/Subdirector
+                                            </label>
                                         </div>
-                                    )
-                                ))}
+
+                                        <div>
+                                            <label
+                                                htmlFor="tracking"
+                                                className="block text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2"
+                                            >
+                                                Seguimiento al ciclo anterior
+                                            </label>
+
+                                            <div className="relative group">
+                                                <textarea
+                                                    id="tracking"
+                                                    placeholder="Escribe el resumen del ciclo anterior..."
+                                                    className="w-full min-h-[120px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 transition-all outline-none resize-none"
+                                                    {...register("tracking")}
+                                                ></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {lastFeedback?.tracking !== "" && (
+                                    <div className="relative pl-0 sm:pl-12">
+                                        <div className="absolute left-0 top-1 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 border-2 border-white ring-4 ring-white z-10">
+                                            <Clock className="text-gray-700" />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="block text-sm font-bold text-indigo-900 uppercase tracking-wider">
+                                                    Seguimiento del {formatFullDate(lastFeedback?.createdAt ?? "")}
+                                                </label>
+                                            </div>
+
+                                            <div className="relative group">
+                                                <textarea
+                                                    disabled
+                                                    readOnly
+                                                    defaultValue={lastFeedback?.tracking ?? ""}
+                                                    className="w-full min-h-40 p-4 bg-white border-2 border-indigo-100 rounded-xl text-slate-800 shadow-sm placeholder-slate-400 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all outline-none resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </fieldset>
                     )}
 
