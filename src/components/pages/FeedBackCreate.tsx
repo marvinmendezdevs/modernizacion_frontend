@@ -57,9 +57,16 @@ function FeedBackCreate() {
         mutation.mutate(formData);
     }
 
+    function textSplit(text?: string | null): string[] {
+    return (text ?? "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "")
+        .map((line) => ` ${line}`);
+    }
     const lastFeedback = observation?.teacher.coachingSessions.at(-1)
+    const tracking = textSplit(lastFeedback?.tracking)
 
-    console.log(observation)
     if (observation) return (
         <div>
             <h2 className="text-2xl font-black text-indigo-600">Generador de reportes de retroalimentación docente</h2>
@@ -107,7 +114,7 @@ function FeedBackCreate() {
                                 Progreso de observaciones
                             </legend>
 
-                            <div className="space-y-6 relative mt-5">
+                            <div className="space-y-6 relative my-5">
                                 <div className="absolute left-[19px] top-2 bottom-0 w-0.5 bg-slate-200 hidden sm:block"></div>
 
                                 <div className="relative pl-0 sm:pl-12">
@@ -143,7 +150,7 @@ function FeedBackCreate() {
                                                 <textarea
                                                     id="tracking"
                                                     placeholder="Escribe el resumen del ciclo anterior..."
-                                                    className="w-full min-h-[120px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-400 transition-all outline-none resize-none"
+                                                    className="w-full min-h-[120px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-all outline-none resize-none"
                                                     {...register("tracking")}
                                                 ></textarea>
                                             </div>
@@ -164,13 +171,12 @@ function FeedBackCreate() {
                                                 </label>
                                             </div>
 
-                                            <div className="relative group">
-                                                <textarea
-                                                    disabled
-                                                    readOnly
-                                                    defaultValue={lastFeedback?.tracking ?? ""}
-                                                    className="w-full min-h-40 p-4 bg-white border-2 border-indigo-100 rounded-xl text-slate-800 shadow-sm placeholder-slate-400 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all outline-none resize-none"
-                                                />
+                                            <div className="relative group pl-4">
+                                                <ul className="list-disc">
+                                                    {tracking.map((item, index) => (
+                                                        <li key={index}>{item}</li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         </div>
                                     </div>
