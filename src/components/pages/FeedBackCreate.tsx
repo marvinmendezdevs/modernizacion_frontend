@@ -1,6 +1,7 @@
 import { setFeedback } from "@/services/tutorship.services";
 import { useFeedbackStore } from "@/stores/tutorship.store";
 import type { CoachingSessionCreateType, ResponseSectionSchema } from "@/types/intruments.types";
+import { formatFullDate } from "@/utils/index.utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -113,8 +114,17 @@ function FeedBackCreate() {
                                     {...register('tracking')}
                                 ></textarea>
                             </div>
+                                {observation.teacher.coachingSessions.map((feedback, index) => (
+                                    feedback.tracking !== "" && (                                        
+                                        <div key={index} className="my-3 grid gap-1">
+                                            <p className="text-gray-600 font-semibold">Seguimiento del {formatFullDate(feedback.createdAt)}</p>
+                                            <textarea className="border border-gray-200 p-2 rounded-sm text-gray-700" disabled>{feedback.tracking}</textarea>
+                                        </div>
+                                    )
+                                ))}
                         </fieldset>
                     )}
+
 
                     <fieldset className="mt-5">
                         <legend className="text-lg text-indigo-600 mb-3">Contenido de la retroalimentación</legend>
