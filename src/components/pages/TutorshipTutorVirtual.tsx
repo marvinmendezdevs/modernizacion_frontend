@@ -1,14 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import {
-  Captions,
-  PencilLine,
-  UserCheck,
-  ChevronLeft,
-  ChevronRight,
-  List,
-  Video,
-} from "lucide-react";
+import {Captions,PencilLine,UserCheck,ChevronLeft,ChevronRight,List,Video,} from "lucide-react";
 import {
   getTutorshipInfoVirtual,
   updateVirtualSessionLinks,
