@@ -13,7 +13,7 @@ type DashboardJsonApi = {
     docentes: DashboardRecord[];
     secciones: DashboardRecord[];
     estudiantes: DashboardRecord[];
-  }
+  };
 };
 
 type DashboardReportApi = {
@@ -29,8 +29,27 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
-  
+type CategoryTab = "Diario" | "Acumulado";
+
+function normalizeCategory(category?: string) {
+  return (category ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function SectionDashboard({
+  startDate,
+  endDate,
+  activeGroup,
+  activeCategory,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+  activeCategory: CategoryTab;
+}) {
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -38,33 +57,54 @@ function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     refetchOnWindowFocus: false,
   });
 
-  const seccionesSeriesData = useMemo<DashboardRecord[]>(() => {
-    const source =
-      data?.cumulative?.length ? data.cumulative : data?.last ? [data.last] : [];
+  const sourceReports = useMemo<DashboardReportApi[]>(() => {
+    if (!data) return [];
 
-    return source.flatMap((report) =>
+    const reports = [
+      ...(data.last ? [data.last] : []),
+      ...(data.cumulative ?? []),
+    ];
+
+    return reports.filter(
+      (report) =>
+        normalizeCategory(report.category) ===
+        normalizeCategory(activeCategory)
+    );
+  }, [data, activeCategory]);
+
+  const seccionesSeriesData = useMemo<DashboardRecord[]>(() => {
+    const ordered = sourceReports
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+      );
+
+    return ordered.flatMap((report) =>
       (report.json.clases.secciones ?? []).map((row) => ({
         ...row,
         type: "Secciones",
         dateReported: report.dateReported,
       }))
     );
-  }, [data]);
+  }, [sourceReports]);
 
   const seccionesLastDayData = useMemo<DashboardRecord[]>(() => {
-    const report =
-      data?.cumulative?.length
-        ? data.cumulative.at(-1) ?? null
-        : data?.last ?? null;
+    if (!sourceReports.length) return [];
 
-    if (!report) return [];
+    const latest = sourceReports.reduce((acc, r) => {
+      return new Date(r.dateReported).getTime() >
+        new Date(acc.dateReported).getTime()
+        ? r
+        : acc;
+    }, sourceReports[0]);
 
-    return (report.json.clases.secciones ?? []).map((row) => ({
+    return (latest.json.clases.secciones ?? []).map((row) => ({
       ...row,
       type: "Secciones",
-      dateReported: report.dateReported,
+      dateReported: latest.dateReported,
     }));
-  }, [data]);
+  }, [sourceReports]);
 
   const { totalInfo, calculateTotals } = useDashboard(
     seccionesLastDayData,
@@ -89,12 +129,16 @@ function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     );
   }
 
-  if (isError || !data?.last) {
+  if (isError) {
     return (
       <p className="text-xs text-red-600 text-center p-3">
         ¡Error inesperado! contacte con soporte.
       </p>
     );
+  }
+
+  if (!sourceReports.length) {
+    return 
   }
 
   return (
@@ -126,7 +170,10 @@ function SectionDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
         />
       </div>
 
-      <GeneralInformation title="Información de secciones" teacherData={totalInfo} />
+      <GeneralInformation
+        title="Información de secciones"
+        teacherData={totalInfo}
+      />
       <SectionsGrafics onTimeInfo={onTimeInfo} activeGroup={activeGroup} />
     </div>
   );

@@ -16,7 +16,7 @@ type SubtypeBlock = {
 
 type DashboardJsonApi = {
   clases?: SubtypeBlock;
-  refuerzo?: SubtypeBlock;    
+  refuerzo?: SubtypeBlock;
   remediacion?: SubtypeBlock;
 };
 
@@ -33,8 +33,27 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
-  
+type CategoryTab = "Diario" | "Acumulado";
+
+function normalizeCategory(category?: string) {
+  return (category ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function TeacherDashboard({
+  startDate,
+  endDate,
+  activeGroup,
+  activeCategory,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+  activeCategory: CategoryTab;
+}) {
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -44,9 +63,18 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
 
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
-    if (data.cumulative?.length) return data.cumulative;
-    return data.last ? [data.last] : [];
-  }, [data]);
+
+    const reports = [
+      ...(data.last ? [data.last] : []),
+      ...(data.cumulative ?? []),
+    ];
+
+    return reports.filter(
+      (report) =>
+        normalizeCategory(report.category) ===
+        normalizeCategory(activeCategory)
+    );
+  }, [data, activeCategory]);
 
   const getBlock = (report: DashboardReportApi) => report.json?.refuerzo;
 
@@ -117,12 +145,10 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     );
   }
 
-  const hasRealData = docentesSeriesData.length > 0;
-
-  if (!hasRealData) {
+  if (!docentesSeriesData.length) {
     return (
       <p className="text-xs text-slate-600 text-center p-3">
-        No hay datos para el rango seleccionado.
+        No hay datos para la categoría seleccionada.
       </p>
     );
   }

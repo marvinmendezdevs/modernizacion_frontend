@@ -16,7 +16,7 @@ type SubtypeBlock = {
 
 type DashboardJsonApi = {
   clases?: SubtypeBlock;
-  refuerzo?: SubtypeBlock;  
+  refuerzo?: SubtypeBlock;
   remediacion?: SubtypeBlock;
 };
 
@@ -33,8 +33,27 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function StudentDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
-  
+type CategoryTab = "Diario" | "Acumulado";
+
+function normalizeCategory(category?: string) {
+  return (category ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function StudentDashboard({
+  startDate,
+  endDate,
+  activeGroup,
+  activeCategory,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+  activeCategory: CategoryTab;
+}) {
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -44,9 +63,18 @@ function StudentDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
 
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
-    if (data.cumulative?.length) return data.cumulative;
-    return data.last ? [data.last] : [];
-  }, [data]);
+
+    const reports = [
+      ...(data.last ? [data.last] : []),
+      ...(data.cumulative ?? []),
+    ];
+
+    return reports.filter(
+      (report) =>
+        normalizeCategory(report.category) ===
+        normalizeCategory(activeCategory)
+    );
+  }, [data, activeCategory]);
 
   const getBlock = (report: DashboardReportApi) => report.json?.refuerzo;
 
@@ -117,10 +145,8 @@ function StudentDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     );
   }
 
-  const hasRealData = studentsSeriesData.length > 0;
-
-  if (!hasRealData) {
-    return ;
+  if (!studentsSeriesData.length) {
+    return
   }
 
   return (

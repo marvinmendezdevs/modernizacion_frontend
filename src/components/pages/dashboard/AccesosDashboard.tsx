@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { BookOpen, Calendar, Check, ClipboardCheck, Clock, Clock1, Zap } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  CalendarDays,
+  Check,
+  ClipboardCheck,
+  Clock,
+  Clock1,
+  Layers,
+  Zap,
+} from "lucide-react";
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
 import SectionDashboard from "./SectionDashboard";
@@ -11,7 +21,7 @@ import RemediacionAccess from "./RemediacionAccess";
 import RefuerzoAccess from "./RefuerzoAccess";
 
 type GroupTab = 1 | 2;
-
+type CategoryTab = "Diario" | "Acumulado";
 type NavAcces = "clases" | "remediacion" | "refuerzo";
 
 type DashboardJsonApi = {
@@ -33,6 +43,14 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
+function normalizeCategory(category?: string) {
+  return (category ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function AccesosDashboard() {
   const formatDate = (date: Date) => date.toLocaleDateString("sv-SE");
 
@@ -44,9 +62,40 @@ function AccesosDashboard() {
     return formatDate(d);
   };
 
+  const isValidDate = (value?: string | null) => {
+    if (!value) return false;
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime());
+  };
+
+  const safeDateToLocale = (
+    value?: string | null,
+    locale = "sv-SE",
+    options?: Intl.DateTimeFormatOptions
+  ) => {
+    if (!isValidDate(value)) return "";
+    return new Date(value as string).toLocaleDateString(locale, options);
+  };
+
+  const safeTimeToLocale = (
+    value?: string | null,
+    locale = "es-SV",
+    options?: Intl.DateTimeFormatOptions
+  ) => {
+    if (!isValidDate(value)) return "";
+    return new Date(value as string).toLocaleTimeString(locale, options);
+  };
+
+  const safeFormatFullDate = (value?: string | null) => {
+    if (!isValidDate(value)) return "Pendiente";
+    return formatFullDate(value as string);
+  };
+
   const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
   const [endDate, setEndDate] = useState(() => getTodayDate());
   const [activeGroup, setActiveGroup] = useState<GroupTab>(1);
+  const [activeCategory, setActiveCategory] = useState<CategoryTab>("Diario");
+  const [activeView, setActiveView] = useState<NavAcces>("clases");
 
   const { data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
@@ -54,6 +103,17 @@ function AccesosDashboard() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  const reports = [
+    ...(data?.last ? [data.last] : []),
+    ...(data?.cumulative ?? []),
+  ];
+
+  const selectedReport =
+    reports.find(
+      (item) =>
+        normalizeCategory(item.category) === normalizeCategory(activeCategory)
+    ) ?? null;
 
   const tz = "America/El_Salvador";
 
@@ -72,34 +132,28 @@ function AccesosDashboard() {
 
   const hoySV = horaSV.toLocaleDateString("sv-SE", { timeZone: tz });
 
-  const report = data?.last?.dateReported;
+  const report = selectedReport?.dateReported;
 
   let fechaSV = "";
   let esMismaFecha = false;
 
-  if (report) {
-    fechaSV = new Date(report).toLocaleDateString("sv-SE", { timeZone: tz });
+  if (isValidDate(report)) {
+    fechaSV = safeDateToLocale(report, "sv-SE", { timeZone: tz });
     esMismaFecha = fechaSV === actualyDateSV;
   }
 
-const hourBd = data?.last?.dateReported;
-const fechaLastReport = data?.last?.dateReported ?? "Pendiente."
-let hourReport = "";
+  const hourBd = selectedReport?.dateReported;
+  const fechaLastReport = selectedReport?.dateReported ?? null;
 
-if (hourBd) {
-  hourReport = new Date(hourBd).toLocaleTimeString("es-SV", {
+  const hourReport = safeTimeToLocale(hourBd, "es-SV", {
     timeZone: "UTC",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
   });
-}
-
-const [ activeView, setActiveView] = useState<NavAcces>("clases")
-
 
   const mostrarPendiente = hora4pm && !esMismaFecha;
-  
+
   return (
     <div className="flex flex-col p-2">
       <div className="mb-5">
@@ -118,19 +172,25 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
                 </p>
               </div>
             </div>
+
             <div className="w-full md:w-auto">
               <div className="w-full rounded-xl bg-emerald-100 p-2 shadow-inner">
                 <p className="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-4 text-emerald-700 font-semibold text-xs w-full">
                   <span className="flex gap-1 text-xs font-semibold">
-                    <Calendar className="size-4 text-emerald-800"/>
-                    {formatFullDate(fechaLastReport)}
+                    <Calendar className="size-4 text-emerald-800" />
+                    {safeFormatFullDate(fechaLastReport)}
                   </span>
-                  <span className="flex gap-1 text-xs font-normal"> <Clock1 className="size-4 text-emerald-700"/> {hourReport}</span>
+
+                  {hourReport && (
+                    <span className="flex gap-1 text-xs font-normal">
+                      <Clock1 className="size-4 text-emerald-700" />
+                      {hourReport}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
           </div>
-          
         ) : (
           <div className="flex flex-col md:flex-row justify-center md:justify-between bg-amber-50 border border-amber-100 p-5 rounded-xl shadow-sm gap-3 items-center">
             <div className="flex flex-col md:flex-row items-center gap-3">
@@ -143,7 +203,7 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
                 </p>
                 <p className="text-[11px] font-bold text-amber-700/70 uppercase tracking-widest mt-1.5">
                   • Mostrando registros del cierre anterior :{" "}
-                  {formatFullDate(fechaSV)}
+                  {fechaSV ? formatFullDate(fechaSV) : "Pendiente"}
                 </p>
                 <p className="text-[11px] font-bold text-amber-700/70 uppercase tracking-widest mt-1.5">
                   • Próxima carga: {formatFullDate(hoySV)}, 4:30 PM - 5:00 PM
@@ -184,26 +244,99 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
             </div>
           </div>
 
-          <div className="inline-flex w-auto mx-auto  md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
-            <button type="button" onClick={() => setActiveGroup(1)} className={["px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",activeGroup === 1 ? "bg-white text-indigo-700 shadow-sm": "text-slate-600 hover:text-slate-800",].join(" ")}>
-              Grupo 1
-            </button>
-            <button type="button" onClick={() => setActiveGroup(2)} className={["px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",activeGroup === 2 ? "bg-white text-indigo-700 shadow-sm": "text-slate-600 hover:text-slate-800",].join(" ")}>
-              Grupo 2
-            </button>
+          <div className="flex flex-col md:flex-row mx-auto md:mx-0 gap-2">
+            <div className="inline-flex w-auto mx-auto md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
+              <button
+                type="button"
+                onClick={() => setActiveGroup(1)}
+                className={[
+                  "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
+                  activeGroup === 1
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-800",
+                ].join(" ")}
+              >
+                Grupo 1
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveGroup(2)}
+                className={[
+                  "px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
+                  activeGroup === 2
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-800",
+                ].join(" ")}
+              >
+                Grupo 2
+              </button>
+            </div>
+            <div className="inline-flex w-auto mx-auto md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("Diario")}
+                className={[
+                  "flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
+                  activeCategory === "Diario"
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-800",
+                ].join(" ")}
+              >
+                <CalendarDays />
+                Diario
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveCategory("Acumulado")}
+                className={[
+                  "flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition cursor-pointer",
+                  activeCategory === "Acumulado"
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-800",
+                ].join(" ")}
+              >
+                <Layers />
+                Acumulado
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
       <div className="flex flex-col md:flex-row md:justify-evenly my-5 w-full md:w-10/12 md:mx-auto">
-        <button type="button" onClick={() => setActiveView("clases")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+        <button
+          type="button"
+          onClick={() => setActiveView("clases")}
+          className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${
+            activeView === "clases"
+              ? "border-blue-800 text-blue-800"
+              : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"
+          }`}
+        >
           <BookOpen className="size-5" />
           Clases
         </button>
-        <button type="button" onClick={() => setActiveView("remediacion")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "remediacion" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}>
-          <ClipboardCheck className="size-5"/>
+        <button
+          type="button"
+          onClick={() => setActiveView("remediacion")}
+          className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${
+            activeView === "remediacion"
+              ? "border-blue-800 text-blue-800"
+              : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"
+          }`}
+        >
+          <ClipboardCheck className="size-5" />
           Remediación
         </button>
-        <button type="button" onClick={() => setActiveView("refuerzo")} className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${ activeView === "refuerzo" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer" }`}>
+        <button
+          type="button"
+          onClick={() => setActiveView("refuerzo")}
+          className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${
+            activeView === "refuerzo"
+              ? "border-blue-800 text-blue-800"
+              : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"
+          }`}
+        >
           <Zap className="size-5" />
           Refuerzo
         </button>
@@ -211,13 +344,44 @@ const [ activeView, setActiveView] = useState<NavAcces>("clases")
 
       {activeView === "clases" && (
         <div>
-          <TeacherDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
-          <StudentDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
-          <SectionDashboard startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>
+          <TeacherDashboard
+            startDate={startDate}
+            endDate={endDate}
+            activeGroup={activeGroup}
+            activeCategory={activeCategory}
+          />
+          <StudentDashboard
+            startDate={startDate}
+            endDate={endDate}
+            activeGroup={activeGroup}
+            activeCategory={activeCategory}
+          />
+          <SectionDashboard
+            startDate={startDate}
+            endDate={endDate}
+            activeGroup={activeGroup}
+            activeCategory={activeCategory}
+          />
         </div>
       )}
-      {activeView === "remediacion" && (<RemediacionAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
-      {activeView === "refuerzo" && (<RefuerzoAccess startDate={startDate} endDate={endDate} activeGroup={activeGroup}/>)}
+
+      {activeView === "remediacion" && (
+        <RemediacionAccess
+          startDate={startDate}
+          endDate={endDate}
+          activeGroup={activeGroup}
+          activeCategory={activeCategory}
+        />
+      )}
+
+      {activeView === "refuerzo" && (
+        <RefuerzoAccess
+          startDate={startDate}
+          endDate={endDate}
+          activeGroup={activeGroup}
+          activeCategory={activeCategory}
+        />
+      )}
     </div>
   );
 }

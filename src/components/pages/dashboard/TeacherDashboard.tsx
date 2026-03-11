@@ -13,7 +13,7 @@ type DashboardJsonApi = {
     docentes: DashboardRecord[];
     secciones: DashboardRecord[];
     estudiantes: DashboardRecord[];
-  }
+  };
 };
 
 type DashboardReportApi = {
@@ -29,8 +29,27 @@ type TeacherInfoResponse = {
   cumulative: DashboardReportApi[];
 };
 
-function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: string; endDate: string; activeGroup: 1 | 2; }) {
-  
+type CategoryTab = "Diario" | "Acumulado";
+
+function normalizeCategory(category?: string) {
+  return (category ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function TeacherDashboard({
+  startDate,
+  endDate,
+  activeGroup,
+  activeCategory,
+}: {
+  startDate: string;
+  endDate: string;
+  activeGroup: 1 | 2;
+  activeCategory: CategoryTab;
+}) {
   const { isLoading, isError, data } = useQuery<TeacherInfoResponse>({
     queryKey: ["dashboard", startDate, endDate],
     queryFn: () => getTeacherInfo(startDate, endDate),
@@ -38,12 +57,20 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     refetchOnWindowFocus: false,
   });
 
-
   const sourceReports = useMemo<DashboardReportApi[]>(() => {
     if (!data) return [];
-    if (data.cumulative?.length) return data.cumulative;
-    return data.last ? [data.last] : [];
-  }, [data]);
+
+    const reports = [
+      ...(data.last ? [data.last] : []),
+      ...(data.cumulative ?? []),
+    ];
+
+    return reports.filter(
+      (report) =>
+        normalizeCategory(report.category) ===
+        normalizeCategory(activeCategory)
+    );
+  }, [data, activeCategory]);
 
   const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
     const ordered = sourceReports
@@ -66,7 +93,8 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
     if (!sourceReports.length) return [];
 
     const latest = sourceReports.reduce((acc, r) => {
-      return new Date(r.dateReported).getTime() > new Date(acc.dateReported).getTime()
+      return new Date(r.dateReported).getTime() >
+        new Date(acc.dateReported).getTime()
         ? r
         : acc;
     }, sourceReports[0]);
@@ -112,7 +140,7 @@ function TeacherDashboard({ startDate, endDate, activeGroup, }:{ startDate: stri
   if (!sourceReports.length) {
     return (
       <p className="text-xs text-slate-600 text-center p-3">
-        No hay datos para el rango seleccionado.
+        No hay datos para la categoría seleccionada.
       </p>
     );
   }
