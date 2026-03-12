@@ -93,6 +93,16 @@ function Dahsboard() {
         >
           Gestión escolar
         </Link>
+                <Link
+          className={`${
+            pathname === "/dashboard/secciones"
+              ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
+              : ""
+          } p-2 rounded-lg font-semibold`}
+          to={"/dashboard/secciones"}
+        >
+          Secciones(clases)
+        </Link>
       </aside>
 
       <div className="flex justify-end p-3 mb-3 lg:hidden">
