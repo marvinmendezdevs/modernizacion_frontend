@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import type { DashboardRecord } from "@/types/dashboard.types";
 import { formatFullDate } from "@/utils/index.utils";
+import RemediacionAccess from "./RemediacionAccess";
+import RefuerzoAccess from "./RefuerzoAccess";
 
 type GroupTab = 1 | 2;
 type CategoryTab = "Diario" | "Acumulado";
@@ -69,7 +71,7 @@ function AccesosDashboard() {
   const safeDateToLocale = (
     value?: string | null,
     locale = "sv-SE",
-    options?: Intl.DateTimeFormatOptions,
+    options?: Intl.DateTimeFormatOptions
   ) => {
     if (!isValidDate(value)) return "";
     return new Date(value as string).toLocaleDateString(locale, options);
@@ -78,7 +80,7 @@ function AccesosDashboard() {
   const safeTimeToLocale = (
     value?: string | null,
     locale = "es-SV",
-    options?: Intl.DateTimeFormatOptions,
+    options?: Intl.DateTimeFormatOptions
   ) => {
     if (!isValidDate(value)) return "";
     return new Date(value as string).toLocaleTimeString(locale, options);
@@ -108,10 +110,17 @@ function AccesosDashboard() {
   ];
 
   const selectedReport =
-    reports.find(
-      (item) =>
-        normalizeCategory(item.category) === normalizeCategory(activeCategory),
-    ) ?? null;
+    reports
+      .filter(
+        (item) =>
+          normalizeCategory(item.category) ===
+          normalizeCategory(activeCategory)
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.dateReported).getTime() -
+          new Date(a.dateReported).getTime()
+      )[0] ?? null;
 
   const tz = "America/El_Salvador";
 
@@ -298,12 +307,18 @@ function AccesosDashboard() {
           </div>
         </div>
       </div>
-      <div className="hidden justify-evenly my-5 w-full">
+
+      <div className="flex justify-evenly my-5 w-full">
         <button
           type="button"
           onClick={() => setActiveView("clases")}
-          className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}
+          className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${
+            activeView === "clases"
+              ? "border-blue-800 text-blue-800"
+              : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"
+          }`}
         >
+          <BookOpen className="size-5" />
           Clases
         </button>
         <button
@@ -353,6 +368,24 @@ function AccesosDashboard() {
             activeCategory={activeCategory}
           />
         </div>
+      )}
+
+      {activeView === "remediacion" && (
+        <RemediacionAccess
+          startDate={startDate}
+          endDate={endDate}
+          activeGroup={activeGroup}
+          activeCategory={activeCategory}
+        />
+      )}
+
+      {activeView === "refuerzo" && (
+        <RefuerzoAccess
+          startDate={startDate}
+          endDate={endDate}
+          activeGroup={activeGroup}
+          activeCategory={activeCategory}
+        />
       )}
     </div>
   );
