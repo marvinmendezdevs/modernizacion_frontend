@@ -9,13 +9,16 @@ import { useMemo, useState } from "react";
 
 type MateriaNombre = "Matemática" | "Lenguaje";
 
+type Indicador = {
+  valor: number;
+  total: number;
+};
+
 type Materia = {
   nombre: MateriaNombre;
-  docentesAccesos: number;
-  estudiantesAccesos: number;
-  clasesEfectivas: number;
-  clasesProgramadas: number;
-  variacion: number;
+  docentesAccesos: Indicador;
+  estudiantesAccesos: Indicador;
+  clasesEfectivas: Indicador;
 };
 
 type Grupo = {
@@ -23,28 +26,39 @@ type Grupo = {
   materias: Materia[];
 };
 
-const TOTAL_DOCENTES = 4000;
-const TOTAL_ESTUDIANTES = 135000;
-
 const GRUPOS_DATA: Grupo[] = [
   {
     grupo: "Grupo 1",
     materias: [
       {
         nombre: "Matemática",
-        docentesAccesos: 1481,
-        estudiantesAccesos: 72491,
-        clasesEfectivas: 1783,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: {
+          valor: 1175,
+          total: 1481,
+        },
+        estudiantesAccesos: {
+          valor: 72491,
+          total: 75628,
+        },
+        clasesEfectivas: {
+          valor: 1783,
+          total: 3177,
+        },
       },
       {
         nombre: "Lenguaje",
-        docentesAccesos: 1459,
-        estudiantesAccesos: 72568,
-        clasesEfectivas: 502,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: {
+          valor: 1172,
+          total: 1459,
+        },
+        estudiantesAccesos: {
+          valor: 72568,
+          total: 75647,
+        },
+        clasesEfectivas: {
+          valor: 502,
+          total: 3170,
+        },
       },
     ],
   },
@@ -53,19 +67,33 @@ const GRUPOS_DATA: Grupo[] = [
     materias: [
       {
         nombre: "Matemática",
-        docentesAccesos: 1176,
-        estudiantesAccesos: 57364,
-        clasesEfectivas: 1183,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: {
+          valor: 804,
+          total: 1176,
+        },
+        estudiantesAccesos: {
+          valor: 57364,
+          total: 61330,
+        },
+        clasesEfectivas: {
+          valor: 1183,
+          total: 2547,
+        },
       },
       {
         nombre: "Lenguaje",
-        docentesAccesos: 1170,
-        estudiantesAccesos: 57563,
-        clasesEfectivas: 214,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: {
+          valor: 817,
+          total: 1170,
+        },
+        estudiantesAccesos: {
+          valor: 57563,
+          total: 61339,
+        },
+        clasesEfectivas: {
+          valor: 214,
+          total: 2554,
+        },
       },
     ],
   },
@@ -87,65 +115,51 @@ function SeccionesClasesDashboard() {
     const acumulado: Record<MateriaNombre, Materia> = {
       Matemática: {
         nombre: "Matemática",
-        docentesAccesos: 0,
-        estudiantesAccesos: 0,
-        clasesEfectivas: 0,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: { valor: 0, total: 0 },
+        estudiantesAccesos: { valor: 0, total: 0 },
+        clasesEfectivas: { valor: 0, total: 0 },
       },
       Lenguaje: {
         nombre: "Lenguaje",
-        docentesAccesos: 0,
-        estudiantesAccesos: 0,
-        clasesEfectivas: 0,
-        clasesProgramadas: 0,
-        variacion: 0,
+        docentesAccesos: { valor: 0, total: 0 },
+        estudiantesAccesos: { valor: 0, total: 0 },
+        clasesEfectivas: { valor: 0, total: 0 },
       },
-    };
-
-    const contadorVariacion: Record<MateriaNombre, number> = {
-      Matemática: 0,
-      Lenguaje: 0,
     };
 
     dataFiltrada.forEach((grupo) => {
       grupo.materias.forEach((materia) => {
-        acumulado[materia.nombre].docentesAccesos += materia.docentesAccesos;
-        acumulado[materia.nombre].estudiantesAccesos +=
-          materia.estudiantesAccesos;
-        acumulado[materia.nombre].clasesEfectivas += materia.clasesEfectivas;
-        acumulado[materia.nombre].clasesProgramadas += materia.clasesProgramadas;
-        acumulado[materia.nombre].variacion += materia.variacion;
-        contadorVariacion[materia.nombre] += 1;
+        acumulado[materia.nombre].docentesAccesos.valor +=
+          materia.docentesAccesos.valor;
+        acumulado[materia.nombre].docentesAccesos.total +=
+          materia.docentesAccesos.total;
+
+        acumulado[materia.nombre].estudiantesAccesos.valor +=
+          materia.estudiantesAccesos.valor;
+        acumulado[materia.nombre].estudiantesAccesos.total +=
+          materia.estudiantesAccesos.total;
+
+        acumulado[materia.nombre].clasesEfectivas.valor +=
+          materia.clasesEfectivas.valor;
+        acumulado[materia.nombre].clasesEfectivas.total +=
+          materia.clasesEfectivas.total;
       });
     });
 
-    return (Object.values(acumulado) as Materia[]).map((materia) => ({
-      ...materia,
-      variacion:
-        contadorVariacion[materia.nombre] > 0
-          ? Number(
-              (materia.variacion / contadorVariacion[materia.nombre]).toFixed(1)
-            )
-          : 0,
-    }));
+    return Object.values(acumulado) as Materia[];
   }, [dataFiltrada]);
 
   const resumenGeneral = useMemo(() => {
     const totalDocentesAccesos = materiasResumen.reduce(
-      (acc, item) => acc + item.docentesAccesos,
+      (acc, item) => acc + item.docentesAccesos.valor,
       0
     );
     const totalEstudiantesAccesos = materiasResumen.reduce(
-      (acc, item) => acc + item.estudiantesAccesos,
+      (acc, item) => acc + item.estudiantesAccesos.valor,
       0
     );
     const totalClasesEfectivas = materiasResumen.reduce(
-      (acc, item) => acc + item.clasesEfectivas,
-      0
-    );
-    const totalClasesProgramadas = materiasResumen.reduce(
-      (acc, item) => acc + item.clasesProgramadas,
+      (acc, item) => acc + item.clasesEfectivas.valor,
       0
     );
 
@@ -153,12 +167,10 @@ function SeccionesClasesDashboard() {
       totalDocentesAccesos,
       totalEstudiantesAccesos,
       totalClasesEfectivas,
-      totalClasesProgramadas,
       grupos: dataFiltrada.length,
       materias: materiasResumen.length,
     };
   }, [materiasResumen, dataFiltrada.length]);
-
 
   return (
     <div className="min-h-screen p-4 md:p-6">
@@ -171,12 +183,12 @@ function SeccionesClasesDashboard() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-                Accesos de docentes y estudiantes, las clases efectivas y la
-                variación en el tiempo por grupo y materia.
+                Accesos de docentes y estudiantes, y clases efectivas por grupo
+                y materia.
               </p>
             </div>
 
-            <div className="">
+            <div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Filtro por grupos
@@ -234,6 +246,7 @@ function SeccionesClasesDashboard() {
             </p>
           </div>
         </div>
+
         <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
@@ -253,12 +266,24 @@ function SeccionesClasesDashboard() {
           <div className="grid gap-4 xl:grid-cols-2">
             {materiasResumen.map((materia) => {
               const porcentajeDocentes =
-                (materia.docentesAccesos / TOTAL_DOCENTES) * 100;
+                materia.docentesAccesos.total > 0
+                  ? (materia.docentesAccesos.valor /
+                      materia.docentesAccesos.total) *
+                    100
+                  : 0;
+
               const porcentajeEstudiantes =
-                (materia.estudiantesAccesos / TOTAL_ESTUDIANTES) * 100;
+                materia.estudiantesAccesos.total > 0
+                  ? (materia.estudiantesAccesos.valor /
+                      materia.estudiantesAccesos.total) *
+                    100
+                  : 0;
+
               const porcentajeClases =
-                materia.clasesProgramadas > 0
-                  ? (materia.clasesEfectivas / materia.clasesProgramadas) * 100
+                materia.clasesEfectivas.total > 0
+                  ? (materia.clasesEfectivas.valor /
+                      materia.clasesEfectivas.total) *
+                    100
                   : 0;
 
               return (
@@ -289,7 +314,8 @@ function SeccionesClasesDashboard() {
                       </div>
 
                       <p className="mt-3 text-2xl font-bold text-slate-900">
-                        {materia.docentesAccesos.toLocaleString("en-US")}
+                        <span className="text-gray-500 text-xl">{materia.docentesAccesos.valor.toLocaleString("en-US")}</span> /{" "}
+                        {materia.docentesAccesos.total.toLocaleString("en-US")}
                       </p>
 
                       <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -309,7 +335,8 @@ function SeccionesClasesDashboard() {
                       </div>
 
                       <p className="mt-3 text-2xl font-bold text-slate-900">
-                        {materia.estudiantesAccesos.toLocaleString("en-US")}
+                        <span className="text-gray-500 text-xl">{materia.estudiantesAccesos.valor.toLocaleString("en-US")}</span> /{" "}
+                        {materia.estudiantesAccesos.total.toLocaleString("en-US")}
                       </p>
 
                       <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -329,12 +356,13 @@ function SeccionesClasesDashboard() {
                       </div>
 
                       <p className="mt-3 text-2xl font-bold text-slate-900">
-                        {materia.clasesEfectivas.toLocaleString("en-US")}
+                        <span className="text-gray-500 text-xl">{materia.clasesEfectivas.valor.toLocaleString("en-US")}</span> /{" "}
+                        {materia.clasesEfectivas.total.toLocaleString("en-US")}
                       </p>
 
                       <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                         <div
-                          className="h-2.5 rounded-full bg-slate-900"
+                          className="h-2.5 rounded-full bg-violet-600"
                           style={{
                             width: `${Math.min(porcentajeClases, 100)}%`,
                           }}
