@@ -2,13 +2,14 @@ import { getDataPublic } from "@/services/tutorship.services";
 import { useQuery } from "@tanstack/react-query";
 import StatCard from "../StatCard";
 import type { ResponseSectionSchema } from "@/types/intruments.types";
-import { Laptop, ListTodo, School } from "lucide-react";
+import { Laptop, ListTodo, School, User } from "lucide-react";
 import { useMemo } from "react";
 import { usePagination } from "@/hooks/usePagination";
 import type {
   FeedbackSchema,
   ObservationSchema,
   VirtualSessionType,
+  UniqueTeacher
 } from "@/types/tutorship.types";
 
 type QueryResponse = {
@@ -16,13 +17,14 @@ type QueryResponse = {
   virtualSessions: VirtualSessionType[];
   observations: ObservationSchema[];
   feedback: FeedbackSchema[];
+  uniqueTeacher: UniqueTeacher[];
 };
 
 type NewSchoolType = {
   code: string;
   name: string;
-  count: number; // diagnósticos
-  countObs: number; // observaciones
+  count: number; 
+  countObs: number; 
 };
 
 type MyAcc = {
@@ -35,13 +37,12 @@ function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: strin
     queryFn: () => getDataPublic(startDate, endDate),
   });
 
-  // ✅ Un solo arreglo que combina diagnósticos + observaciones por escuela
+console.log(data)
   const schoolsArray = useMemo<NewSchoolType[]>(() => {
     if (!data) return [];
 
     const acc: MyAcc = {};
 
-    // Diagnósticos
     for (const diag of data.diagnostic ?? []) {
       const s = diag.school;
 
@@ -51,14 +52,13 @@ function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: strin
       acc[s.code].count += 1;
     }
 
-    // Observaciones
     for (const obs of data.observations ?? []) {
       const s = obs.school;
 
       if (!acc[s.code]) {
         acc[s.code] = { code: s.code, name: s.name, count: 0, countObs: 0 };
       }
-      acc[s.code].countObs += 1; // ✅ aquí sí suma observaciones
+      acc[s.code].countObs += 1; 
     }
 
     return Object.values(acc);
@@ -66,7 +66,7 @@ function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: strin
 
   const { itemsPage, handleSetSearchTerm, totalPage, page, setPage } =
     usePagination<NewSchoolType>({
-      data: schoolsArray, // ✅ ahora sí es un array
+      data: schoolsArray,
       perPage: 5,
       fn: (item, search) =>
         item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -94,6 +94,12 @@ function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: strin
     <div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
+          title="Docentes únicos"
+          icon={User}
+          color="emerald"
+          value={data.uniqueTeacher.length}
+        />
+        <StatCard
           title="Diagnósticos realizados"
           icon={ListTodo}
           color="emerald"
@@ -103,7 +109,7 @@ function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: strin
           title="Centros escolares atendidos"
           icon={School}
           color="blue"
-          value={schoolsArray.length} // ✅ escuelas únicas con cualquiera de los dos
+          value={schoolsArray.length}
         />
         <StatCard
           title="Tutorías virtuales"

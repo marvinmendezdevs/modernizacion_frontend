@@ -1,6 +1,6 @@
 import { getObservations } from "@/services/tutorship.services";
 import type { ResponseSectionSchema } from "@/types/intruments.types";
-import { formatDate } from "@/utils/index.utils";
+import { formatFullDate } from "@/utils/index.utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building,
@@ -74,7 +74,7 @@ function ObservationList({ teacherDui }: ObservationListType) {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar size={12} />
-                        {formatDate(observation.submittedAt)}
+                        {formatFullDate(observation.submittedAt)}
                       </span>
                     </p>
                     <p className="flex items-center gap-3 text-gray-600 text-sm">

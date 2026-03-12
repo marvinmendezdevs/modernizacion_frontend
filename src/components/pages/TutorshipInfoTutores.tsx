@@ -36,11 +36,7 @@ function TutorshipInfoTutores({ tutor, meta, setPage }: TutorshipInfoTutoresProp
           });
         }, [tutor, today]);
 
-
-
-        console.log(data);
-
-  return (
+        return (
     <>
       <div className="flex justify-between items-center">
         <p className="text-indigo-600 font-bold my-5">Tutores {String(tutor[0].infoTutores.type) === "PRESENCIAL" ? "Presenciales" : "Virtuales"}</p>

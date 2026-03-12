@@ -9,11 +9,9 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import StudentsGrafics1 from "./accesos/StudentsGrafics";
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  };
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
 };
 
 type DashboardReportApi = {
@@ -68,7 +66,7 @@ function StudentDashboard({
     return reports.filter(
       (report) =>
         normalizeCategory(report.category) ===
-        normalizeCategory(activeCategory)
+        normalizeCategory(activeCategory),
     );
   }, [data, activeCategory]);
 
@@ -77,15 +75,16 @@ function StudentDashboard({
       .slice()
       .sort(
         (a, b) =>
-          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+          new Date(a.dateReported).getTime() -
+          new Date(b.dateReported).getTime(),
       );
 
-    return ordered.flatMap((report) =>
-      (report.json.clases.estudiantes ?? []).map((row) => ({
+    return source.flatMap((report) =>
+      (report.json.estudiantes ?? []).map((row) => ({
         ...row,
         type: "Estudiantes",
         dateReported: report.dateReported,
-      }))
+      })),
     );
   }, [sourceReports]);
 
@@ -99,7 +98,7 @@ function StudentDashboard({
         : acc;
     }, sourceReports[0]);
 
-    return (latest.json.clases.estudiantes ?? []).map((row) => ({
+    return (report.json.estudiantes ?? []).map((row) => ({
       ...row,
       type: "Estudiantes",
       dateReported: latest.dateReported,
@@ -110,14 +109,14 @@ function StudentDashboard({
     studentsLastDayData,
     "Estudiantes",
     startDate,
-    endDate
+    endDate,
   );
 
   const { onTimeInfo } = useDashboard(
     studentsSeriesData,
     "Estudiantes",
     startDate,
-    endDate
+    endDate,
   );
 
   if (isLoading) {
@@ -138,7 +137,7 @@ function StudentDashboard({
   }
 
   if (!sourceReports.length) {
-    return ;
+    return;
   }
 
   return (

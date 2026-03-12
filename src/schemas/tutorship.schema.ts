@@ -26,7 +26,16 @@ export const AssignamentSchema = z.object({
     section: SectionSchoolSchema,
 });
 
-
+export const UniqueTeacher = z.object({
+    name: z.string(),
+    id: z.number(),
+    email: z.string(),
+    telephone: z.string(),
+    dui: z.string(),
+    status: z.boolean(),
+    comingLxp: z.boolean(),
+    teacherAccess: z.boolean(),
+})
 
 export const TeacherTutorSchema = TeacherSchema.extend({
     assignments: z.array(AssignamentSchema)

@@ -9,11 +9,9 @@ import { useMemo } from "react";
 import SectionsGrafics from "./accesos/SectionsGrafics";
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  };
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
 };
 
 type DashboardReportApi = {
@@ -68,7 +66,7 @@ function SectionDashboard({
     return reports.filter(
       (report) =>
         normalizeCategory(report.category) ===
-        normalizeCategory(activeCategory)
+        normalizeCategory(activeCategory),
     );
   }, [data, activeCategory]);
 
@@ -77,15 +75,16 @@ function SectionDashboard({
       .slice()
       .sort(
         (a, b) =>
-          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+          new Date(a.dateReported).getTime() -
+          new Date(b.dateReported).getTime(),
       );
 
-    return ordered.flatMap((report) =>
-      (report.json.clases.secciones ?? []).map((row) => ({
+    return source.flatMap((report) =>
+      (report.json.secciones ?? []).map((row) => ({
         ...row,
         type: "Secciones",
         dateReported: report.dateReported,
-      }))
+      })),
     );
   }, [sourceReports]);
 
@@ -99,7 +98,7 @@ function SectionDashboard({
         : acc;
     }, sourceReports[0]);
 
-    return (latest.json.clases.secciones ?? []).map((row) => ({
+    return (report.json.secciones ?? []).map((row) => ({
       ...row,
       type: "Secciones",
       dateReported: latest.dateReported,
@@ -110,14 +109,14 @@ function SectionDashboard({
     seccionesLastDayData,
     "Secciones",
     startDate,
-    endDate
+    endDate,
   );
 
   const { onTimeInfo } = useDashboard(
     seccionesSeriesData,
     "Secciones",
     startDate,
-    endDate
+    endDate,
   );
 
   if (isLoading) {
@@ -138,7 +137,7 @@ function SectionDashboard({
   }
 
   if (!sourceReports.length) {
-    return 
+    return;
   }
 
   return (

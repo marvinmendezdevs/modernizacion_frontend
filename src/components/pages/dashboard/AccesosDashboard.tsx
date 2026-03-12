@@ -17,8 +17,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getTeacherInfo } from "@/services/dashboard.services";
 import type { DashboardRecord } from "@/types/dashboard.types";
 import { formatFullDate } from "@/utils/index.utils";
-import RemediacionAccess from "./RemediacionAccess";
-import RefuerzoAccess from "./RefuerzoAccess";
 
 type GroupTab = 1 | 2;
 type CategoryTab = "Diario" | "Acumulado";
@@ -71,7 +69,7 @@ function AccesosDashboard() {
   const safeDateToLocale = (
     value?: string | null,
     locale = "sv-SE",
-    options?: Intl.DateTimeFormatOptions
+    options?: Intl.DateTimeFormatOptions,
   ) => {
     if (!isValidDate(value)) return "";
     return new Date(value as string).toLocaleDateString(locale, options);
@@ -80,7 +78,7 @@ function AccesosDashboard() {
   const safeTimeToLocale = (
     value?: string | null,
     locale = "es-SV",
-    options?: Intl.DateTimeFormatOptions
+    options?: Intl.DateTimeFormatOptions,
   ) => {
     if (!isValidDate(value)) return "";
     return new Date(value as string).toLocaleTimeString(locale, options);
@@ -112,14 +110,12 @@ function AccesosDashboard() {
   const selectedReport =
     reports.find(
       (item) =>
-        normalizeCategory(item.category) === normalizeCategory(activeCategory)
+        normalizeCategory(item.category) === normalizeCategory(activeCategory),
     ) ?? null;
 
   const tz = "America/El_Salvador";
 
-  const horaSV = new Date(
-    new Date().toLocaleString("en-US", { timeZone: tz })
-  );
+  const horaSV = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
 
   const hora4pm = horaSV.getHours() >= 16;
 
@@ -302,18 +298,12 @@ function AccesosDashboard() {
           </div>
         </div>
       </div>
-
-      <div className="flex flex-col md:flex-row md:justify-evenly my-5 w-full md:w-10/12 md:mx-auto">
+      <div className="hidden justify-evenly my-5 w-full">
         <button
           type="button"
           onClick={() => setActiveView("clases")}
-          className={`flex justify-center items-center gap-1 w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${
-            activeView === "clases"
-              ? "border-blue-800 text-blue-800"
-              : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"
-          }`}
+          className={`w-full font-semibold p-2 transition-all transform rounded-t-xl border-b-2 ${activeView === "clases" ? "border-blue-800 text-blue-800" : "border-gray-200 hover:text-gray-800 text-gray-400 cursor-pointer"}`}
         >
-          <BookOpen className="size-5" />
           Clases
         </button>
         <button
@@ -363,24 +353,6 @@ function AccesosDashboard() {
             activeCategory={activeCategory}
           />
         </div>
-      )}
-
-      {activeView === "remediacion" && (
-        <RemediacionAccess
-          startDate={startDate}
-          endDate={endDate}
-          activeGroup={activeGroup}
-          activeCategory={activeCategory}
-        />
-      )}
-
-      {activeView === "refuerzo" && (
-        <RefuerzoAccess
-          startDate={startDate}
-          endDate={endDate}
-          activeGroup={activeGroup}
-          activeCategory={activeCategory}
-        />
       )}
     </div>
   );

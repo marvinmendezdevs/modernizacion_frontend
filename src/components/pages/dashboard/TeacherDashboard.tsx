@@ -9,11 +9,9 @@ import type { DashboardRecord } from "@/types/dashboard.types";
 import TeachersGrafics1 from "./accesos/TeachersGrafics";
 
 type DashboardJsonApi = {
-  clases: {
-    docentes: DashboardRecord[];
-    secciones: DashboardRecord[];
-    estudiantes: DashboardRecord[];
-  };
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
 };
 
 type DashboardReportApi = {
@@ -68,7 +66,7 @@ function TeacherDashboard({
     return reports.filter(
       (report) =>
         normalizeCategory(report.category) ===
-        normalizeCategory(activeCategory)
+        normalizeCategory(activeCategory),
     );
   }, [data, activeCategory]);
 
@@ -77,15 +75,16 @@ function TeacherDashboard({
       .slice()
       .sort(
         (a, b) =>
-          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+          new Date(a.dateReported).getTime() -
+          new Date(b.dateReported).getTime(),
       );
 
     return ordered.flatMap((report) =>
-      (report.json.clases.docentes ?? []).map((row) => ({
+      (report.json.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
         dateReported: report.dateReported,
-      }))
+      })),
     );
   }, [sourceReports]);
 
@@ -99,7 +98,7 @@ function TeacherDashboard({
         : acc;
     }, sourceReports[0]);
 
-    return (latest.json.clases.docentes ?? []).map((row) => ({
+    return (latest.json.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
       dateReported: latest.dateReported,
@@ -110,14 +109,14 @@ function TeacherDashboard({
     docentesLastDayData,
     "Docentes",
     startDate,
-    endDate
+    endDate,
   );
 
   const { onTimeInfo } = useDashboard(
     docentesSeriesData,
     "Docentes",
     startDate,
-    endDate
+    endDate,
   );
 
   if (isLoading) {
