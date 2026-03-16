@@ -29,6 +29,8 @@ import SchoolManagementDashboard from "./components/pages/dashboard/school_manag
 import SchoolsDashboard from "./components/pages/dashboard/SchoolsDashboard"
 import AccesosDashboard from "./components/pages/dashboard/AccesosDashboard"
 import SeccionesClasesDashboard from "./components/pages/dashboard/SeccionesClasesDashboard"
+import DashboardAccesos from "./components/pages/update/DashboardAccesos"
+import FormAccesos from "./components/pages/update/FormAccesos"
 
 function Router() {
 
@@ -79,6 +81,11 @@ function Router() {
               <Route element={<FacilitadoresHome />} />
               <Route index element={<Facilitadores />} />
               <Route path=":schoolCode/escuela" element={<FacilitatorTeacherList />} />
+            </Route>
+
+            <Route path="/dashboard" element={<AppRoleValidator allowedRoles={["Administrador"]} />}>
+              <Route path="update" element={<DashboardAccesos />} />
+              <Route path="accesos/form" element={<FormAccesos />} />
             </Route>
           </Route>
         </Route>

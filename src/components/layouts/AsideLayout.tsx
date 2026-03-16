@@ -77,6 +77,14 @@ function AsideLayout() {
           <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-8">
             Administración
           </p>
+          <NavLinksVerificator allowedRoles={["Administrador"]} userRole={user.role.name}>
+            <SidebarItem
+              icon={<GraduationCap />}
+              label="Dashboard"
+              active={activeTab === "/dashboard/update"}
+              path="dashboard/update"
+            />
+          </NavLinksVerificator>
         </div>
 
         <div className="p-4 border-t border-slate-100">
