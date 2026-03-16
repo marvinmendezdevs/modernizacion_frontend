@@ -1,9 +1,12 @@
+import { getSeccionClasses } from "@/services/dashboard.services";
+import { formatFullDate } from "@/utils/index.utils";
+import { useQuery } from "@tanstack/react-query";
 import {
-  ChevronDown,
   Users,
   GraduationCap,
   BookOpen,
   CheckCircle2,
+  Calendar,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -21,133 +24,178 @@ type Materia = {
   clasesEfectivas: Indicador;
 };
 
-type Grupo = {
-  grupo: string;
-  materias: Materia[];
+type ClaseItem = {
+  grupo: number;
+  totalClases: number;
+  totalDocentes: number;
+  accesosDocentes: number;
+  clasesEfectivas: number;
+  totalEstudiantes: number;
+  accesosEstudiantes: number;
 };
 
-const GRUPOS_DATA: Grupo[] = [
-  {
-    grupo: "Grupo 1",
-    materias: [
-      {
-        nombre: "Matemática",
-        docentesAccesos: {
-          valor: 1161,
-          total: 1486,
-        },
-        estudiantesAccesos: {
-          valor: 50899,
-          total: 76032,
-        },
-        clasesEfectivas: {
-          valor: 1783,
-          total: 3177,
-        },
-      },
-      {
-        nombre: "Lenguaje",
-        docentesAccesos: {
-          valor: 1160,
-          total: 1462,
-        },
-        estudiantesAccesos: {
-          valor: 49820,
-          total: 76553,
-        },
-        clasesEfectivas: {
-          valor: 502,
-          total: 3170,
-        },
-      },
-    ],
-  },
-  {
-    grupo: "Grupo 2",
-    materias: [
-      {
-        nombre: "Matemática",
-        docentesAccesos: {
-          valor: 796,
-          total: 1184,
-        },
-        estudiantesAccesos: {
-          valor: 35910,
-          total: 61581,
-        },
-        clasesEfectivas: {
-          valor: 1183,
-          total: 2547,
-        },
-      },
-      {
-        nombre: "Lenguaje",
-        docentesAccesos: {
-          valor: 803,
-          total: 1178,
-        },
-        estudiantesAccesos: {
-          valor: 35542,
-          total: 61652,
-        },
-        clasesEfectivas: {
-          valor: 214,
-          total: 2554,
-        },
-      },
-    ],
-  },
-];
+type SeccionesJson = {
+  clases?: {
+    Lenguaje?: ClaseItem[];
+    Matematica?: ClaseItem[];
+  };
+  remediacion?: unknown;
+  refuerzo?: unknown;
+};
+
+type MetricsRecord = {
+  id: number;
+  dateReported: string;
+  type: string;
+  category: string;
+  json: SeccionesJson;
+};
+
+type ApiResponse = {
+  last: MetricsRecord | null;
+  cumulative: MetricsRecord | null;
+};
+
+const EMPTY_CLASES = {
+  Lenguaje: [] as ClaseItem[],
+  Matematica: [] as ClaseItem[],
+};
+
+function getTodayDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeDate(date?: string | null) {
+  if (!date) return "";
+  return date.slice(0, 10);
+}
 
 function SeccionesClasesDashboard() {
   const [grupoActivo, setGrupoActivo] = useState<string>("Grupo 1");
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
 
-  const gruposDisponibles = useMemo(
-    () => GRUPOS_DATA.map((item) => item.grupo),
-    []
-  );
+  const { data, isLoading, isError } = useQuery<ApiResponse>({
+    queryKey: ["dashboard-secciones", selectedDate],
+    queryFn: () => getSeccionClasses(selectedDate),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  const dataFiltrada = useMemo(() => {
-    return GRUPOS_DATA.filter((item) => item.grupo === grupoActivo);
-  }, [grupoActivo]);
+  const sourceRecord = useMemo(() => {
+    const records = [data?.last, data?.cumulative].filter(
+      (record): record is MetricsRecord => Boolean(record)
+    );
 
-  const materiasResumen = useMemo(() => {
-    const acumulado: Record<MateriaNombre, Materia> = {
-      Matemática: {
-        nombre: "Matemática",
-        docentesAccesos: { valor: 0, total: 0 },
-        estudiantesAccesos: { valor: 0, total: 0 },
-        clasesEfectivas: { valor: 0, total: 0 },
+    const matchedRecord = records.find(
+      (record) => normalizeDate(record.dateReported) === selectedDate
+    );
+
+    return matchedRecord ?? null;
+  }, [data, selectedDate]);
+
+  const currentData = useMemo(() => {
+    const source = sourceRecord?.json ?? null;
+
+    return {
+      clases: {
+        Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
+        Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
       },
-      Lenguaje: {
-        nombre: "Lenguaje",
-        docentesAccesos: { valor: 0, total: 0 },
-        estudiantesAccesos: { valor: 0, total: 0 },
-        clasesEfectivas: { valor: 0, total: 0 },
-      },
+      remediacion: source?.remediacion ?? null,
+      refuerzo: source?.refuerzo ?? null,
     };
+  }, [sourceRecord]);
 
-    dataFiltrada.forEach((grupo) => {
-      grupo.materias.forEach((materia) => {
-        acumulado[materia.nombre].docentesAccesos.valor +=
-          materia.docentesAccesos.valor;
-        acumulado[materia.nombre].docentesAccesos.total +=
-          materia.docentesAccesos.total;
+  const hasData = useMemo(() => {
+    return (
+      currentData.clases.Lenguaje.length > 0 ||
+      currentData.clases.Matematica.length > 0
+    );
+  }, [currentData]);
 
-        acumulado[materia.nombre].estudiantesAccesos.valor +=
-          materia.estudiantesAccesos.valor;
-        acumulado[materia.nombre].estudiantesAccesos.total +=
-          materia.estudiantesAccesos.total;
+  const gruposDisponibles = useMemo(() => {
+    const grupos = new Set<number>();
 
-        acumulado[materia.nombre].clasesEfectivas.valor +=
-          materia.clasesEfectivas.valor;
-        acumulado[materia.nombre].clasesEfectivas.total +=
-          materia.clasesEfectivas.total;
-      });
-    });
+    currentData.clases.Lenguaje.forEach((item) => grupos.add(item.grupo));
+    currentData.clases.Matematica.forEach((item) => grupos.add(item.grupo));
 
-    return Object.values(acumulado) as Materia[];
-  }, [dataFiltrada]);
+    return Array.from(grupos)
+      .sort((a, b) => a - b)
+      .map((grupo) => `Grupo ${grupo}`);
+  }, [currentData]);
+
+  const grupoActivoResolved = useMemo(() => {
+    if (!hasData) return "Grupo 1";
+    if (gruposDisponibles.includes(grupoActivo)) return grupoActivo;
+    return gruposDisponibles[0] ?? "Grupo 1";
+  }, [hasData, gruposDisponibles, grupoActivo]);
+
+  const materiasResumen = useMemo((): Materia[] => {
+    if (!hasData) {
+      return [
+        {
+          nombre: "Lenguaje",
+          docentesAccesos: { valor: 0, total: 0 },
+          estudiantesAccesos: { valor: 0, total: 0 },
+          clasesEfectivas: { valor: 0, total: 0 },
+        },
+        {
+          nombre: "Matemática",
+          docentesAccesos: { valor: 0, total: 0 },
+          estudiantesAccesos: { valor: 0, total: 0 },
+          clasesEfectivas: { valor: 0, total: 0 },
+        },
+      ];
+    }
+
+    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
+
+    const lenguaje = currentData.clases.Lenguaje.find(
+      (item) => item.grupo === grupoNumero
+    );
+
+    const matematica = currentData.clases.Matematica.find(
+      (item) => item.grupo === grupoNumero
+    );
+
+    return [
+      {
+        nombre: "Lenguaje",
+        docentesAccesos: {
+          valor: lenguaje?.accesosDocentes ?? 0,
+          total: lenguaje?.totalDocentes ?? 0,
+        },
+        estudiantesAccesos: {
+          valor: lenguaje?.accesosEstudiantes ?? 0,
+          total: lenguaje?.totalEstudiantes ?? 0,
+        },
+        clasesEfectivas: {
+          valor: lenguaje?.clasesEfectivas ?? 0,
+          total: lenguaje?.totalClases ?? 0,
+        },
+      },
+      {
+        nombre: "Matemática",
+        docentesAccesos: {
+          valor: matematica?.accesosDocentes ?? 0,
+          total: matematica?.totalDocentes ?? 0,
+        },
+        estudiantesAccesos: {
+          valor: matematica?.accesosEstudiantes ?? 0,
+          total: matematica?.totalEstudiantes ?? 0,
+        },
+        clasesEfectivas: {
+          valor: matematica?.clasesEfectivas ?? 0,
+          total: matematica?.totalClases ?? 0,
+        },
+      },
+    ];
+  }, [hasData, grupoActivoResolved, currentData]);
 
   const resumenGeneral = useMemo(() => {
     const totalDocentesAccesos = materiasResumen.reduce(
@@ -167,216 +215,261 @@ function SeccionesClasesDashboard() {
       totalDocentesAccesos,
       totalEstudiantesAccesos,
       totalClasesEfectivas,
-      grupos: dataFiltrada.length,
       materias: materiasResumen.length,
     };
-  }, [materiasResumen, dataFiltrada.length]);
+  }, [materiasResumen]);
+
+  console.log(data);
+  console.log("selectedDate:", selectedDate);
+  console.log("sourceRecord:", sourceRecord);
+
+  if (isLoading) {
+    return (
+      <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
+        <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
+        Cargando información...
+      </p>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="text-xs text-red-600 flex justify-center items-center p-3">
+        Ocurrió un error al cargar la información.
+      </p>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-                Secciones(clases)
-              </h1>
+      <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8 my-5">
+          <div className="mb-3">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-3xl">
+              Secciones (clases)
+            </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-                Accesos de docentes y estudiantes, y clases efectivas por grupo
-                y materia.
+            <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
+              Accesos de docentes y estudiantes, y clases efectivas por grupo y
+              materia.
+            </p>
+
+            <p className="mt-2 text-sm text-slate-400">
+              Fecha del reporte: {formatFullDate(selectedDate)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-end items-center gap-2 text-xs my-5">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
+            <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Calendar size={16} />
+            </div>
+            <input
+              type="date"
+              className="w-full"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
+            <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <Users size={16} />
+            </div>
+            <select
+              value={grupoActivoResolved}
+              onChange={(e) => setGrupoActivo(e.target.value)}
+              className="w-full bg-transparent text-xs font-medium text-slate-700 outline-none"
+              disabled={!hasData}
+            >
+              {gruposDisponibles.length > 0 ? (
+                gruposDisponibles.map((grupo) => (
+                  <option key={grupo} value={grupo}>
+                    {grupo}
+                  </option>
+                ))
+              ) : (
+                <option value="Grupo 1">Grupo 1</option>
+              )}
+            </select>
+          </div>
+        </div>
+        {!hasData ? (
+          <p className="border-l-2 border-green-700 text-green-700 p-2 bg-green-50 text-center">No hay datos para la fecha seleccionada.</p>
+        ):(
+        <div className="mx-auto max-w-7xl space-y-6">
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-500">
+                Accesos docentes
+              </p>
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {resumenGeneral.totalDocentesAccesos.toLocaleString("en-US")}
               </p>
             </div>
 
-            <div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Filtro por grupos
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-500">
+                Accesos estudiantes
+              </p>
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {resumenGeneral.totalEstudiantesAccesos.toLocaleString("en-US")}
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-500">
+                Clases efectivas
+              </p>
+              <p className="mt-3 text-3xl font-bold text-slate-900">
+                {resumenGeneral.totalClasesEfectivas.toLocaleString("en-US")}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
+            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Resumen por materia
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {`Visualización correspondiente a ${grupoActivoResolved}.`}
                 </p>
+              </div>
 
-                <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <Users size={16} />
-                  </div>
-
-                  <select
-                    value={grupoActivo}
-                    onChange={(e) => setGrupoActivo(e.target.value)}
-                    className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none"
-                  >
-                    {gruposDisponibles.map((grupo) => (
-                      <option key={grupo} value={grupo}>
-                        {grupo}
-                      </option>
-                    ))}
-                  </select>
-
-                  <ChevronDown size={16} className="text-slate-400" />
-                </div>
+              <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+                {grupoActivoResolved}
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm font-medium text-slate-500">
-              Accesos docentes
-            </p>
-            <p className="mt-3 text-3xl font-bold text-slate-900">
-              {resumenGeneral.totalDocentesAccesos.toLocaleString("en-US")}
-            </p>
-          </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              {materiasResumen.map((materia) => {
+                const porcentajeDocentes =
+                  materia.docentesAccesos.total > 0
+                    ? (materia.docentesAccesos.valor /
+                        materia.docentesAccesos.total) *
+                      100
+                    : 0;
 
-          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm font-medium text-slate-500">
-              Accesos estudiantes
-            </p>
-            <p className="mt-3 text-3xl font-bold text-slate-900">
-              {resumenGeneral.totalEstudiantesAccesos.toLocaleString("en-US")}
-            </p>
-          </div>
+                const porcentajeEstudiantes =
+                  materia.estudiantesAccesos.total > 0
+                    ? (materia.estudiantesAccesos.valor /
+                        materia.estudiantesAccesos.total) *
+                      100
+                    : 0;
 
-          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <p className="text-sm font-medium text-slate-500">
-              Clases efectivas
-            </p>
-            <p className="mt-3 text-3xl font-bold text-slate-900">
-              {resumenGeneral.totalClasesEfectivas.toLocaleString("en-US")}
-            </p>
-          </div>
-        </div>
+                const porcentajeClases =
+                  materia.clasesEfectivas.total > 0
+                    ? (materia.clasesEfectivas.valor /
+                        materia.clasesEfectivas.total) *
+                      100
+                    : 0;
 
-        <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
-          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Resumen por materia
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {`Visualización correspondiente a ${grupoActivo}.`}
-              </p>
-            </div>
+                return (
+                  <div
+                    key={materia.nombre}
+                    className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                          <BookOpen size={18} />
+                        </div>
 
-            <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-              {grupoActivo}
-            </div>
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-2">
-            {materiasResumen.map((materia) => {
-              const porcentajeDocentes =
-                materia.docentesAccesos.total > 0
-                  ? (materia.docentesAccesos.valor /
-                      materia.docentesAccesos.total) *
-                    100
-                  : 0;
-
-              const porcentajeEstudiantes =
-                materia.estudiantesAccesos.total > 0
-                  ? (materia.estudiantesAccesos.valor /
-                      materia.estudiantesAccesos.total) *
-                    100
-                  : 0;
-
-              const porcentajeClases =
-                materia.clasesEfectivas.total > 0
-                  ? (materia.clasesEfectivas.valor /
-                      materia.clasesEfectivas.total) *
-                    100
-                  : 0;
-
-              return (
-                <div
-                  key={materia.nombre}
-                  className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                        <BookOpen size={18} />
-                      </div>
-
-                      <h3 className="text-xl font-semibold text-slate-900">
-                        {materia.nombre}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Indicadores principales de la materia
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid gap-3">
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <Users size={16} />
-                        <p className="text-sm font-medium">Docentes</p>
-                      </div>
-
-                      <p className="mt-3 text-2xl font-bold text-slate-900">
-                        <span className="text-gray-500 text-xl">{materia.docentesAccesos.valor.toLocaleString("en-US")}</span> /{" "}
-                        {materia.docentesAccesos.total.toLocaleString("en-US")}
-                      </p>
-
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-indigo-600"
-                          style={{
-                            width: `${Math.min(porcentajeDocentes, 100)}%`,
-                          }}
-                        />
+                        <h3 className="text-xl font-semibold text-slate-900">
+                          {materia.nombre}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Indicadores principales de la materia
+                        </p>
                       </div>
                     </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <GraduationCap size={16} />
-                        <p className="text-sm font-medium">Estudiantes</p>
+                    <div className="mt-6 grid gap-3">
+                      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <Users size={16} />
+                          <p className="text-sm font-medium">Docentes</p>
+                        </div>
+
+                        <p className="mt-3 text-2xl font-bold text-slate-900">
+                          <span className="text-gray-500 text-xl">
+                            {materia.docentesAccesos.valor.toLocaleString("en-US")}
+                          </span>{" "}
+                          / {materia.docentesAccesos.total.toLocaleString("en-US")}
+                        </p>
+
+                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-indigo-600"
+                            style={{
+                              width: `${Math.min(porcentajeDocentes, 100)}%`,
+                            }}
+                          />
+                        </div>
                       </div>
 
-                      <p className="mt-3 text-2xl font-bold text-slate-900">
-                        <span className="text-gray-500 text-xl">{materia.estudiantesAccesos.valor.toLocaleString("en-US")}</span> /{" "}
-                        {materia.estudiantesAccesos.total.toLocaleString("en-US")}
-                      </p>
+                      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <GraduationCap size={16} />
+                          <p className="text-sm font-medium">Estudiantes</p>
+                        </div>
 
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-emerald-600"
-                          style={{
-                            width: `${Math.min(porcentajeEstudiantes, 100)}%`,
-                          }}
-                        />
+                        <p className="mt-3 text-2xl font-bold text-slate-900">
+                          <span className="text-gray-500 text-xl">
+                            {materia.estudiantesAccesos.valor.toLocaleString(
+                              "en-US"
+                            )}
+                          </span>{" "}
+                          /{" "}
+                          {materia.estudiantesAccesos.total.toLocaleString(
+                            "en-US"
+                          )}
+                        </p>
+
+                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-emerald-600"
+                            style={{
+                              width: `${Math.min(porcentajeEstudiantes, 100)}%`,
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <CheckCircle2 size={16} />
-                        <p className="text-sm font-medium">Clases efectivas</p>
-                      </div>
+                      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <CheckCircle2 size={16} />
+                          <p className="text-sm font-medium">Clases efectivas</p>
+                        </div>
 
-                      <p className="mt-3 text-2xl font-bold text-slate-900">
-                        <span className="text-gray-500 text-xl">{materia.clasesEfectivas.valor.toLocaleString("en-US")}</span> /{" "}
-                        {materia.clasesEfectivas.total.toLocaleString("en-US")}
-                      </p>
+                        <p className="mt-3 text-2xl font-bold text-slate-900">
+                          <span className="text-gray-500 text-xl">
+                            {materia.clasesEfectivas.valor.toLocaleString("en-US")}
+                          </span>{" "}
+                          / {materia.clasesEfectivas.total.toLocaleString("en-US")}
+                        </p>
 
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-violet-600"
-                          style={{
-                            width: `${Math.min(porcentajeClases, 100)}%`,
-                          }}
-                        />
+                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-violet-600"
+                            style={{
+                              width: `${Math.min(porcentajeClases, 100)}%`,
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+        )}
+  </div>
   );
 }
 
