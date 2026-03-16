@@ -162,19 +162,11 @@ function StudentDashboard({
   }
 
   if (!sourceReports.length) {
-    return (
-      <p className="text-xs text-slate-600 text-center p-3">
-        No hay datos para la categoría seleccionada.
-      </p>
-    );
+    return;
   }
 
   if (!reportsInRange.length) {
-    return (
-      <p className="text-xs text-slate-600 text-center p-3">
-        No hay datos para el rango de fechas seleccionado.
-      </p>
-    );
+    return;
   }
 
   return (

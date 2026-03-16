@@ -75,6 +75,17 @@ function normalizeDate(date?: string | null) {
   return date.slice(0, 10);
 }
 
+function calcularVariacionPorcentual(valores: number[]) {
+  if (valores.length < 2) return 0;
+
+  const max = Math.max(...valores);
+  const min = Math.min(...valores);
+
+  if (max === 0) return 0;
+
+  return ((max - min) / max) * 100;
+}
+
 function SeccionesClasesDashboard() {
   const [grupoActivo, setGrupoActivo] = useState<string>("Grupo 1");
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
@@ -219,9 +230,37 @@ function SeccionesClasesDashboard() {
     };
   }, [materiasResumen]);
 
+  const variaciones = useMemo(() => {
+    return {
+      Lenguaje: {
+        docentes: calcularVariacionPorcentual(
+          currentData.clases.Lenguaje.map((item) => item.accesosDocentes)
+        ),
+        estudiantes: calcularVariacionPorcentual(
+          currentData.clases.Lenguaje.map((item) => item.accesosEstudiantes)
+        ),
+        clases: calcularVariacionPorcentual(
+          currentData.clases.Lenguaje.map((item) => item.clasesEfectivas)
+        ),
+      },
+      Matemática: {
+        docentes: calcularVariacionPorcentual(
+          currentData.clases.Matematica.map((item) => item.accesosDocentes)
+        ),
+        estudiantes: calcularVariacionPorcentual(
+          currentData.clases.Matematica.map((item) => item.accesosEstudiantes)
+        ),
+        clases: calcularVariacionPorcentual(
+          currentData.clases.Matematica.map((item) => item.clasesEfectivas)
+        ),
+      },
+    };
+  }, [currentData]);
+
   console.log(data);
   console.log("selectedDate:", selectedDate);
   console.log("sourceRecord:", sourceRecord);
+  console.log("variaciones:", variaciones);
 
   if (isLoading) {
     return (
@@ -243,62 +282,64 @@ function SeccionesClasesDashboard() {
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8 my-5">
-          <div className="mb-3">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-3xl">
-              Secciones (clases)
-            </h1>
+        <div className="mb-3">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-3xl">
+            Secciones (clases)
+          </h1>
 
-            <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-              Accesos de docentes y estudiantes, y clases efectivas por grupo y
-              materia.
-            </p>
+          <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
+            Accesos de docentes y estudiantes, clases efectivas y variación por
+            materia.
+          </p>
 
-            <p className="mt-2 text-sm text-slate-400">
-              Fecha del reporte: {formatFullDate(selectedDate)}
-            </p>
+          <p className="mt-2 text-sm text-slate-400">
+            Fecha del reporte: {formatFullDate(selectedDate)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row justify-end items-center gap-2 text-xs my-5">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
+          <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <Calendar size={16} />
           </div>
+          <input
+            type="date"
+            className="w-full"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+          />
         </div>
 
-        <div className="flex flex-col md:flex-row justify-end items-center gap-2 text-xs my-5">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
-            <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Calendar size={16} />
-            </div>
-            <input
-              type="date"
-              className="w-full"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
+        <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
+          <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <Users size={16} />
           </div>
-
-          <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
-            <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Users size={16} />
-            </div>
-            <select
-              value={grupoActivoResolved}
-              onChange={(e) => setGrupoActivo(e.target.value)}
-              className="w-full bg-transparent text-xs font-medium text-slate-700 outline-none"
-              disabled={!hasData}
-            >
-              {gruposDisponibles.length > 0 ? (
-                gruposDisponibles.map((grupo) => (
-                  <option key={grupo} value={grupo}>
-                    {grupo}
-                  </option>
-                ))
-              ) : (
-                <option value="Grupo 1">Grupo 1</option>
-              )}
-            </select>
-          </div>
+          <select
+            value={grupoActivoResolved}
+            onChange={(e) => setGrupoActivo(e.target.value)}
+            className="w-full bg-transparent text-xs font-medium text-slate-700 outline-none"
+            disabled={!hasData}
+          >
+            {gruposDisponibles.length > 0 ? (
+              gruposDisponibles.map((grupo) => (
+                <option key={grupo} value={grupo}>
+                  {grupo}
+                </option>
+              ))
+            ) : (
+              <option value="Grupo 1">Grupo 1</option>
+            )}
+          </select>
         </div>
-        {!hasData ? (
-          <p className="border-l-2 border-green-700 text-green-700 p-2 bg-green-50 text-center">No hay datos para la fecha seleccionada.</p>
-        ):(
+      </div>
+
+      {!hasData ? (
+        <p className="border-l-2 border-green-700 text-green-700 p-2 bg-green-50 text-center">
+          No hay datos para la fecha seleccionada.
+        </p>
+      ) : (
         <div className="mx-auto max-w-7xl space-y-6">
-
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
@@ -367,6 +408,8 @@ function SeccionesClasesDashboard() {
                       100
                     : 0;
 
+                const variacionMateria = variaciones[materia.nombre];
+
                 return (
                   <div
                     key={materia.nombre}
@@ -396,9 +439,12 @@ function SeccionesClasesDashboard() {
 
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
-                            {materia.docentesAccesos.valor.toLocaleString("en-US")}
+                            {materia.docentesAccesos.valor.toLocaleString(
+                              "en-US"
+                            )}
                           </span>{" "}
-                          / {materia.docentesAccesos.total.toLocaleString("en-US")}
+                          /{" "}
+                          {materia.docentesAccesos.total.toLocaleString("en-US")}
                         </p>
 
                         <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -409,6 +455,10 @@ function SeccionesClasesDashboard() {
                             }}
                           />
                         </div>
+
+                        <p className="mt-3 text-xs font-medium text-slate-500">
+                          Variación: {variacionMateria.docentes.toFixed(1)}%
+                        </p>
                       </div>
 
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
@@ -433,23 +483,35 @@ function SeccionesClasesDashboard() {
                           <div
                             className="h-2.5 rounded-full bg-emerald-600"
                             style={{
-                              width: `${Math.min(porcentajeEstudiantes, 100)}%`,
+                              width: `${Math.min(
+                                porcentajeEstudiantes,
+                                100
+                              )}%`,
                             }}
                           />
                         </div>
+
+                        <p className="mt-3 text-xs font-medium text-slate-500">
+                          Variación: {variacionMateria.estudiantes.toFixed(1)}%
+                        </p>
                       </div>
 
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                         <div className="flex items-center gap-2 text-slate-700">
                           <CheckCircle2 size={16} />
-                          <p className="text-sm font-medium">Clases efectivas</p>
+                          <p className="text-sm font-medium">
+                            Clases efectivas
+                          </p>
                         </div>
 
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
-                            {materia.clasesEfectivas.valor.toLocaleString("en-US")}
+                            {materia.clasesEfectivas.valor.toLocaleString(
+                              "en-US"
+                            )}
                           </span>{" "}
-                          / {materia.clasesEfectivas.total.toLocaleString("en-US")}
+                          /{" "}
+                          {materia.clasesEfectivas.total.toLocaleString("en-US")}
                         </p>
 
                         <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -460,6 +522,10 @@ function SeccionesClasesDashboard() {
                             }}
                           />
                         </div>
+
+                        <p className="mt-3 text-xs font-medium text-slate-500">
+                          Variación: {variacionMateria.clases.toFixed(1)}%
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -468,8 +534,8 @@ function SeccionesClasesDashboard() {
             </div>
           </div>
         </div>
-        )}
-  </div>
+      )}
+    </div>
   );
 }
 
