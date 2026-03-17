@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { updateMetrics } from "@/services/metrisc.services";
 import type { metricsUpdate } from "@/types/metrics";
 import { useQuery } from "@tanstack/react-query";
-import { Edit } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import Modal from "./Modal";
+import { formatFullDate } from "@/utils/index.utils";
 
 function DashboardAccesos() {
   const { isLoading, isError, data } = useQuery<metricsUpdate>({
@@ -69,7 +70,6 @@ function DashboardAccesos() {
         <table className="min-w-full text-sm text-left">
           <thead className="bg-gray-100 text-gray-700">
             <tr>
-              <th className="px-3 py-2">ID</th>
               <th className="px-3 py-2">Fecha</th>
               <th className="px-3 py-2">Tipo</th>
               <th className="px-3 py-2">Categoría</th>
@@ -85,17 +85,17 @@ function DashboardAccesos() {
                 </td>
               </tr>
             ) : (
-              paginatedMetrics.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2">{item.id}</td>
+              paginatedMetrics.map((item, index) => (
+                <tr key={index} className="hover:bg-gray-50">
                   <td className="px-3 py-2">
-                    {new Date(item.dateReported).toLocaleDateString("es-SV")}
+                    {formatFullDate(String(item.dateReported))}
                   </td>
                   <td className="px-3 py-2">{item.type}</td>
                   <td className="px-3 py-2">{item.category}</td>
                   <td className="px-3 py-2">
-                    <div className="flex justify-center">
+                    <div className="flex justify-center items-center gap-3">
                       <Edit className="size-5 text-blue-800 cursor-pointer" />
+                      <Trash2 className="size-5 text-red-800 cursor-pointer" />
                     </div>
                   </td>
                 </tr>

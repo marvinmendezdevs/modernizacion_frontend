@@ -44,10 +44,13 @@ function normalizeCategory(category?: string) {
 }
 
 function formatDateOnly(date: string | Date) {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  if (typeof date === "string") {
+    return date.slice(0, 10);
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -98,10 +101,10 @@ function TeacherDashboard({
   const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
     const ordered = reportsInRange
       .slice()
-      .sort(
-        (a, b) =>
-          new Date(a.dateReported).getTime() -
-          new Date(b.dateReported).getTime()
+      .sort((a, b) =>
+        formatDateOnly(a.dateReported).localeCompare(
+          formatDateOnly(b.dateReported)
+        )
       );
 
     return ordered.flatMap((report) =>
@@ -144,6 +147,7 @@ function TeacherDashboard({
     endDate
   );
 
+
   if (isLoading) {
     return (
       <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
@@ -179,7 +183,6 @@ function TeacherDashboard({
 
   return (
     <div>
-
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
         <h1 className="text-indigo-700 text-3xl font-semibold">
           Accesos de docentes

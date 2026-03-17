@@ -306,6 +306,9 @@ function AccesosDashboard() {
             </div>
           </div>
         </div>
+        <div className="border-l-4 bg-green-50 p-2 mt-2 text-green-700">
+            <p className="font-semibold text-center">Estás visualizando los accesos {activeCategory}</p>
+        </div>
       </div>
 
       <div className="flex justify-evenly my-5 w-full">
