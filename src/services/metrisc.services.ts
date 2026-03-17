@@ -19,6 +19,6 @@ export const updateMetrics = async() => {
 }
 
 export const metricsUpload = async (payload: metricData) => {
-        const { data } = await api.post("/metrics/data", payload);
+        const { data } = await api.post("/metrics/update", payload);
     return data;
 }

@@ -9,10 +9,9 @@ export const metrics = z.object({
 });
 
 export const dataMetrics = z.object({
-  id: z.string(),
-  dateReported: z.coerce.date(),
+  dateReported: z.date(),
   type: z.string(),
-  json: z.string(),
+  json: z.json(),
   category: z.string(),
 });
 

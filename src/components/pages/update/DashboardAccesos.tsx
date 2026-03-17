@@ -3,7 +3,7 @@ import { updateMetrics } from "@/services/metrisc.services";
 import type { metricsUpdate } from "@/types/metrics";
 import { useQuery } from "@tanstack/react-query";
 import { Edit } from "lucide-react";
-import { Link } from "react-router";
+import Modal from "./Modal";
 
 function DashboardAccesos() {
   const { isLoading, isError, data } = useQuery<metricsUpdate>({
@@ -13,9 +13,10 @@ function DashboardAccesos() {
   });
 
   const [page, setPage] = useState(1);
+  const [openModal, setOpenModal] = useState(false);
   const perPage = 8;
 
-const metrics = useMemo(() => data?.metrics ?? [], [data?.metrics]);
+  const metrics = useMemo(() => data?.metrics ?? [], [data?.metrics]);
 
   const totalPages = Math.ceil(metrics.length / perPage);
 
@@ -55,11 +56,13 @@ const metrics = useMemo(() => data?.metrics ?? [], [data?.metrics]);
       <div className="flex items-center justify-between mb-5">
         <p className="text-xl font-semibold text-indigo-700">Métricas</p>
 
-        <Link to={"/dashboard/accesos/form"} type="button"
+        <button
+          type="button"
+          onClick={() => setOpenModal(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
         >
           Agregar nuevo
-        </Link>
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -129,6 +132,8 @@ const metrics = useMemo(() => data?.metrics ?? [], [data?.metrics]);
           </div>
         </div>
       )}
+
+      <Modal open={openModal} onClose={() => setOpenModal(false)} />
     </>
   );
 }

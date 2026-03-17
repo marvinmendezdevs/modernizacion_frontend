@@ -31,6 +31,8 @@ import AccesosDashboard from "./components/pages/dashboard/AccesosDashboard"
 import SeccionesClasesDashboard from "./components/pages/dashboard/SeccionesClasesDashboard"
 import DashboardAccesos from "./components/pages/update/DashboardAccesos"
 import FormAccesos from "./components/pages/update/FormAccesos"
+import FormGestionEscolar from "./components/pages/update/FormGestionEscolar"
+import FormSecciones from "./components/pages/update/FormSecciones"
 
 function Router() {
 
@@ -86,6 +88,8 @@ function Router() {
             <Route path="/dashboard" element={<AppRoleValidator allowedRoles={["Administrador"]} />}>
               <Route path="update" element={<DashboardAccesos />} />
               <Route path="accesos/form" element={<FormAccesos />} />
+              <Route path="gestion-escolar/form" element={<FormGestionEscolar />} />
+              <Route path="secciones/form" element={<FormSecciones />} />
             </Route>
           </Route>
         </Route>
