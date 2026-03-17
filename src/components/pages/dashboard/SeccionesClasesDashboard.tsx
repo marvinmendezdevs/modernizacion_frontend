@@ -3,10 +3,10 @@ import { formatFullDate } from "@/utils/index.utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users,
-  GraduationCap,
   BookOpen,
-  CheckCircle2,
   Calendar,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -53,7 +53,7 @@ type MetricsRecord = {
 
 type ApiResponse = {
   last: MetricsRecord | null;
-  cumulative: MetricsRecord | null;
+  cumulative: MetricsRecord[];
 };
 
 const EMPTY_CLASES = {
@@ -75,15 +75,9 @@ function normalizeDate(date?: string | null) {
   return date.slice(0, 10);
 }
 
-function calcularVariacionPorcentual(valores: number[]) {
-  if (valores.length < 2) return 0;
-
-  const max = Math.max(...valores);
-  const min = Math.min(...valores);
-
-  if (max === 0) return 0;
-
-  return ((max - min) / max) * 100;
+function calcularVariacionPorcentual(anterior: number, actual: number) {
+  if (anterior === 0) return 0;
+  return ((actual - anterior) / anterior) * 100;
 }
 
 function SeccionesClasesDashboard() {
@@ -97,17 +91,38 @@ function SeccionesClasesDashboard() {
     refetchOnWindowFocus: false,
   });
 
-  const sourceRecord = useMemo(() => {
-    const records = [data?.last, data?.cumulative].filter(
-      (record): record is MetricsRecord => Boolean(record)
-    );
+  const cumulative = data?.cumulative;
 
-    const matchedRecord = records.find(
+  const orderedRecords = useMemo<MetricsRecord[]>(() => {
+    if (!Array.isArray(cumulative)) return [];
+
+    return [...cumulative].sort(
+      (a, b) =>
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+    );
+  }, [cumulative]);
+
+  const sourceRecord = useMemo<MetricsRecord | null>(() => {
+    if (orderedRecords.length === 0) return null;
+
+    const matchedRecord = orderedRecords.find(
       (record) => normalizeDate(record.dateReported) === selectedDate
     );
 
     return matchedRecord ?? null;
-  }, [data, selectedDate]);
+  }, [orderedRecords, selectedDate]);
+
+  const previousRecord = useMemo<MetricsRecord | null>(() => {
+    if (!sourceRecord || orderedRecords.length === 0) return null;
+
+    const currentIndex = orderedRecords.findIndex(
+      (record) => record.id === sourceRecord.id
+    );
+
+    if (currentIndex === -1) return null;
+
+    return orderedRecords[currentIndex + 1] ?? null;
+  }, [sourceRecord, orderedRecords]);
 
   const currentData = useMemo(() => {
     const source = sourceRecord?.json ?? null;
@@ -121,6 +136,19 @@ function SeccionesClasesDashboard() {
       refuerzo: source?.refuerzo ?? null,
     };
   }, [sourceRecord]);
+
+  const previousData = useMemo(() => {
+    const source = previousRecord?.json ?? null;
+
+    return {
+      clases: {
+        Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
+        Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
+      },
+      remediacion: source?.remediacion ?? null,
+      refuerzo: source?.refuerzo ?? null,
+    };
+  }, [previousRecord]);
 
   const hasData = useMemo(() => {
     return (
@@ -231,36 +259,53 @@ function SeccionesClasesDashboard() {
   }, [materiasResumen]);
 
   const variaciones = useMemo(() => {
+    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
+
+    const lenguajeActual = currentData.clases.Lenguaje.find(
+      (item) => item.grupo === grupoNumero
+    );
+    const lenguajeAnterior = previousData.clases.Lenguaje.find(
+      (item) => item.grupo === grupoNumero
+    );
+
+    const matematicaActual = currentData.clases.Matematica.find(
+      (item) => item.grupo === grupoNumero
+    );
+    const matematicaAnterior = previousData.clases.Matematica.find(
+      (item) => item.grupo === grupoNumero
+    );
+
     return {
       Lenguaje: {
         docentes: calcularVariacionPorcentual(
-          currentData.clases.Lenguaje.map((item) => item.accesosDocentes)
+          lenguajeAnterior?.accesosDocentes ?? 0,
+          lenguajeActual?.accesosDocentes ?? 0
         ),
         estudiantes: calcularVariacionPorcentual(
-          currentData.clases.Lenguaje.map((item) => item.accesosEstudiantes)
+          lenguajeAnterior?.accesosEstudiantes ?? 0,
+          lenguajeActual?.accesosEstudiantes ?? 0
         ),
         clases: calcularVariacionPorcentual(
-          currentData.clases.Lenguaje.map((item) => item.clasesEfectivas)
+          lenguajeAnterior?.clasesEfectivas ?? 0,
+          lenguajeActual?.clasesEfectivas ?? 0
         ),
       },
       Matemática: {
         docentes: calcularVariacionPorcentual(
-          currentData.clases.Matematica.map((item) => item.accesosDocentes)
+          matematicaAnterior?.accesosDocentes ?? 0,
+          matematicaActual?.accesosDocentes ?? 0
         ),
         estudiantes: calcularVariacionPorcentual(
-          currentData.clases.Matematica.map((item) => item.accesosEstudiantes)
+          matematicaAnterior?.accesosEstudiantes ?? 0,
+          matematicaActual?.accesosEstudiantes ?? 0
         ),
         clases: calcularVariacionPorcentual(
-          currentData.clases.Matematica.map((item) => item.clasesEfectivas)
+          matematicaAnterior?.clasesEfectivas ?? 0,
+          matematicaActual?.clasesEfectivas ?? 0
         ),
       },
     };
-  }, [currentData]);
-
-  console.log(data);
-  console.log("selectedDate:", selectedDate);
-  console.log("sourceRecord:", sourceRecord);
-  console.log("variaciones:", variaciones);
+  }, [currentData, previousData, grupoActivoResolved]);
 
   if (isLoading) {
     return (
@@ -432,11 +477,23 @@ function SeccionesClasesDashboard() {
 
                     <div className="mt-6 grid gap-3">
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                        <div className="flex items-center gap-2 text-slate-700">
-                          <Users size={16} />
-                          <p className="text-sm font-medium">Docentes</p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <Users size={16} />
+                            <p className="text-sm font-medium">Docentes</p>
+                          </div>
+                          {variacionMateria.docentes > 0 ? (
+                            <p className="flex gap-2 items-center text-xs font-medium text-green-700">
+                              <TrendingUp size={16} />
+                              Variación: {variacionMateria.docentes.toFixed(1)}%
+                            </p>
+                          ) : (
+                            <p className="flex gap-2 items-center text-xs font-medium text-red-700">
+                              <TrendingDown size={16} />
+                              Variación: {variacionMateria.docentes.toFixed(1)}%
+                            </p>
+                          )}
                         </div>
-
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
                             {materia.docentesAccesos.valor.toLocaleString(
@@ -446,7 +503,6 @@ function SeccionesClasesDashboard() {
                           /{" "}
                           {materia.docentesAccesos.total.toLocaleString("en-US")}
                         </p>
-
                         <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                           <div
                             className="h-2.5 rounded-full bg-indigo-600"
@@ -455,16 +511,25 @@ function SeccionesClasesDashboard() {
                             }}
                           />
                         </div>
-
-                        <p className="mt-3 text-xs font-medium text-slate-500">
-                          Variación: {variacionMateria.docentes.toFixed(1)}%
-                        </p>
                       </div>
 
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                        <div className="flex items-center gap-2 text-slate-700">
-                          <GraduationCap size={16} />
-                          <p className="text-sm font-medium">Estudiantes</p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <Users size={16} />
+                            <p className="text-sm font-medium">Estudiantes</p>
+                          </div>
+                          {variacionMateria.estudiantes > 0 ? (
+                            <p className="flex gap-2 items-center text-xs font-medium text-green-700">
+                              <TrendingUp size={16} />
+                              Variación: {variacionMateria.estudiantes.toFixed(1)}%
+                            </p>
+                          ) : (
+                            <p className="flex gap-2 items-center text-xs font-medium text-red-700">
+                              <TrendingDown size={16} />
+                              Variación: {variacionMateria.estudiantes.toFixed(1)}%
+                            </p>
+                          )}
                         </div>
 
                         <p className="mt-3 text-2xl font-bold text-slate-900">
@@ -490,18 +555,27 @@ function SeccionesClasesDashboard() {
                             }}
                           />
                         </div>
-
-                        <p className="mt-3 text-xs font-medium text-slate-500">
-                          Variación: {variacionMateria.estudiantes.toFixed(1)}%
-                        </p>
                       </div>
 
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                        <div className="flex items-center gap-2 text-slate-700">
-                          <CheckCircle2 size={16} />
-                          <p className="text-sm font-medium">
-                            Clases efectivas
-                          </p>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2 text-slate-700">
+                            <Users size={16} />
+                            <p className="text-sm font-medium">
+                              Clases efectivas
+                            </p>
+                          </div>
+                          {variacionMateria.clases > 0 ? (
+                            <p className="flex gap-2 items-center text-xs font-medium text-green-700">
+                              <TrendingUp size={16} />
+                              Variación: {variacionMateria.clases.toFixed(1)}%
+                            </p>
+                          ) : (
+                            <p className="flex gap-2 items-center text-xs font-medium text-red-700">
+                              <TrendingDown size={16} />
+                              Variación: {variacionMateria.clases.toFixed(1)}%
+                            </p>
+                          )}
                         </div>
 
                         <p className="mt-3 text-2xl font-bold text-slate-900">
@@ -522,10 +596,6 @@ function SeccionesClasesDashboard() {
                             }}
                           />
                         </div>
-
-                        <p className="mt-3 text-xs font-medium text-slate-500">
-                          Variación: {variacionMateria.clases.toFixed(1)}%
-                        </p>
                       </div>
                     </div>
                   </div>
