@@ -317,14 +317,16 @@ function SeccionesClasesDashboard() {
                         <span className="text-gray-500 text-xl">{materia.docentesAccesos.valor.toLocaleString("en-US")}</span> /{" "}
                         {materia.docentesAccesos.total.toLocaleString("en-US")}
                       </p>
-
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-indigo-600"
-                          style={{
-                            width: `${Math.min(porcentajeDocentes, 100)}%`,
-                          }}
-                        />
+                      <div className="flex items-center justify-center mt-4 gap-2">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-indigo-600"
+                            style={{
+                              width: `${Math.min(porcentajeDocentes, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-sm">{Math.round(Math.min(porcentajeDocentes, 100))}%</p>
                       </div>
                     </div>
 
@@ -339,13 +341,16 @@ function SeccionesClasesDashboard() {
                         {materia.estudiantesAccesos.total.toLocaleString("en-US")}
                       </p>
 
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-emerald-600"
-                          style={{
-                            width: `${Math.min(porcentajeEstudiantes, 100)}%`,
-                          }}
-                        />
+                      <div className="flex items-center justify-center mt-4 gap-2">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-indigo-600"
+                            style={{
+                              width: `${Math.min(porcentajeEstudiantes, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-sm">{Math.round(Math.min(porcentajeEstudiantes, 100))}%</p>
                       </div>
                     </div>
 
@@ -360,13 +365,16 @@ function SeccionesClasesDashboard() {
                         {materia.clasesEfectivas.total.toLocaleString("en-US")}
                       </p>
 
-                      <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-2.5 rounded-full bg-violet-600"
-                          style={{
-                            width: `${Math.min(porcentajeClases, 100)}%`,
-                          }}
-                        />
+                      <div className="flex items-center justify-center mt-4 gap-2">
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-2.5 rounded-full bg-indigo-600"
+                            style={{
+                              width: `${Math.min(porcentajeClases, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-gray-500 text-sm">{Math.round(Math.min(porcentajeClases, 100))}%</p>
                       </div>
                     </div>
                   </div>
