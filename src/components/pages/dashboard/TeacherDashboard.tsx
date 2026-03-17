@@ -179,6 +179,7 @@ function TeacherDashboard({
 
   return (
     <div>
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-2">
         <h1 className="text-indigo-700 text-3xl font-semibold">
           Accesos de docentes
