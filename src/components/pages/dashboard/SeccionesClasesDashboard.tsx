@@ -33,12 +33,12 @@ const GRUPOS_DATA: Grupo[] = [
       {
         nombre: "Matemática",
         docentesAccesos: {
-          valor: 1175,
-          total: 1481,
+          valor: 1161,
+          total: 1486,
         },
         estudiantesAccesos: {
-          valor: 72491,
-          total: 75628,
+          valor: 50899,
+          total: 76032,
         },
         clasesEfectivas: {
           valor: 1783,
@@ -48,12 +48,12 @@ const GRUPOS_DATA: Grupo[] = [
       {
         nombre: "Lenguaje",
         docentesAccesos: {
-          valor: 1172,
-          total: 1459,
+          valor: 1160,
+          total: 1462,
         },
         estudiantesAccesos: {
-          valor: 72568,
-          total: 75647,
+          valor: 49820,
+          total: 76553,
         },
         clasesEfectivas: {
           valor: 502,
@@ -68,12 +68,12 @@ const GRUPOS_DATA: Grupo[] = [
       {
         nombre: "Matemática",
         docentesAccesos: {
-          valor: 804,
-          total: 1176,
+          valor: 796,
+          total: 1184,
         },
         estudiantesAccesos: {
-          valor: 57364,
-          total: 61330,
+          valor: 35910,
+          total: 61581,
         },
         clasesEfectivas: {
           valor: 1183,
@@ -83,12 +83,12 @@ const GRUPOS_DATA: Grupo[] = [
       {
         nombre: "Lenguaje",
         docentesAccesos: {
-          valor: 817,
-          total: 1170,
+          valor: 803,
+          total: 1178,
         },
         estudiantesAccesos: {
-          valor: 57563,
-          total: 61339,
+          valor: 35542,
+          total: 61652,
         },
         clasesEfectivas: {
           valor: 214,

@@ -43,6 +43,19 @@ function normalizeCategory(category?: string) {
     .trim();
 }
 
+function formatDateOnly(date: string | Date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isDateInRange(date: string, start: string, end: string) {
+  const current = formatDateOnly(date);
+  return current >= start && current <= end;
+}
+
 function TeacherDashboard({
   startDate,
   endDate,
@@ -76,8 +89,14 @@ function TeacherDashboard({
     );
   }, [data, activeCategory]);
 
+  const reportsInRange = useMemo<DashboardReportApi[]>(() => {
+    return sourceReports.filter((report) =>
+      isDateInRange(report.dateReported, startDate, endDate)
+    );
+  }, [sourceReports, startDate, endDate]);
+
   const docentesSeriesData = useMemo<DashboardRecord[]>(() => {
-    const ordered = sourceReports
+    const ordered = reportsInRange
       .slice()
       .sort(
         (a, b) =>
@@ -89,27 +108,27 @@ function TeacherDashboard({
       (report.json.clases.docentes ?? []).map((row) => ({
         ...row,
         type: "Docentes",
-        dateReported: report.dateReported,
+        dateReported: formatDateOnly(report.dateReported),
       }))
     );
-  }, [sourceReports]);
+  }, [reportsInRange]);
 
   const docentesLastDayData = useMemo<DashboardRecord[]>(() => {
-    if (!sourceReports.length) return [];
+    if (!reportsInRange.length) return [];
 
-    const latest = sourceReports.reduce((acc, r) => {
-      return new Date(r.dateReported).getTime() >
-        new Date(acc.dateReported).getTime()
-        ? r
+    const latest = reportsInRange.reduce((acc, current) => {
+      return formatDateOnly(current.dateReported) >
+        formatDateOnly(acc.dateReported)
+        ? current
         : acc;
-    }, sourceReports[0]);
+    }, reportsInRange[0]);
 
     return (latest.json.clases.docentes ?? []).map((row) => ({
       ...row,
       type: "Docentes",
-      dateReported: latest.dateReported,
+      dateReported: formatDateOnly(latest.dateReported),
     }));
-  }, [sourceReports]);
+  }, [reportsInRange]);
 
   const { totalInfo, calculateTotals } = useDashboard(
     docentesLastDayData,
@@ -146,6 +165,14 @@ function TeacherDashboard({
     return (
       <p className="text-xs text-slate-600 text-center p-3">
         No hay datos para la categoría seleccionada.
+      </p>
+    );
+  }
+
+  if (!reportsInRange.length) {
+    return (
+      <p className="text-xs text-slate-600 text-center p-3">
+        No hay datos para el rango de fechas seleccionado.
       </p>
     );
   }
