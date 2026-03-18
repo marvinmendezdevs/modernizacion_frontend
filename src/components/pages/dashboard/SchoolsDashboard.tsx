@@ -19,22 +19,40 @@ function SchoolsDashboard() {
 
   const grupo1 = schools?.filter((items) => items.block === "1");
   const grupo2 = schools?.filter((items) => items.block === "2");
-  const totalSchools = schools?.filter((items) => items.block !== "Sin grupo" && items.block !== "3")
+  const totalSchools =
+    schools?.filter(
+      (items) => items.block !== "Sin grupo" && items.block !== "3"
+    ) ?? [];
 
   const schoolFiltered = (school: SchoolInfo, searchTerm: string) => {
     const term = cleanSearchTerm(searchTerm.trim());
-    const matchesText = !term || school.code.includes(searchTerm) || cleanSearchTerm(school.name).includes(term) || school.block.includes(searchTerm);
-    const matchesGroup = !groupSelected || school.block === groupSelected;
+
+    const code = String(school.code ?? "").trim();
+    const name = cleanSearchTerm(String(school.name ?? "").trim());
+    const block = String(school.block ?? "").trim();
+
+    const matchesText =
+      !term ||
+      code.includes(searchTerm.trim()) ||
+      name.includes(term) ||
+      block.includes(searchTerm.trim());
+
+    const matchesGroup = !groupSelected || block === groupSelected;
 
     return matchesText && matchesGroup;
   };
 
-  const { handleSetSearchTerm, totalPage, itemsPage: schoolsPage, setPage, page } =
-    usePagination<SchoolInfo>({
-      data: totalSchools ?? [],
-      perPage: 5,
-      fn: schoolFiltered,
-    });
+  const {
+    handleSetSearchTerm,
+    totalPage,
+    itemsPage: schoolsPage,
+    setPage,
+    page,
+  } = usePagination<SchoolInfo>({
+    data: totalSchools,
+    perPage: 5,
+    fn: schoolFiltered,
+  });
 
   if (isLoading) {
     return (
@@ -48,7 +66,7 @@ function SchoolsDashboard() {
   if (isError || !schools) {
     return (
       <p className="text-xs text-red-600 text-center p-3">
-        ¡Error inespertado! contacte con soporte.
+        ¡Error inesperado! contacte con soporte.
       </p>
     );
   }
@@ -56,9 +74,24 @@ function SchoolsDashboard() {
   return (
     <div>
       <div className="grid grid-cols-1 mt-5 md:grid-cols-3 gap-6">
-        <StatCard title="Total de Centros Educativos" value={Number(totalSchools?.length)} icon={School} color="emerald"/>
-        <StatCard title="Grupo 1" value={Number(grupo1?.length)} icon={School} color="blue" />
-        <StatCard title="Grupo 2" value={Number(grupo2?.length)} icon={School} color="blue" />
+        <StatCard
+          title="Total de Centros Educativos"
+          value={totalSchools.length}
+          icon={School}
+          color="emerald"
+        />
+        <StatCard
+          title="Grupo 1"
+          value={Number(grupo1?.length ?? 0)}
+          icon={School}
+          color="blue"
+        />
+        <StatCard
+          title="Grupo 2"
+          value={Number(grupo2?.length ?? 0)}
+          icon={School}
+          color="blue"
+        />
       </div>
 
       <div className="bg-white mt-5 p-3 rounded-lg">
@@ -114,11 +147,15 @@ function SchoolsDashboard() {
               {schoolsPage.length > 0 ? (
                 schoolsPage.map((ce) => (
                   <tr key={ce.code} className="hover:bg-indigo-50/30 transition-colors">
-                    <td className="p-3 text-sm font-mono text-indigo-600">{ce.code}</td>
-                    <td className="p-3 text-sm text-slate-700">{ce.name}</td>
+                    <td className="p-3 text-sm font-mono text-indigo-600">
+                      {ce.code ?? "-"}
+                    </td>
+                    <td className="p-3 text-sm text-slate-700">
+                      {ce.name ?? "Sin nombre"}
+                    </td>
                     <td className="p-3 text-sm text-center">
                       <span className="text-indigo-700 px-2 py-1 rounded-full font-bold">
-                        {ce.block}
+                        {ce.block ?? "-"}
                       </span>
                     </td>
                   </tr>
@@ -133,6 +170,7 @@ function SchoolsDashboard() {
             </tbody>
           </table>
         </div>
+
         <Pagination setPage={setPage} totalPage={totalPage} page={page} />
       </div>
     </div>
