@@ -102,6 +102,11 @@ function SeccionesClasesDashboard() {
     );
   }, [cumulative]);
 
+  const lastReportDate = useMemo(() => {
+    if (orderedRecords.length === 0) return "Sin registros";
+    return formatFullDate(orderedRecords[0].dateReported);
+  }, [orderedRecords]);
+
   const sourceRecord = useMemo<MetricsRecord | null>(() => {
     if (orderedRecords.length === 0) return null;
 
@@ -327,19 +332,23 @@ function SeccionesClasesDashboard() {
   return (
     <div className="min-h-screen p-4 md:p-6">
       <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8 my-5">
-        <div className="mb-3">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-3xl">
-            Secciones (clases)
-          </h1>
+        <div className="mb-3 flex gap-2 justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-3xl">
+              Secciones (clases)
+            </h1>
 
-          <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-            Accesos de docentes y estudiantes, clases efectivas y variación por
-            materia.
-          </p>
+            <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
+              Accesos de docentes y estudiantes, clases efectivas y variación por
+              materia.
+            </p>
+          </div>
 
-          <p className="mt-2 text-sm text-slate-400">
-            Fecha del reporte: {formatFullDate(selectedDate)}
-          </p>
+          <div className="flex mt-3">
+            <p className="text-xs bg-green-600 p-1 rounded-lg text-green-900">
+              <span className="font-semibold">Reciente:</span> <span className="text-white font-light">{lastReportDate}</span>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -503,13 +512,18 @@ function SeccionesClasesDashboard() {
                           /{" "}
                           {materia.docentesAccesos.total.toLocaleString("en-US")}
                         </p>
-                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-2.5 rounded-full bg-indigo-600"
-                            style={{
-                              width: `${Math.min(porcentajeDocentes, 100)}%`,
-                            }}
-                          />
+                        <div className="flex items-center justify-center mt-4 gap-2">
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className="h-2.5 rounded-full bg-indigo-600"
+                              style={{
+                                width: `${Math.min(porcentajeDocentes, 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="text-gray-500 text-sm font-semibold">
+                            {Math.round(Math.min(porcentajeDocentes, 100))}%
+                          </p>
                         </div>
                       </div>
 
@@ -544,16 +558,21 @@ function SeccionesClasesDashboard() {
                           )}
                         </p>
 
-                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-2.5 rounded-full bg-emerald-600"
-                            style={{
-                              width: `${Math.min(
-                                porcentajeEstudiantes,
-                                100
-                              )}%`,
-                            }}
-                          />
+                        <div className="flex items-center justify-center mt-4 gap-2">
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className="h-2.5 rounded-full bg-indigo-600"
+                              style={{
+                                width: `${Math.min(
+                                  porcentajeEstudiantes,
+                                  100
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="text-gray-500 text-sm font-semibold">
+                            {Math.round(Math.min(porcentajeEstudiantes, 100))}%
+                          </p>
                         </div>
                       </div>
 
@@ -588,13 +607,18 @@ function SeccionesClasesDashboard() {
                           {materia.clasesEfectivas.total.toLocaleString("en-US")}
                         </p>
 
-                        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-2.5 rounded-full bg-violet-600"
-                            style={{
-                              width: `${Math.min(porcentajeClases, 100)}%`,
-                            }}
-                          />
+                        <div className="flex items-center justify-center mt-4 gap-2">
+                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className="h-2.5 rounded-full bg-green-700"
+                              style={{
+                                width: `${Math.min(porcentajeClases, 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="text-gray-500 text-sm font-semibold">
+                            {Math.round(Math.min(porcentajeClases, 100))}%
+                          </p>
                         </div>
                       </div>
                     </div>
