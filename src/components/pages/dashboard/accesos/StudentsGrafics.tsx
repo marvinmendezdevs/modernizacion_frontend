@@ -71,8 +71,8 @@ function StudentsGrafics({ onTimeInfo, activeGroup }: StudentsGraficsProps) {
   const cards = activeGroup === 1 ? group1Cards : group2Cards;
   const title =
     activeGroup === 1
-      ? "Grupo 1 - Acumulado por día"
-      : "Grupo 2 - Acumulado por día";
+      ? "Grupo 1"
+      : "Grupo 2";
 
   return (
     <div className="border-b border-gray-200 pb-8">

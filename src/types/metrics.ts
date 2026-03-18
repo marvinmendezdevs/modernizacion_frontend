@@ -1,8 +1,12 @@
-import type { dataMetrics, metricsResponseSchema } from "@/schemas/metrics";
-import type { metrics } from "@/services/metrisc.services";
 import type z from "zod";
+import {
+  dataMetrics,
+  metrics,
+  metricsInfo,
+  metricsResponseSchema,
+} from "@/schemas/metrics";
 
-export type metricsInfo = z.infer<typeof metrics>
-export type metricData = z.infer<typeof dataMetrics>
-export type metricsUpdate = z.infer<typeof metricsResponseSchema>
-
+export type MetricsInfo = z.infer<typeof metricsInfo>;
+export type Metrics = z.infer<typeof metrics>;
+export type MetricData = z.infer<typeof dataMetrics>;
+export type MetricsUpdate = z.infer<typeof metricsResponseSchema>;

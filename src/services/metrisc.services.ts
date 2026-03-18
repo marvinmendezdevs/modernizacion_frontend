@@ -1,5 +1,5 @@
 import { api } from "@/config/axios.config";
-import type { metricData } from "@/types/metrics";
+import type { MetricData } from "@/types/metrics";
 
 
 export const metrics = async (startDate: string, endDate: string) => {
@@ -18,7 +18,7 @@ export const updateMetrics = async() => {
     return data;
 }
 
-export const metricsUpload = async (payload: metricData) => {
+export const metricsUpload = async (payload: MetricData) => {
         const { data } = await api.post("/metrics/update", payload);
     return data;
 }

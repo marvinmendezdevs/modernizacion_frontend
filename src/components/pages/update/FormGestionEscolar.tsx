@@ -1,5 +1,5 @@
 import { metricsUpload } from "@/services/metrisc.services";
-import type { metricData } from "@/types/metrics";
+import type { MetricData } from "@/types/metrics";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -117,17 +117,18 @@ function FormGestionEscolar() {
     return () => window.clearInterval(interval);
   }, [setValue]);
 
-  const mutation = useMutation<ResponseType, Error, metricData>({
+  const mutation = useMutation({
     mutationKey: ["metrics-gestion-escolar"],
     mutationFn: metricsUpload,
-    onSuccess: async (res) => {
-      if (res) {
-        setSuccessMsg("Datos actualizados correctamente.");
-        setErrorMsg(null);
-        queryClient.invalidateQueries({ queryKey: ["gestion-escolar-update"] });
-      }
+    onSuccess: async () => {
+      setSuccessMsg("Datos actualizados correctamente.");
+      setErrorMsg(null);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["gestion-escolar-update"],
+      });
     },
-    onError: (err) => {
+    onError: (err: Error) => {
       setSuccessMsg(null);
       setErrorMsg(err.message || "Ocurrió un error");
     },
@@ -142,11 +143,11 @@ function FormGestionEscolar() {
     ].join(":");
 
     const [year, month, day] = values.dateReported.split("-").map(Number);
-    const [hours, minutes, seconds = "00"] = currentTime.split(":").map(Number);
+    const [hours, minutes, seconds = 0] = currentTime.split(":").map(Number);
 
-    const payload: metricData = {
+    const payload: MetricData = {
       dateReported: new Date(
-        Date.UTC(year, month - 1, day, hours, minutes, Number(seconds), 0)
+        Date.UTC(year, month - 1, day, hours, minutes, seconds, 0)
       ),
       type: values.type.trim(),
       category: values.category.trim(),

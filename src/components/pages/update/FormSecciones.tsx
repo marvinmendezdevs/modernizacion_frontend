@@ -1,5 +1,5 @@
 import { metricsUpload } from "@/services/metrisc.services";
-import type { metricData } from "@/types/metrics";
+import type { MetricData } from "@/types/metrics";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -96,7 +96,7 @@ function FormSecciones() {
     return () => window.clearInterval(interval);
   }, [setValue]);
 
-  const mutation = useMutation<ResponseType, Error, metricData>({
+  const mutation = useMutation<ResponseType, Error, MetricData>({
     mutationKey: ["metrics-secciones"],
     mutationFn: metricsUpload,
     onSuccess: async (res) => {
@@ -123,7 +123,7 @@ function FormSecciones() {
     const [year, month, day] = values.dateReported.split("-").map(Number);
     const [hours, minutes, seconds = "00"] = currentTime.split(":").map(Number);
 
-    const payload: metricData = {
+    const payload:MetricData = {
       dateReported: new Date(
         Date.UTC(year, month - 1, day, hours, minutes, Number(seconds), 0)
       ),

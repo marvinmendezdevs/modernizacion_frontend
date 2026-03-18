@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { updateMetrics, deleteMetric } from "@/services/metrisc.services";
-import type { metricsUpdate } from "@/types/metrics";
+import type { MetricsInfo, MetricsUpdate } from "@/types/metrics";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import Modal from "./Modal";
@@ -9,7 +9,7 @@ import { formatFullDate } from "@/utils/index.utils";
 function DashboardAccesos() {
   const queryClient = useQueryClient();
 
-  const { isLoading, isError, data } = useQuery<metricsUpdate>({
+  const { isLoading, isError, data } = useQuery<MetricsUpdate>({
     queryKey: ["accesos-update"],
     queryFn: updateMetrics,
     retry: false,
@@ -28,15 +28,15 @@ function DashboardAccesos() {
 
   const perPage = 8;
 
-  const metrics = useMemo(() => data?.metrics ?? [], [data?.metrics]);
+  const metricsList = useMemo<MetricsInfo[]>(() => data?.metrics ?? [], [data]);
 
-  const totalPages = Math.ceil(metrics.length / perPage);
+  const totalPages = Math.ceil(metricsList.length / perPage);
 
-  const paginatedMetrics = useMemo(() => {
+  const paginatedMetrics = useMemo<MetricsInfo[]>(() => {
     const start = (page - 1) * perPage;
     const end = start + perPage;
-    return metrics.slice(start, end);
-  }, [metrics, page]);
+    return metricsList.slice(start, end);
+  }, [metricsList, page]);
 
   const handlePrevPage = () => {
     setPage((prev) => Math.max(prev - 1, 1));
@@ -142,7 +142,7 @@ function DashboardAccesos() {
           </thead>
 
           <tbody className="divide-y divide-gray-300">
-            {metrics.length === 0 ? (
+            {metricsList.length === 0 ? (
               <tr>
                 <td colSpan={4} className="text-center py-6 text-gray-500">
                   No hay datos disponibles
@@ -178,7 +178,7 @@ function DashboardAccesos() {
         </table>
       </div>
 
-      {metrics.length > 0 && (
+      {metricsList.length > 0 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-gray-600">
             Página {page} de {totalPages}

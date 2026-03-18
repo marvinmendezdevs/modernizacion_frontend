@@ -1,5 +1,5 @@
 import { metricsUpload } from "@/services/metrisc.services";
-import type { metricData } from "@/types/metrics";
+import type { MetricData } from "@/types/metrics";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -107,17 +107,18 @@ function FormAccesos() {
     return () => window.clearInterval(interval);
   }, [setValue]);
 
-  const mutation = useMutation<ResponseType, Error, metricData>({
+  const mutation = useMutation({
     mutationKey: ["metrics-data"],
     mutationFn: metricsUpload,
-    onSuccess: async (res) => {
-      if (res) {
-        setSuccessMsg("Datos actualizados correctamente.");
-        setErrorMsg(null);
-        queryClient.invalidateQueries({ queryKey: ["accesos-update"] });
-      }
+    onSuccess: async () => {
+      setSuccessMsg("Datos actualizados correctamente.");
+      setErrorMsg(null);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["accesos-update"],
+      });
     },
-    onError: (err) => {
+    onError: (err: Error) => {
       setSuccessMsg(null);
       setErrorMsg(err.message || "Ocurrió un error");
     },
@@ -125,11 +126,13 @@ function FormAccesos() {
 
   const onSubmit = (values: FormValues) => {
     const [year, month, day] = values.dateReported.split("-").map(Number);
-    const [hours, minutes, seconds = "00"] = values.timeReported.split(":").map(Number);
+    const [hours, minutes, seconds = 0] = values.timeReported
+      .split(":")
+      .map(Number);
 
-    const payload: metricData = {
+    const payload: MetricData = {
       dateReported: new Date(
-        Date.UTC(year, month - 1, day, hours, minutes, Number(seconds), 0)
+        Date.UTC(year, month - 1, day, hours, minutes, seconds, 0)
       ),
       type: values.type.trim(),
       category: values.category.trim(),
@@ -168,7 +171,7 @@ function FormAccesos() {
             />
             {errors.json?.[section]?.[metric]?.[groupIndex]?.total?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json?.[section]?.[metric]?.[groupIndex]?.total?.message}
+                {errors.json[section]?.[metric]?.[groupIndex]?.total?.message}
               </p>
             )}
           </div>
@@ -188,7 +191,7 @@ function FormAccesos() {
             />
             {errors.json?.[section]?.[metric]?.[groupIndex]?.access?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json?.[section]?.[metric]?.[groupIndex]?.access?.message}
+                {errors.json[section]?.[metric]?.[groupIndex]?.access?.message}
               </p>
             )}
           </div>
@@ -208,7 +211,7 @@ function FormAccesos() {
             />
             {errors.json?.[section]?.[metric]?.[groupIndex]?.demo?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json?.[section]?.[metric]?.[groupIndex]?.demo?.message}
+                {errors.json[section]?.[metric]?.[groupIndex]?.demo?.message}
               </p>
             )}
           </div>
@@ -338,16 +341,18 @@ function FormAccesos() {
               <ChevronUp className="transition-transform duration-300 group-open:rotate-180" />
             </summary>
 
-            {(Object.keys(metricTitles) as MetricKey[]).map((metricKey) => (
-              <div key={metricKey} className="space-y-3">
-                <h3 className="text-md font-semibold text-gray-800">
-                  {metricTitles[metricKey]}
-                </h3>
+            <div className="mt-4 space-y-4">
+              {(Object.keys(metricTitles) as MetricKey[]).map((metricKey) => (
+                <div key={metricKey} className="space-y-3">
+                  <h3 className="text-md font-semibold text-gray-800">
+                    {metricTitles[metricKey]}
+                  </h3>
 
-                {renderMetricFields(sectionKey, metricKey, 0)}
-                {renderMetricFields(sectionKey, metricKey, 1)}
-              </div>
-            ))}
+                  {renderMetricFields(sectionKey, metricKey, 0)}
+                  {renderMetricFields(sectionKey, metricKey, 1)}
+                </div>
+              ))}
+            </div>
           </details>
         ))}
 

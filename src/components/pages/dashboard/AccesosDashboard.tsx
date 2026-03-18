@@ -306,8 +306,17 @@ function AccesosDashboard() {
             </div>
           </div>
         </div>
-        <div className="border-l-4 bg-green-50 p-2 mt-2 text-green-700">
-            <p className="font-semibold text-center">Estás visualizando los accesos {activeCategory}</p>
+        <div className="relative flex items-center py-4">
+          <div className="grow border-t border-gray-200"></div>
+          <span className="shrink-0 mx-4 text-sm text-gray-500 flex items-center gap-2 px-2">
+            {activeCategory === "Diario" ? (
+              <CalendarDays />
+            ):(
+              <Layers />
+            )}
+            Visualizando accesos: <span className="font-semibold text-gray-900 text-[16px]">{activeCategory}</span>
+          </span>
+          <div className="grow border-t border-gray-200"></div>
         </div>
       </div>
 
