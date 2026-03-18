@@ -9,6 +9,7 @@ export const metrics = z.object({
 });
 
 export const dataMetrics = z.object({
+  id: z.int(),
   dateReported: z.date(),
   type: z.string(),
   json: z.json(),

@@ -22,3 +22,8 @@ export const metricsUpload = async (payload: metricData) => {
         const { data } = await api.post("/metrics/update", payload);
     return data;
 }
+
+export async function deleteMetric(id: number) {
+  const { data } = await api.delete(`/metrics/${id}`);
+  return data;
+}
