@@ -94,7 +94,7 @@ function AccesosDashboard() {
   const [startDate, setStartDate] = useState(() => getDaysAgoDate(3));
   const [endDate, setEndDate] = useState(() => getTodayDate());
   const [activeGroup, setActiveGroup] = useState<GroupTab>(1);
-  const [activeCategory, setActiveCategory] = useState<CategoryTab>("Diario");
+  const [activeCategory, setActiveCategory] = useState<CategoryTab>("Acumulado");
   const [activeView, setActiveView] = useState<NavAcces>("clases");
 
   const { data } = useQuery<TeacherInfoResponse>({
@@ -276,7 +276,7 @@ function AccesosDashboard() {
                 Grupo 2
               </button>
             </div>
-            <div className="inline-flex w-auto mx-auto md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
+            <div className="hidden w-auto mx-auto md:mx-0 gap-3 justify-end bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
               <button
                 type="button"
                 onClick={() => setActiveCategory("Diario")}
