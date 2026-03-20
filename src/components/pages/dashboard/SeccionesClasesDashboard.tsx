@@ -490,7 +490,7 @@ function SeccionesClasesDashboard() {
                 {Math.round(Math.min(detailsPorcentajes.presenciaEstudiante, 100))}%
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
-                {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString("en-US")}{" "}
+                {detailsResumen.tasaPresenciaEstudiante.toLocaleString("en-US")}{" "}
                 <span className="">
                   de{" "}
                   {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString(
