@@ -9,7 +9,7 @@ function TutorshipDashboard() {
 
     const getTodayDate = () => new Date().toLocaleDateString('sv-SE');
 
-    const [startDate, setStartDate] = useState(getTodayDate());
+    const [startDate, setStartDate] = useState("2026-02-02");
     const [endDate, setEndDate] = useState(getTodayDate());
     const [activeCategory, setActiveCategory] = useState<CategoryTab>("Presencial");
     

@@ -380,6 +380,33 @@ function SeccionesClasesDashboard() {
     };
   }, [currentData, previousData, grupoActivoResolved]);
 
+  const clasesEfectivasResumen = useMemo(() => {
+    const lenguaje = materiasResumen.find((m) => m.nombre === "Lenguaje");
+    const matematica = materiasResumen.find((m) => m.nombre === "Matemática");
+
+    const valor =
+      (lenguaje?.clasesEfectivas.valor ?? 0) +
+      (matematica?.clasesEfectivas.valor ?? 0);
+
+    const total =
+      (lenguaje?.clasesEfectivas.total ?? 0) +
+      (matematica?.clasesEfectivas.total ?? 0);
+
+    const porcentaje = calcularPorcentaje(valor, total);
+
+    const variacion =
+      ((variaciones.Lenguaje?.clases ?? 0) +
+        (variaciones["Matemática"]?.clases ?? 0)) /
+      2;
+
+    return {
+      valor,
+      total,
+      porcentaje,
+      variacion,
+    };
+  }, [materiasResumen, variaciones]);
+
   if (isLoading) {
     return (
       <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
@@ -463,6 +490,47 @@ function SeccionesClasesDashboard() {
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
+          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 text-slate-700">
+                <BookOpen size={16} />
+                <p className="text-sm font-medium">Clases efectivas</p>
+              </div>
+              {clasesEfectivasResumen.variacion > 0 ? (
+                <p className="flex gap-2 items-center text-xs font-medium text-green-700">
+                  <TrendingUp size={16} />
+                  Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                </p>
+              ) : (
+                <p className="flex gap-2 items-center text-xs font-medium text-red-700">
+                  <TrendingDown size={16} />
+                  Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                </p>
+              )}
+            </div>
+
+            <p className="mt-3 text-2xl font-bold text-slate-900">
+              <span className="text-gray-500 text-xl">
+                {clasesEfectivasResumen.valor.toLocaleString("en-US")}
+              </span>{" "}
+              / {clasesEfectivasResumen.total.toLocaleString("en-US")}
+            </p>
+
+            <div className="flex items-center justify-center mt-4 gap-2">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-2.5 rounded-full bg-green-700"
+                  style={{
+                    width: `${Math.min(clasesEfectivasResumen.porcentaje, 100)}%`,
+                  }}
+                />
+              </div>
+              <p className="text-gray-500 text-sm font-semibold">
+                {Math.round(Math.min(clasesEfectivasResumen.porcentaje, 100))}%
+              </p>
+            </div>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
@@ -473,7 +541,7 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.tasaPresenciaDocente.toLocaleString("en-US")}{" "}
-                <span className="">
+                <span>
                   de{" "}
                   {detailsResumen.tasaPresenciaDocenteTotal.toLocaleString(
                     "en-US"
@@ -491,7 +559,7 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.tasaPresenciaEstudiante.toLocaleString("en-US")}{" "}
-                <span className="">
+                <span>
                   de{" "}
                   {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString(
                     "en-US"
@@ -509,11 +577,9 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.logroAcademico.toLocaleString("en-US")}{" "}
-                <span className="">
+                <span>
                   de{" "}
-                  {detailsResumen.logroAcademicoTotal.toLocaleString(
-                    "en-US"
-                  )}
+                  {detailsResumen.logroAcademicoTotal.toLocaleString("en-US")}
                 </span>
               </p>
             </div>
@@ -527,11 +593,9 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.recursosDigitales.toLocaleString("en-US")}{" "}
-                <span className="">
+                <span>
                   de{" "}
-                  {detailsResumen.recursosDigitalesTotal.toLocaleString(
-                    "en-US"
-                  )}
+                  {detailsResumen.recursosDigitalesTotal.toLocaleString("en-US")}
                 </span>
               </p>
             </div>
@@ -569,13 +633,6 @@ function SeccionesClasesDashboard() {
                       100
                     : 0;
 
-                const porcentajeClases =
-                  materia.clasesEfectivas.total > 0
-                    ? (materia.clasesEfectivas.valor /
-                        materia.clasesEfectivas.total) *
-                      100
-                    : 0;
-
                 const variacionMateria = variaciones[materia.nombre];
 
                 return (
@@ -598,7 +655,7 @@ function SeccionesClasesDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-6 grid gap-3">
+                    <div className="grid gap-3 mt-6">
                       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-2 text-slate-700">
@@ -623,8 +680,7 @@ function SeccionesClasesDashboard() {
                               "en-US"
                             )}
                           </span>{" "}
-                          /{" "}
-                          {materia.docentesAccesos.total.toLocaleString("en-US")}
+                          / {materia.docentesAccesos.total.toLocaleString("en-US")}
                         </p>
                         <div className="flex items-center justify-center mt-4 gap-2">
                           <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
@@ -688,52 +744,6 @@ function SeccionesClasesDashboard() {
                           </div>
                           <p className="text-gray-500 text-sm font-semibold">
                             {Math.round(Math.min(porcentajeEstudiantes, 100))}%
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2 text-slate-700">
-                            <Users size={16} />
-                            <p className="text-sm font-medium">
-                              Clases efectivas
-                            </p>
-                          </div>
-                          {variacionMateria.clases > 0 ? (
-                            <p className="flex gap-2 items-center text-xs font-medium text-green-700">
-                              <TrendingUp size={16} />
-                              Variación: {variacionMateria.clases.toFixed(1)}%
-                            </p>
-                          ) : (
-                            <p className="flex gap-2 items-center text-xs font-medium text-red-700">
-                              <TrendingDown size={16} />
-                              Variación: {variacionMateria.clases.toFixed(1)}%
-                            </p>
-                          )}
-                        </div>
-
-                        <p className="mt-3 text-2xl font-bold text-slate-900">
-                          <span className="text-gray-500 text-xl">
-                            {materia.clasesEfectivas.valor.toLocaleString(
-                              "en-US"
-                            )}
-                          </span>{" "}
-                          /{" "}
-                          {materia.clasesEfectivas.total.toLocaleString("en-US")}
-                        </p>
-
-                        <div className="flex items-center justify-center mt-4 gap-2">
-                          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                            <div
-                              className="h-2.5 rounded-full bg-green-700"
-                              style={{
-                                width: `${Math.min(porcentajeClases, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <p className="text-gray-500 text-sm font-semibold">
-                            {Math.round(Math.min(porcentajeClases, 100))}%
                           </p>
                         </div>
                       </div>
