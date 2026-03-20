@@ -2,7 +2,7 @@ import { getDataPublic } from "@/services/tutorship.services";
 import { useQuery } from "@tanstack/react-query";
 import StatCard from "../StatCard";
 import type { ResponseSectionSchema } from "@/types/intruments.types";
-import { Laptop, ListTodo, School, User } from "lucide-react";
+import { Laptop, ListTodo, School } from "lucide-react";
 import { useMemo } from "react";
 import { usePagination } from "@/hooks/usePagination";
 import type {
@@ -31,13 +31,12 @@ type MyAcc = {
   [key: string]: NewSchoolType;
 };
 
-function GeneralInfo({ startDate, endDate }: { startDate: string; endDate: string }) {
+function TutorshipPresencial({ startDate, endDate }: { startDate: string; endDate: string }) {
   const { isLoading, isError, data } = useQuery<QueryResponse>({
     queryKey: ["general-tutoria", startDate, endDate],
     queryFn: () => getDataPublic(startDate, endDate),
   });
 
-console.log(data)
   const schoolsArray = useMemo<NewSchoolType[]>(() => {
     if (!data) return [];
 
@@ -92,13 +91,7 @@ console.log(data)
 
   return (
     <div>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Docentes únicos"
-          icon={User}
-          color="emerald"
-          value={data.uniqueTeacher.length}
-        />
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
         <StatCard
           title="Diagnósticos realizados"
           icon={ListTodo}
@@ -110,12 +103,6 @@ console.log(data)
           icon={School}
           color="blue"
           value={schoolsArray.length}
-        />
-        <StatCard
-          title="Tutorías virtuales"
-          icon={Laptop}
-          color="blue"
-          value={data.virtualSessions.length}
         />
         <StatCard
           title="Observaciones realizadas"
@@ -220,4 +207,4 @@ console.log(data)
   );
 }
 
-export default GeneralInfo;
+export default TutorshipPresencial;

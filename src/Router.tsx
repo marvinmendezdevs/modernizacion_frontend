@@ -41,11 +41,11 @@ function Router() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<Dahsboard />}>
-          <Route index path="dashboard" element={<SchoolsDashboard />} />
+          <Route index path="dashboard" element={<SeccionesClasesDashboard />} />
+          <Route path="dashboard/centros-educativos" element={<SchoolsDashboard />} />
           <Route path="/dashboard/accesos" element={<AccesosDashboard />} />
           <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
           <Route path="dashboard/gestion-escolar" element={<SchoolManagementDashboard />} />
-          <Route path="dashboard/secciones" element={<SeccionesClasesDashboard />} />
 
         </Route>
         <Route element={<ProtectedRoute />}>

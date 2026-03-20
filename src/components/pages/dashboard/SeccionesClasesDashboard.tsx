@@ -9,6 +9,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import GraficsSecciones from "./secciones/GraficsSecciones";
 
 type MateriaNombre = "Matemática" | "Lenguaje";
 
@@ -34,8 +35,39 @@ type ClaseItem = {
   accesosEstudiantes: number;
 };
 
+type IndicadoresItem = {
+  grupo: number;
+  clasesTotales: number;
+  totalDocentes: number;
+  accesosDocentes: number;
+  clasesEfectivas: number;
+  totalEstudiantes: number;
+  accesosEstudiantes: number;
+};
+
+type DetailItem = {
+  grupo: number;
+  tasaPresenciaDocente: number;
+  tasaPresenciaDocenteTotal: number;
+  tasaPresenciaEstudiante: number;
+  tasaPresenciaEstudianteTotal: number;
+  logroAcademico: number;
+  logroAcademicoTotal: number;
+  recursosDigitales: number;
+  recursosDigitalesTotal: number;
+};
+
+type GradoItem = {
+  grado: number;
+  clasesTotales: number;
+  clasesEfectivas: number;
+};
+
 type SeccionesJson = {
   clases?: {
+    grados?: GradoItem[];
+    Indicadores?: IndicadoresItem[];
+    details?: DetailItem[];
     Lenguaje?: ClaseItem[];
     Matematica?: ClaseItem[];
   };
@@ -59,6 +91,9 @@ type ApiResponse = {
 const EMPTY_CLASES = {
   Lenguaje: [] as ClaseItem[],
   Matematica: [] as ClaseItem[],
+  Indicadores: [] as IndicadoresItem[],
+  details: [] as DetailItem[],
+  grados: [] as GradoItem[],
 };
 
 function getTodayDate() {
@@ -78,6 +113,11 @@ function normalizeDate(date?: string | null) {
 function calcularVariacionPorcentual(anterior: number, actual: number) {
   if (anterior === 0) return 0;
   return ((actual - anterior) / anterior) * 100;
+}
+
+function calcularPorcentaje(valor: number, total: number) {
+  if (total === 0) return 0;
+  return (valor / total) * 100;
 }
 
 function SeccionesClasesDashboard() {
@@ -134,6 +174,9 @@ function SeccionesClasesDashboard() {
 
     return {
       clases: {
+        grados: source?.clases?.grados ?? EMPTY_CLASES.grados,
+        Indicadores: source?.clases?.Indicadores ?? EMPTY_CLASES.Indicadores,
+        details: source?.clases?.details ?? EMPTY_CLASES.details,
         Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
         Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
       },
@@ -147,6 +190,9 @@ function SeccionesClasesDashboard() {
 
     return {
       clases: {
+        grados: source?.clases?.grados ?? EMPTY_CLASES.grados,
+        Indicadores: source?.clases?.Indicadores ?? EMPTY_CLASES.Indicadores,
+        details: source?.clases?.details ?? EMPTY_CLASES.details,
         Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
         Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
       },
@@ -158,7 +204,9 @@ function SeccionesClasesDashboard() {
   const hasData = useMemo(() => {
     return (
       currentData.clases.Lenguaje.length > 0 ||
-      currentData.clases.Matematica.length > 0
+      currentData.clases.Matematica.length > 0 ||
+      currentData.clases.Indicadores.length > 0 ||
+      currentData.clases.details.length > 0
     );
   }, [currentData]);
 
@@ -167,6 +215,8 @@ function SeccionesClasesDashboard() {
 
     currentData.clases.Lenguaje.forEach((item) => grupos.add(item.grupo));
     currentData.clases.Matematica.forEach((item) => grupos.add(item.grupo));
+    currentData.clases.Indicadores.forEach((item) => grupos.add(item.grupo));
+    currentData.clases.details.forEach((item) => grupos.add(item.grupo));
 
     return Array.from(grupos)
       .sort((a, b) => a - b)
@@ -174,7 +224,7 @@ function SeccionesClasesDashboard() {
   }, [currentData]);
 
   const grupoActivoResolved = useMemo(() => {
-    if (!hasData) return "Grupo 1";
+    if (!hasData && gruposDisponibles.length === 0) return "Grupo 1";
     if (gruposDisponibles.includes(grupoActivo)) return grupoActivo;
     return gruposDisponibles[0] ?? "Grupo 1";
   }, [hasData, gruposDisponibles, grupoActivo]);
@@ -241,27 +291,45 @@ function SeccionesClasesDashboard() {
     ];
   }, [hasData, grupoActivoResolved, currentData]);
 
-  const resumenGeneral = useMemo(() => {
-    const totalDocentesAccesos = materiasResumen.reduce(
-      (acc, item) => acc + item.docentesAccesos.valor,
-      0
-    );
-    const totalEstudiantesAccesos = materiasResumen.reduce(
-      (acc, item) => acc + item.estudiantesAccesos.valor,
-      0
-    );
-    const totalClasesEfectivas = materiasResumen.reduce(
-      (acc, item) => acc + item.clasesEfectivas.valor,
-      0
+  const detailsResumen = useMemo(() => {
+    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
+
+    const detail = currentData.clases.details.find(
+      (item) => item.grupo === grupoNumero
     );
 
     return {
-      totalDocentesAccesos,
-      totalEstudiantesAccesos,
-      totalClasesEfectivas,
-      materias: materiasResumen.length,
+      tasaPresenciaDocente: detail?.tasaPresenciaDocente ?? 0,
+      tasaPresenciaDocenteTotal: detail?.tasaPresenciaDocenteTotal ?? 0,
+      tasaPresenciaEstudiante: detail?.tasaPresenciaEstudiante ?? 0,
+      tasaPresenciaEstudianteTotal: detail?.tasaPresenciaEstudianteTotal ?? 0,
+      logroAcademico: detail?.logroAcademico ?? 0,
+      logroAcademicoTotal: detail?.logroAcademicoTotal ?? 0,
+      recursosDigitales: detail?.recursosDigitales ?? 0,
+      recursosDigitalesTotal: detail?.recursosDigitalesTotal ?? 0,
     };
-  }, [materiasResumen]);
+  }, [currentData, grupoActivoResolved]);
+
+  const detailsPorcentajes = useMemo(() => {
+    return {
+      presenciaDocente: calcularPorcentaje(
+        detailsResumen.tasaPresenciaDocente,
+        detailsResumen.tasaPresenciaDocenteTotal
+      ),
+      presenciaEstudiante: calcularPorcentaje(
+        detailsResumen.tasaPresenciaEstudiante,
+        detailsResumen.tasaPresenciaEstudianteTotal
+      ),
+      logroAcademico: calcularPorcentaje(
+        detailsResumen.logroAcademico,
+        detailsResumen.logroAcademicoTotal
+      ),
+      recursosDigitales: calcularPorcentaje(
+        detailsResumen.recursosDigitales,
+        detailsResumen.recursosDigitalesTotal
+      ),
+    };
+  }, [detailsResumen]);
 
   const variaciones = useMemo(() => {
     const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
@@ -346,7 +414,8 @@ function SeccionesClasesDashboard() {
 
           <div className="flex mt-3">
             <p className="text-xs bg-green-600 p-1 rounded-lg text-green-900">
-              <span className="font-semibold">Reciente:</span> <span className="text-white font-light">{lastReportDate}</span>
+              <span className="font-semibold">Reciente:</span>{" "}
+              <span className="text-white font-light">{lastReportDate}</span>
             </p>
           </div>
         </div>
@@ -373,7 +442,7 @@ function SeccionesClasesDashboard() {
             value={grupoActivoResolved}
             onChange={(e) => setGrupoActivo(e.target.value)}
             className="w-full bg-transparent text-xs font-medium text-slate-700 outline-none"
-            disabled={!hasData}
+            disabled={!hasData && gruposDisponibles.length === 0}
           >
             {gruposDisponibles.length > 0 ? (
               gruposDisponibles.map((grupo) => (
@@ -394,31 +463,76 @@ function SeccionesClasesDashboard() {
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
-                Accesos docentes
+                Tasa de presencia de docentes
               </p>
-              <p className="mt-3 text-3xl font-bold text-slate-900">
-                {resumenGeneral.totalDocentesAccesos.toLocaleString("en-US")}
+              <p className="mt-2 font-bold text-indigo-600 text-5xl">
+                {Math.round(Math.min(detailsPorcentajes.presenciaDocente, 100))}%
+              </p>
+              <p className="mt-3 text-lg text-gray-500 font-semibold">
+                {detailsResumen.tasaPresenciaDocente.toLocaleString("en-US")}{" "}
+                <span className="">
+                  de{" "}
+                  {detailsResumen.tasaPresenciaDocenteTotal.toLocaleString(
+                    "en-US"
+                  )}
+                </span>
               </p>
             </div>
 
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
-                Accesos estudiantes
+                Tasa de presencia de estudiantes
               </p>
-              <p className="mt-3 text-3xl font-bold text-slate-900">
-                {resumenGeneral.totalEstudiantesAccesos.toLocaleString("en-US")}
+              <p className="mt-2 font-bold text-indigo-600 text-5xl">
+                {Math.round(Math.min(detailsPorcentajes.presenciaEstudiante, 100))}%
+              </p>
+              <p className="mt-3 text-lg text-gray-500 font-semibold">
+                {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString("en-US")}{" "}
+                <span className="">
+                  de{" "}
+                  {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString(
+                    "en-US"
+                  )}
+                </span>
               </p>
             </div>
 
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
-                Clases efectivas
+                Nivel de logro académico
               </p>
-              <p className="mt-3 text-3xl font-bold text-slate-900">
-                {resumenGeneral.totalClasesEfectivas.toLocaleString("en-US")}
+              <p className="mt-2 font-bold text-green-700 text-5xl">
+                {Math.round(Math.min(detailsPorcentajes.logroAcademico, 100))}%
+              </p>
+              <p className="mt-3 text-lg text-gray-500 font-semibold">
+                {detailsResumen.logroAcademico.toLocaleString("en-US")}{" "}
+                <span className="">
+                  de{" "}
+                  {detailsResumen.logroAcademicoTotal.toLocaleString(
+                    "en-US"
+                  )}
+                </span>
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-500">
+                Uso de recursos digitales
+              </p>
+              <p className="mt-2 font-bold text-green-700 text-5xl">
+                {Math.round(Math.min(detailsPorcentajes.recursosDigitales, 100))}%
+              </p>
+              <p className="mt-3 text-lg text-gray-500 font-semibold">
+                {detailsResumen.recursosDigitales.toLocaleString("en-US")}{" "}
+                <span className="">
+                  de{" "}
+                  {detailsResumen.recursosDigitalesTotal.toLocaleString(
+                    "en-US"
+                  )}
+                </span>
               </p>
             </div>
           </div>
@@ -536,12 +650,14 @@ function SeccionesClasesDashboard() {
                           {variacionMateria.estudiantes > 0 ? (
                             <p className="flex gap-2 items-center text-xs font-medium text-green-700">
                               <TrendingUp size={16} />
-                              Variación: {variacionMateria.estudiantes.toFixed(1)}%
+                              Variación:{" "}
+                              {variacionMateria.estudiantes.toFixed(1)}%
                             </p>
                           ) : (
                             <p className="flex gap-2 items-center text-xs font-medium text-red-700">
                               <TrendingDown size={16} />
-                              Variación: {variacionMateria.estudiantes.toFixed(1)}%
+                              Variación:{" "}
+                              {variacionMateria.estudiantes.toFixed(1)}%
                             </p>
                           )}
                         </div>
@@ -626,6 +742,10 @@ function SeccionesClasesDashboard() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="mt-5 hidden">
+            <GraficsSecciones grados={currentData.clases.grados} />
           </div>
         </div>
       )}

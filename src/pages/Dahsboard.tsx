@@ -49,7 +49,6 @@ function Dahsboard() {
           <X />
         </button>
       </div>
-
         <Link
           className={`${
             pathname === "/dashboard"
@@ -58,18 +57,17 @@ function Dahsboard() {
           } p-2 rounded-lg font-semibold`}
           to={"/dashboard"}
         >
-          Centros Educativos
+          Secciones(clases)
         </Link>
-
         <Link
           className={`${
-            pathname === "/dashboard/accesos"
+            pathname === "/dashboard/centros-educativos"
               ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
               : ""
           } p-2 rounded-lg font-semibold`}
-          to={"/dashboard/accesos"}
+          to={"/dashboard/centros-educativos"}
         >
-          Accesos
+          Centros Educativos
         </Link>
 
         <Link
@@ -93,15 +91,16 @@ function Dahsboard() {
         >
           Gestión escolar
         </Link>
-                <Link
+
+        <Link
           className={`${
-            pathname === "/dashboard/secciones"
+            pathname === "/dashboard/accesos"
               ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
               : ""
           } p-2 rounded-lg font-semibold`}
-          to={"/dashboard/secciones"}
+          to={"/dashboard/accesos"}
         >
-          Secciones(clases)
+          Accesos
         </Link>
       </aside>
 

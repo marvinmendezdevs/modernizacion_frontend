@@ -219,8 +219,8 @@ function AccesosDashboard() {
         )}
       </div>
 
-      <div className="sticky top-0 z-10 backdrop-blur bg-white/90 border-b border-slate-200 rounded-md mb-5">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 rounded-md shadow-sm">
+      <div className="sticky top-0 z-10 rounded-md mb-5 bg-white">
+        <div className="flex flex-col md:flex-row items-start md:items-center bg-white justify-between gap-3 p-4 rounded-md">
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <div className="w-full md:w-auto">
               <p className="text-gray-600 text-sm mb-1">Desde</p>
