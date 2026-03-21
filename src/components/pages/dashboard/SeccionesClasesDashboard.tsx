@@ -490,43 +490,33 @@ function SeccionesClasesDashboard() {
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
-          <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 text-slate-700">
-                <BookOpen size={16} />
-                <p className="text-sm font-medium">Clases efectivas</p>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <BookOpen size={16} />
+                  <p className="text-sm font-medium">Clases efectivas</p>
+                </div>
+                {clasesEfectivasResumen.variacion > 0 ? (
+                  <p className="flex gap-2 items-center text-xs font-medium text-green-700">
+                    <TrendingUp size={16} />
+                    Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                  </p>
+                ) : (
+                  <p className="flex gap-2 items-center text-xs font-medium text-red-700">
+                    <TrendingDown size={16} />
+                    Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                  </p>
+                )}
               </div>
-              {clasesEfectivasResumen.variacion > 0 ? (
-                <p className="flex gap-2 items-center text-xs font-medium text-green-700">
-                  <TrendingUp size={16} />
-                  Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
-                </p>
-              ) : (
-                <p className="flex gap-2 items-center text-xs font-medium text-red-700">
-                  <TrendingDown size={16} />
-                  Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
-                </p>
-              )}
-            </div>
-
-            <p className="mt-3 text-2xl font-bold text-slate-900">
-              <span className="text-gray-500 text-xl">
-                {clasesEfectivasResumen.valor.toLocaleString("en-US")}
-              </span>{" "}
-              / {clasesEfectivasResumen.total.toLocaleString("en-US")}
-            </p>
-
-            <div className="flex items-center justify-center mt-4 gap-2">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-2.5 rounded-full bg-green-700"
-                  style={{
-                    width: `${Math.min(clasesEfectivasResumen.porcentaje, 100)}%`,
-                  }}
-                />
-              </div>
-              <p className="text-gray-500 text-sm font-semibold">
+              <p className="mt-2 font-bold text-indigo-600 text-5xl">
                 {Math.round(Math.min(clasesEfectivasResumen.porcentaje, 100))}%
+              </p>
+              <p className="mt-3 text-lg text-gray-500 font-semibold">
+                <span className="text-gray-500">
+                  {clasesEfectivasResumen.valor.toLocaleString("en-US")}
+                </span>{" "}
+                de {clasesEfectivasResumen.total.toLocaleString("en-US")}
               </p>
             </div>
           </div>
