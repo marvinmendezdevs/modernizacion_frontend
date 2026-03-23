@@ -96,14 +96,14 @@ const EMPTY_CLASES = {
   grados: [] as GradoItem[],
 };
 
-function getTodayDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = `${today.getMonth() + 1}`.padStart(2, "0");
-  const day = `${today.getDate()}`.padStart(2, "0");
+// function getTodayDate() {
+//   const today = new Date();
+//   const year = today.getFullYear();
+//   const month = `${today.getMonth() + 1}`.padStart(2, "0");
+//   const day = `${today.getDate()}`.padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
-}
+//   return `${year}-${month}-${day}`;
+// }
 
 function normalizeDate(date?: string | null) {
   if (!date) return "";
@@ -122,7 +122,7 @@ function calcularPorcentaje(valor: number, total: number) {
 
 function SeccionesClasesDashboard() {
   const [grupoActivo, setGrupoActivo] = useState<string>("Grupo 1");
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
     queryKey: ["dashboard-secciones", selectedDate],
@@ -130,6 +130,9 @@ function SeccionesClasesDashboard() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  const lastReportedDate = data?.last?.dateReported?.slice(0, 10) || "";
+  const effectiveSelectedDate = selectedDate || lastReportedDate;
 
   const cumulative = data?.cumulative;
 
@@ -151,11 +154,11 @@ function SeccionesClasesDashboard() {
     if (orderedRecords.length === 0) return null;
 
     const matchedRecord = orderedRecords.find(
-      (record) => normalizeDate(record.dateReported) === selectedDate
+      (record) => normalizeDate(record.dateReported) === effectiveSelectedDate
     );
 
     return matchedRecord ?? null;
-  }, [orderedRecords, selectedDate]);
+  }, [orderedRecords, effectiveSelectedDate]);
 
   const previousRecord = useMemo<MetricsRecord | null>(() => {
     if (!sourceRecord || orderedRecords.length === 0) return null;
@@ -407,6 +410,8 @@ function SeccionesClasesDashboard() {
     };
   }, [materiasResumen, variaciones]);
 
+  console.log(data);
+
   if (isLoading) {
     return (
       <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
@@ -456,7 +461,7 @@ function SeccionesClasesDashboard() {
           <input
             type="date"
             className="w-full"
-            value={selectedDate}
+            value={effectiveSelectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
         </div>
@@ -545,7 +550,10 @@ function SeccionesClasesDashboard() {
                 Tasa de presencia de estudiantes
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.presenciaEstudiante, 100))}%
+                {Math.round(
+                  Math.min(detailsPorcentajes.presenciaEstudiante, 100)
+                )}
+                %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.tasaPresenciaEstudiante.toLocaleString("en-US")}{" "}
@@ -568,8 +576,7 @@ function SeccionesClasesDashboard() {
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.logroAcademico.toLocaleString("en-US")}{" "}
                 <span>
-                  de{" "}
-                  {detailsResumen.logroAcademicoTotal.toLocaleString("en-US")}
+                  de {detailsResumen.logroAcademicoTotal.toLocaleString("en-US")}
                 </span>
               </p>
             </div>
@@ -579,7 +586,8 @@ function SeccionesClasesDashboard() {
                 Uso de recursos digitales
               </p>
               <p className="mt-2 font-bold text-green-700 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.recursosDigitales, 100))}%
+                {Math.round(Math.min(detailsPorcentajes.recursosDigitales, 100))}
+                %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.recursosDigitales.toLocaleString("en-US")}{" "}
