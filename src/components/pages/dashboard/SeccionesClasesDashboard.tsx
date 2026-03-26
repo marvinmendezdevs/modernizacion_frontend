@@ -9,7 +9,16 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import GraficsSecciones from "./secciones/GraficsSecciones";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 type MateriaNombre = "Matemática" | "Lenguaje";
 
@@ -88,6 +97,13 @@ type ApiResponse = {
   cumulative: MetricsRecord[];
 };
 
+type LineChartItem = {
+  fecha: string;
+  accesosDocentes: number;
+  accesosEstudiantes: number;
+  clasesEfectivas: number;
+};
+
 const EMPTY_CLASES = {
   Lenguaje: [] as ClaseItem[],
   Matematica: [] as ClaseItem[],
@@ -95,15 +111,6 @@ const EMPTY_CLASES = {
   details: [] as DetailItem[],
   grados: [] as GradoItem[],
 };
-
-// function getTodayDate() {
-//   const today = new Date();
-//   const year = today.getFullYear();
-//   const month = `${today.getMonth() + 1}`.padStart(2, "0");
-//   const day = `${today.getDate()}`.padStart(2, "0");
-
-//   return `${year}-${month}-${day}`;
-// }
 
 function normalizeDate(date?: string | null) {
   if (!date) return "";
@@ -120,8 +127,91 @@ function calcularPorcentaje(valor: number, total: number) {
   return (valor / total) * 100;
 }
 
+function sumarClaseItems(items: ClaseItem[]): ClaseItem {
+  return items.reduce(
+    (acc, item) => ({
+      grupo: 0,
+      totalClases: acc.totalClases + (item.totalClases ?? 0),
+      totalDocentes: acc.totalDocentes + (item.totalDocentes ?? 0),
+      accesosDocentes: acc.accesosDocentes + (item.accesosDocentes ?? 0),
+      clasesEfectivas: acc.clasesEfectivas + (item.clasesEfectivas ?? 0),
+      totalEstudiantes: acc.totalEstudiantes + (item.totalEstudiantes ?? 0),
+      accesosEstudiantes: acc.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
+    }),
+    {
+      grupo: 0,
+      totalClases: 0,
+      totalDocentes: 0,
+      accesosDocentes: 0,
+      clasesEfectivas: 0,
+      totalEstudiantes: 0,
+      accesosEstudiantes: 0,
+    }
+  );
+}
+
+function sumarDetailItems(items: DetailItem[]): DetailItem {
+  return items.reduce(
+    (acc, item) => ({
+      grupo: 0,
+      tasaPresenciaDocente:
+        acc.tasaPresenciaDocente + (item.tasaPresenciaDocente ?? 0),
+      tasaPresenciaDocenteTotal:
+        acc.tasaPresenciaDocenteTotal + (item.tasaPresenciaDocenteTotal ?? 0),
+      tasaPresenciaEstudiante:
+        acc.tasaPresenciaEstudiante + (item.tasaPresenciaEstudiante ?? 0),
+      tasaPresenciaEstudianteTotal:
+        acc.tasaPresenciaEstudianteTotal +
+        (item.tasaPresenciaEstudianteTotal ?? 0),
+      logroAcademico: acc.logroAcademico + (item.logroAcademico ?? 0),
+      logroAcademicoTotal:
+        acc.logroAcademicoTotal + (item.logroAcademicoTotal ?? 0),
+      recursosDigitales: acc.recursosDigitales + (item.recursosDigitales ?? 0),
+      recursosDigitalesTotal:
+        acc.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+    }),
+    {
+      grupo: 0,
+      tasaPresenciaDocente: 0,
+      tasaPresenciaDocenteTotal: 0,
+      tasaPresenciaEstudiante: 0,
+      tasaPresenciaEstudianteTotal: 0,
+      logroAcademico: 0,
+      logroAcademicoTotal: 0,
+      recursosDigitales: 0,
+      recursosDigitalesTotal: 0,
+    }
+  );
+}
+
+// function sumarIndicadoresItems(items: IndicadoresItem[]): IndicadoresItem {
+//   return items.reduce(
+//     (acc, item) => ({
+//       grupo: 0,
+//       clasesTotales: acc.clasesTotales + (item.clasesTotales ?? 0),
+//       totalDocentes: acc.totalDocentes + (item.totalDocentes ?? 0),
+//       accesosDocentes: acc.accesosDocentes + (item.accesosDocentes ?? 0),
+//       clasesEfectivas: acc.clasesEfectivas + (item.clasesEfectivas ?? 0),
+//       totalEstudiantes: acc.totalEstudiantes + (item.totalEstudiantes ?? 0),
+//       accesosEstudiantes: acc.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
+//     }),
+//     {
+//       grupo: 0,
+//       clasesTotales: 0,
+//       totalDocentes: 0,
+//       accesosDocentes: 0,
+//       clasesEfectivas: 0,
+//       totalEstudiantes: 0,
+//       accesosEstudiantes: 0,
+//     }
+//   );
+// }
+
 function SeccionesClasesDashboard() {
-  const [grupoActivo, setGrupoActivo] = useState<string>("Grupo 1");
+  const [gruposSeleccionados, setGruposSeleccionados] = useState<string[]>([
+    "Grupo 1",
+    "Grupo 2",
+  ]);
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
@@ -133,7 +223,6 @@ function SeccionesClasesDashboard() {
 
   const lastReportedDate = data?.last?.dateReported?.slice(0, 10) || "";
   const effectiveSelectedDate = selectedDate || lastReportedDate;
-
   const cumulative = data?.cumulative;
 
   const orderedRecords = useMemo<MetricsRecord[]>(() => {
@@ -226,11 +315,39 @@ function SeccionesClasesDashboard() {
       .map((grupo) => `Grupo ${grupo}`);
   }, [currentData]);
 
-  const grupoActivoResolved = useMemo(() => {
-    if (!hasData && gruposDisponibles.length === 0) return "Grupo 1";
-    if (gruposDisponibles.includes(grupoActivo)) return grupoActivo;
-    return gruposDisponibles[0] ?? "Grupo 1";
-  }, [hasData, gruposDisponibles, grupoActivo]);
+  const gruposActivosResolved = useMemo(() => {
+    if (!hasData && gruposDisponibles.length === 0) return ["Grupo 1"];
+
+    const validos = gruposSeleccionados.filter((grupo) =>
+      gruposDisponibles.includes(grupo)
+    );
+
+    if (validos.length > 0) return validos;
+
+    return gruposDisponibles.length > 0 ? gruposDisponibles : ["Grupo 1"];
+  }, [gruposSeleccionados, gruposDisponibles, hasData]);
+
+  const etiquetaGrupoActiva = useMemo(() => {
+    if (gruposActivosResolved.length > 1) return "Todos";
+    return gruposActivosResolved[0] ?? "Grupo 1";
+  }, [gruposActivosResolved]);
+
+  const gruposNumerosActivos = useMemo(() => {
+    return gruposActivosResolved.map((grupo) =>
+      Number(grupo.replace("Grupo ", ""))
+    );
+  }, [gruposActivosResolved]);
+
+  const toggleGrupo = (grupo: string) => {
+    setGruposSeleccionados((prev) => {
+      if (prev.includes(grupo)) {
+        const next = prev.filter((item) => item !== grupo);
+        return next.length > 0 ? next : [grupo];
+      }
+
+      return [...prev, grupo].sort();
+    });
+  };
 
   const materiasResumen = useMemo((): Materia[] => {
     if (!hasData) {
@@ -250,68 +367,69 @@ function SeccionesClasesDashboard() {
       ];
     }
 
-    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
-
-    const lenguaje = currentData.clases.Lenguaje.find(
-      (item) => item.grupo === grupoNumero
+    const lenguajeItems = currentData.clases.Lenguaje.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
     );
 
-    const matematica = currentData.clases.Matematica.find(
-      (item) => item.grupo === grupoNumero
+    const matematicaItems = currentData.clases.Matematica.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
     );
+
+    const lenguaje = sumarClaseItems(lenguajeItems);
+    const matematica = sumarClaseItems(matematicaItems);
 
     return [
       {
         nombre: "Lenguaje",
         docentesAccesos: {
-          valor: lenguaje?.accesosDocentes ?? 0,
-          total: lenguaje?.totalDocentes ?? 0,
+          valor: lenguaje.accesosDocentes,
+          total: lenguaje.totalDocentes,
         },
         estudiantesAccesos: {
-          valor: lenguaje?.accesosEstudiantes ?? 0,
-          total: lenguaje?.totalEstudiantes ?? 0,
+          valor: lenguaje.accesosEstudiantes,
+          total: lenguaje.totalEstudiantes,
         },
         clasesEfectivas: {
-          valor: lenguaje?.clasesEfectivas ?? 0,
-          total: lenguaje?.totalClases ?? 0,
+          valor: lenguaje.clasesEfectivas,
+          total: lenguaje.totalClases,
         },
       },
       {
         nombre: "Matemática",
         docentesAccesos: {
-          valor: matematica?.accesosDocentes ?? 0,
-          total: matematica?.totalDocentes ?? 0,
+          valor: matematica.accesosDocentes,
+          total: matematica.totalDocentes,
         },
         estudiantesAccesos: {
-          valor: matematica?.accesosEstudiantes ?? 0,
-          total: matematica?.totalEstudiantes ?? 0,
+          valor: matematica.accesosEstudiantes,
+          total: matematica.totalEstudiantes,
         },
         clasesEfectivas: {
-          valor: matematica?.clasesEfectivas ?? 0,
-          total: matematica?.totalClases ?? 0,
+          valor: matematica.clasesEfectivas,
+          total: matematica.totalClases,
         },
       },
     ];
-  }, [hasData, grupoActivoResolved, currentData]);
+  }, [hasData, currentData, gruposNumerosActivos]);
 
   const detailsResumen = useMemo(() => {
-    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
-
-    const detail = currentData.clases.details.find(
-      (item) => item.grupo === grupoNumero
+    const detailItems = currentData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
     );
 
+    const detail = sumarDetailItems(detailItems);
+
     return {
-      tasaPresenciaDocente: detail?.tasaPresenciaDocente ?? 0,
-      tasaPresenciaDocenteTotal: detail?.tasaPresenciaDocenteTotal ?? 0,
-      tasaPresenciaEstudiante: detail?.tasaPresenciaEstudiante ?? 0,
-      tasaPresenciaEstudianteTotal: detail?.tasaPresenciaEstudianteTotal ?? 0,
-      logroAcademico: detail?.logroAcademico ?? 0,
-      logroAcademicoTotal: detail?.logroAcademicoTotal ?? 0,
-      recursosDigitales: detail?.recursosDigitales ?? 0,
-      recursosDigitalesTotal: detail?.recursosDigitalesTotal ?? 0,
+      tasaPresenciaDocente: detail.tasaPresenciaDocente,
+      tasaPresenciaDocenteTotal: detail.tasaPresenciaDocenteTotal,
+      tasaPresenciaEstudiante: detail.tasaPresenciaEstudiante,
+      tasaPresenciaEstudianteTotal: detail.tasaPresenciaEstudianteTotal,
+      logroAcademico: detail.logroAcademico,
+      logroAcademicoTotal: detail.logroAcademicoTotal,
+      recursosDigitales: detail.recursosDigitales,
+      recursosDigitalesTotal: detail.recursosDigitalesTotal,
     };
-  }, [currentData, grupoActivoResolved]);
+  }, [currentData, gruposNumerosActivos]);
 
   const detailsPorcentajes = useMemo(() => {
     return {
@@ -335,53 +453,61 @@ function SeccionesClasesDashboard() {
   }, [detailsResumen]);
 
   const variaciones = useMemo(() => {
-    const grupoNumero = Number(grupoActivoResolved.replace("Grupo ", ""));
-
-    const lenguajeActual = currentData.clases.Lenguaje.find(
-      (item) => item.grupo === grupoNumero
-    );
-    const lenguajeAnterior = previousData.clases.Lenguaje.find(
-      (item) => item.grupo === grupoNumero
+    const lenguajeActual = sumarClaseItems(
+      currentData.clases.Lenguaje.filter((item) =>
+        gruposNumerosActivos.includes(item.grupo)
+      )
     );
 
-    const matematicaActual = currentData.clases.Matematica.find(
-      (item) => item.grupo === grupoNumero
+    const lenguajeAnterior = sumarClaseItems(
+      previousData.clases.Lenguaje.filter((item) =>
+        gruposNumerosActivos.includes(item.grupo)
+      )
     );
-    const matematicaAnterior = previousData.clases.Matematica.find(
-      (item) => item.grupo === grupoNumero
+
+    const matematicaActual = sumarClaseItems(
+      currentData.clases.Matematica.filter((item) =>
+        gruposNumerosActivos.includes(item.grupo)
+      )
+    );
+
+    const matematicaAnterior = sumarClaseItems(
+      previousData.clases.Matematica.filter((item) =>
+        gruposNumerosActivos.includes(item.grupo)
+      )
     );
 
     return {
       Lenguaje: {
         docentes: calcularVariacionPorcentual(
-          lenguajeAnterior?.accesosDocentes ?? 0,
-          lenguajeActual?.accesosDocentes ?? 0
+          lenguajeAnterior.accesosDocentes,
+          lenguajeActual.accesosDocentes
         ),
         estudiantes: calcularVariacionPorcentual(
-          lenguajeAnterior?.accesosEstudiantes ?? 0,
-          lenguajeActual?.accesosEstudiantes ?? 0
+          lenguajeAnterior.accesosEstudiantes,
+          lenguajeActual.accesosEstudiantes
         ),
         clases: calcularVariacionPorcentual(
-          lenguajeAnterior?.clasesEfectivas ?? 0,
-          lenguajeActual?.clasesEfectivas ?? 0
+          lenguajeAnterior.clasesEfectivas,
+          lenguajeActual.clasesEfectivas
         ),
       },
       Matemática: {
         docentes: calcularVariacionPorcentual(
-          matematicaAnterior?.accesosDocentes ?? 0,
-          matematicaActual?.accesosDocentes ?? 0
+          matematicaAnterior.accesosDocentes,
+          matematicaActual.accesosDocentes
         ),
         estudiantes: calcularVariacionPorcentual(
-          matematicaAnterior?.accesosEstudiantes ?? 0,
-          matematicaActual?.accesosEstudiantes ?? 0
+          matematicaAnterior.accesosEstudiantes,
+          matematicaActual.accesosEstudiantes
         ),
         clases: calcularVariacionPorcentual(
-          matematicaAnterior?.clasesEfectivas ?? 0,
-          matematicaActual?.clasesEfectivas ?? 0
+          matematicaAnterior.clasesEfectivas,
+          matematicaActual.clasesEfectivas
         ),
       },
     };
-  }, [currentData, previousData, grupoActivoResolved]);
+  }, [currentData, previousData, gruposNumerosActivos]);
 
   const clasesEfectivasResumen = useMemo(() => {
     const lenguaje = materiasResumen.find((m) => m.nombre === "Lenguaje");
@@ -410,7 +536,40 @@ function SeccionesClasesDashboard() {
     };
   }, [materiasResumen, variaciones]);
 
-  console.log(data);
+  const lineChartData = useMemo<LineChartItem[]>(() => {
+  if (!orderedRecords.length) return [];
+
+  const ultimosCinco = [...orderedRecords]
+    .slice(0, 5)
+    .sort(
+      (a, b) =>
+        new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+    );
+
+  return ultimosCinco.map((record) => {
+    const lenguajeItems = (record.json?.clases?.Lenguaje ?? []).filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
+
+    const matematicaItems = (record.json?.clases?.Matematica ?? []).filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
+
+    const lenguaje = sumarClaseItems(lenguajeItems);
+    const matematica = sumarClaseItems(matematicaItems);
+
+    return {
+      fecha: formatFullDate(record.dateReported),
+      accesosDocentes:
+        (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
+      accesosEstudiantes:
+        (lenguaje.accesosEstudiantes ?? 0) +
+        (matematica.accesosEstudiantes ?? 0),
+      clasesEfectivas:
+        (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
+    };
+  });
+}, [orderedRecords, gruposNumerosActivos]);
 
   if (isLoading) {
     return (
@@ -466,26 +625,39 @@ function SeccionesClasesDashboard() {
           />
         </div>
 
-        <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
-          <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm w-full md:w-auto">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
             <Users size={16} />
           </div>
-          <select
-            value={grupoActivoResolved}
-            onChange={(e) => setGrupoActivo(e.target.value)}
-            className="w-full bg-transparent text-xs font-medium text-slate-700 outline-none"
-            disabled={!hasData && gruposDisponibles.length === 0}
-          >
+
+          <div className="flex flex-wrap items-center gap-4">
             {gruposDisponibles.length > 0 ? (
               gruposDisponibles.map((grupo) => (
-                <option key={grupo} value={grupo}>
-                  {grupo}
-                </option>
+                <label
+                  key={grupo}
+                  className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={gruposActivosResolved.includes(grupo)}
+                    onChange={() => toggleGrupo(grupo)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  <span>{grupo}</span>
+                </label>
               ))
             ) : (
-              <option value="Grupo 1">Grupo 1</option>
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked
+                  readOnly
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                <span>Grupo 1</span>
+              </label>
             )}
-          </select>
+          </div>
         </div>
       </div>
 
@@ -606,12 +778,12 @@ function SeccionesClasesDashboard() {
                   Resumen por materia
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {`Visualización correspondiente a ${grupoActivoResolved}.`}
+                  {`Visualización correspondiente a ${etiquetaGrupoActiva}.`}
                 </p>
               </div>
 
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-                {grupoActivoResolved}
+                {etiquetaGrupoActiva}
               </div>
             </div>
 
@@ -672,6 +844,7 @@ function SeccionesClasesDashboard() {
                             </p>
                           )}
                         </div>
+
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
                             {materia.docentesAccesos.valor.toLocaleString(
@@ -680,6 +853,7 @@ function SeccionesClasesDashboard() {
                           </span>{" "}
                           / {materia.docentesAccesos.total.toLocaleString("en-US")}
                         </p>
+
                         <div className="flex items-center justify-center mt-4 gap-2">
                           <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                             <div
@@ -745,6 +919,8 @@ function SeccionesClasesDashboard() {
                           </p>
                         </div>
                       </div>
+
+                      
                     </div>
                   </div>
                 );
@@ -752,8 +928,69 @@ function SeccionesClasesDashboard() {
             </div>
           </div>
 
-          <div className="mt-5 hidden">
-            <GraficsSecciones grados={currentData.clases.grados} />
+          <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
+            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Comportamiento semanal
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Tendencia de los últimos 5 días para {etiquetaGrupoActiva.toLowerCase()}.
+                </p>
+              </div>
+
+              <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+                Últimos 5 días
+              </div>
+            </div>
+
+            {lineChartData.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                No hay datos suficientes para mostrar la tendencia semanal.
+              </div>
+            ) : (
+              <div className="h-[340px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={lineChartData}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="fecha" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="accesosDocentes"
+                      name="Accesos docentes"
+                      stroke="#4f46e5"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="accesosEstudiantes"
+                      name="Accesos estudiantes"
+                      stroke="#059669"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="clasesEfectivas"
+                      name="Clases efectivas"
+                      stroke="#ea580c"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
       )}
