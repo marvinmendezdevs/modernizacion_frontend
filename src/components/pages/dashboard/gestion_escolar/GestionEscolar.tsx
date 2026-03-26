@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {Phone,MessageSquare,ClipboardCheck,Layers,Loader2,Calendar,ChevronLeft,ChevronRight,
+import {
+  Phone,
+  MessageSquare,
+  ClipboardCheck,
+  Layers,
+  Loader2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
 } from "lucide-react";
 import { getGestionEscolar } from "@/services/dashboard.services";
 import { formatFullDate } from "@/utils/index.utils";
@@ -14,19 +23,6 @@ type ApiGestionItem = {
   seguimientoDeIncidencias: number;
 };
 
-type DashboardGestionResponse = {
-  status: string;
-  data: {
-    last: {
-      id: number;
-      dateReported: string;
-      type: string;
-      category: string;
-      json: ApiGestionItem[];
-    } | null;
-  };
-};
-
 type GestionRow = {
   id: number;
   unidad: string;
@@ -38,10 +34,54 @@ type GestionRow = {
   total: number;
 };
 
+type CategoryTab = "Diario" | "Acumulado";
+
 const safePct = (value: number, total: number) => {
   if (!total) return 0;
   return Number(((value / total) * 100).toFixed(1));
 };
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString("sv-SE");
+}
+
+function getWeekStringFromDate(date: Date) {
+  const tempDate = new Date(date);
+  tempDate.setHours(0, 0, 0, 0);
+
+  const day = tempDate.getDay() || 7;
+  tempDate.setDate(tempDate.getDate() + 4 - day);
+
+  const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+  const weekNo = Math.ceil(
+    (((tempDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7
+  );
+
+  return `${tempDate.getFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function getStartAndEndFromWeek(weekValue: string) {
+  const [yearPart, weekPart] = weekValue.split("-W");
+
+  const year = Number(yearPart);
+  const week = Number(weekPart);
+
+  const firstDayOfYear = new Date(year, 0, 1);
+  const dayOffset = firstDayOfYear.getDay() || 7;
+
+  const monday = new Date(firstDayOfYear);
+  monday.setDate(firstDayOfYear.getDate() + (week - 1) * 7 - (dayOffset - 1));
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  return {
+    startDate: formatDate(monday),
+    endDate: formatDate(sunday),
+  };
+}
 
 function StatCard({
   title,
@@ -91,40 +131,60 @@ function StatCard({
 }
 
 function GestionDashboardPage() {
+  const [activeCategory, setActiveCategory] = useState<CategoryTab>("Diario");
   const [selectedDate, setSelectedDate] = useState("");
-  const [queryDate, setQueryDate] = useState<string | undefined>(undefined);
+  const [selectedWeek, setSelectedWeek] = useState<string>(
+    getWeekStringFromDate(new Date())
+  );
   const [currentPage, setCurrentPage] = useState(1);
 
   const ITEMS_PER_PAGE = 5;
 
-  const { isLoading, isError, data, isFetching } =
-    useQuery<DashboardGestionResponse>({
-      queryKey: ["dashboard-school-management", queryDate ?? "last"],
-      queryFn: () => getGestionEscolar(queryDate),
-      retry: false,
-      refetchOnWindowFocus: false,
-    });
+  const { startDate, endDate } = useMemo(() => {
+    return getStartAndEndFromWeek(selectedWeek);
+  }, [selectedWeek]);
+
+
+  const { isLoading, isError, data, isFetching } = useQuery({
+    queryKey: [
+      "dashboard-school-management",
+      activeCategory,
+      selectedDate,
+      selectedWeek,
+      startDate,
+      endDate,
+    ],
+    queryFn: () =>
+      getGestionEscolar({
+        category: activeCategory,
+        selectedDate: activeCategory === "Diario" ? selectedDate : undefined,
+        startDate: activeCategory === "Acumulado" ? startDate : undefined,
+        endDate: activeCategory === "Acumulado" ? endDate : undefined,
+      }),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   const last = data?.data?.last ?? null;
 
   const inputDateValue = selectedDate || last?.dateReported?.slice(0, 10) || "";
 
-  const rows: GestionRow[] = useMemo(() => {
-    const rawRows = last?.json ?? [];
+const rows: GestionRow[] = useMemo(() => {
+  const rawRows: ApiGestionItem[] = last?.json ?? [];
 
-    if (!rawRows.length) return [];
+  if (!rawRows.length) return [];
 
-    return rawRows.map((item, index) => ({
-      id: index + 1,
-      unidad: String(index + 1),
-      escuelas: item.escuela ?? 0,
-      llamadas: item.llamada ?? 0,
-      whatsapp: item.whatsApp ?? 0,
-      gestionCE: item.gestionPorCE ?? 0,
-      seguimiento: item.seguimientoDeIncidencias ?? 0,
-      total: item.totalGestiones ?? 0,
-    }));
-  }, [last]);
+  return rawRows.map((item: ApiGestionItem, index: number) => ({
+    id: index + 1,
+    unidad: String(index + 1),
+    escuelas: item.escuela ?? 0,
+    llamadas: item.llamada ?? 0,
+    whatsapp: item.whatsApp ?? 0,
+    gestionCE: item.gestionPorCE ?? 0,
+    seguimiento: item.seguimientoDeIncidencias ?? 0,
+    total: item.totalGestiones ?? 0,
+  }));
+}, [last]);
 
   const totals = useMemo(() => {
     return rows.reduce(
@@ -162,7 +222,11 @@ function GestionDashboardPage() {
 
   const handleDateChange = (value: string) => {
     setSelectedDate(value);
-    setQueryDate(value || undefined);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (category: CategoryTab) => {
+    setActiveCategory(category);
     setCurrentPage(1);
   };
 
@@ -188,7 +252,6 @@ function GestionDashboardPage() {
     return pages;
   }, [currentPage, totalPages]);
 
-  console.log(last)
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
@@ -229,24 +292,85 @@ function GestionDashboardPage() {
               </p>
             </div>
 
-            <div className="flex flex-col justify-end gap-3">
-              <p>Filtrar por fecha:</p>
+            <div className="flex flex-col justify-center gap-3">
+              <div className="flex w-auto mx-auto md:mx-0 gap-3 justify-center bg-slate-100 p-1 rounded-xl border border-slate-200 md:w-auto">
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange("Diario")}
+                  className={[
+                    "flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition cursor-pointer",
+                    activeCategory === "Diario"
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-800",
+                  ].join(" ")}
+                >
+                  <CalendarDays />
+                  Diario
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange("Acumulado")}
+                  className={[
+                    "flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition cursor-pointer",
+                    activeCategory === "Acumulado"
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-800",
+                  ].join(" ")}
+                >
+                  <Layers />
+                  Acumulado
+                </button>
+              </div>
+
+              <p>
+                {activeCategory === "Diario"
+                  ? "Filtrar por fecha:"
+                  : "Filtrar por semana:"}
+              </p>
+
               <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-1">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <Calendar className="" />
+                  <Calendar />
                 </div>
-                <input
-                  type="date"
-                  value={inputDateValue}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                />
+
+                {activeCategory === "Diario" ? (
+                  <input
+                    type="date"
+                    value={inputDateValue}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                  />
+                ) : (
+                  <input
+                    className="bg-transparent text-sm text-slate-600 outline-none w-full"
+                    type="week"
+                    value={selectedWeek}
+                    onChange={(e) => {
+                      setSelectedWeek(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                )}
               </div>
-              <div className="flex w-full">
-                <p className="text-xs bg-green-600 p-1 rounded-lg text-green-900 w-full text-center">
-                  <span className="text-white font-semibold">{last?.dateReported ? formatFullDate(last.dateReported) : "Sin registro"}</span>
-                </p>
-              </div>
+
+              {activeCategory === "Acumulado" && (
+                <div className="text-xs text-slate-500">
+                  Rango consultado:{" "}
+                  <strong>{startDate}</strong> al <strong>{endDate}</strong>
+                </div>
+              )}
+
+              {activeCategory === "Diario" && (
+                <div className="flex w-full">
+                  <p className="text-xs bg-green-600 p-1 rounded-lg text-green-900 w-full text-center">
+                    <span className="text-white font-semibold">
+                      {last?.dateReported
+                        ? formatFullDate(last.dateReported)
+                        : "Sin registro"}
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center justify-center text-xs font-semibold text-slate-400">
                 {isFetching && (
@@ -271,7 +395,11 @@ function GestionDashboardPage() {
           <StatCard
             title="Llamadas"
             value={totals.llamadas}
-            percentage={safePct(totals.llamadas, totals.escuelas)}
+            percentage={
+              activeCategory === "Diario"
+                ? safePct(totals.llamadas, totals.escuelas)
+                : undefined
+            }
             icon={<Phone className="h-6 w-6" />}
             iconBg="bg-blue-600"
           />
@@ -279,7 +407,11 @@ function GestionDashboardPage() {
           <StatCard
             title="WhatsApp"
             value={totals.whatsapp}
-            percentage={safePct(totals.whatsapp, totals.escuelas)}
+            percentage={
+              activeCategory === "Diario"
+                ? safePct(totals.whatsapp, totals.escuelas)
+                : undefined
+            }
             icon={<MessageSquare className="h-6 w-6" />}
             iconBg="bg-green-600"
           />
@@ -287,7 +419,11 @@ function GestionDashboardPage() {
           <StatCard
             title="Gestión por CE"
             value={totals.gestionCE}
-            percentage={safePct(totals.gestionCE, totals.escuelas)}
+            percentage={
+              activeCategory === "Diario"
+                ? safePct(totals.gestionCE, totals.escuelas)
+                : undefined
+            }
             icon={<ClipboardCheck className="h-6 w-6" />}
             iconBg="bg-indigo-600"
           />
@@ -374,7 +510,7 @@ function GestionDashboardPage() {
                         colSpan={7}
                         className="px-6 py-10 text-center text-sm font-medium text-slate-500"
                       >
-                        No hay registros para la fecha seleccionada.
+                        No hay registros para el filtro seleccionado.
                       </td>
                     </tr>
                   )}
