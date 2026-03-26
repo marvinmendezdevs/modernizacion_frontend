@@ -19,3 +19,15 @@ export const getSeccionClasses = async (startDate: string) => {
 
     return data;
 }
+
+export const getGestionEscolar = async (selectedDate?: string) => {
+  const { data } = await api.get("/metrics/gestion-metrics", {
+    params: selectedDate
+      ? {
+          selectedDate,
+        }
+      : {},
+  });
+
+  return data;
+};
