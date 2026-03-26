@@ -7,3 +7,9 @@ export type DashboardRecord = {
     dateReported: string,
     group: number
 }
+export type GetGestionEscolarParams = {
+  category: "Diario" | "Acumulado";
+  selectedDate?: string;
+  startDate?: string;
+  endDate?: string;
+};
