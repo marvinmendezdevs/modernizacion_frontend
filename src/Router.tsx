@@ -25,7 +25,6 @@ import FacilitatorTeacherList from "./pages/FacilitatorTeacherList"
 import FacilitadoresHome from "./pages/FacilitadoresHome"
 import Dahsboard from "./pages/Dahsboard"
 import TutorshipDashboard from "./components/pages/dashboard/TutorshipDashboard"
-import SchoolManagementDashboard from "./components/pages/dashboard/school_management/SchoolManagementDashboard"
 import SchoolsDashboard from "./components/pages/dashboard/SchoolsDashboard"
 import AccesosDashboard from "./components/pages/dashboard/AccesosDashboard"
 import SeccionesClasesDashboard from "./components/pages/dashboard/SeccionesClasesDashboard"
@@ -33,6 +32,7 @@ import DashboardAccesos from "./components/pages/update/DashboardAccesos"
 import FormAccesos from "./components/pages/update/FormAccesos"
 import FormGestionEscolar from "./components/pages/update/FormGestionEscolar"
 import FormSecciones from "./components/pages/update/FormSecciones"
+import GestionEscolar from "./components/pages/dashboard/gestion_escolar/GestionEscolar"
 
 function Router() {
 
@@ -45,7 +45,7 @@ function Router() {
           <Route path="dashboard/centros-educativos" element={<SchoolsDashboard />} />
           <Route path="/dashboard/accesos" element={<AccesosDashboard />} />
           <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
-          <Route path="dashboard/gestion-escolar" element={<SchoolManagementDashboard />} />
+          <Route path="dashboard/gestion-escolar" element={<GestionEscolar />} />
 
         </Route>
         <Route element={<ProtectedRoute />}>
