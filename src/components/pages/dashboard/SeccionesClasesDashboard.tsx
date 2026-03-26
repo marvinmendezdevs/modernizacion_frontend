@@ -184,28 +184,56 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
   );
 }
 
-// function sumarIndicadoresItems(items: IndicadoresItem[]): IndicadoresItem {
-//   return items.reduce(
-//     (acc, item) => ({
-//       grupo: 0,
-//       clasesTotales: acc.clasesTotales + (item.clasesTotales ?? 0),
-//       totalDocentes: acc.totalDocentes + (item.totalDocentes ?? 0),
-//       accesosDocentes: acc.accesosDocentes + (item.accesosDocentes ?? 0),
-//       clasesEfectivas: acc.clasesEfectivas + (item.clasesEfectivas ?? 0),
-//       totalEstudiantes: acc.totalEstudiantes + (item.totalEstudiantes ?? 0),
-//       accesosEstudiantes: acc.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
-//     }),
-//     {
-//       grupo: 0,
-//       clasesTotales: 0,
-//       totalDocentes: 0,
-//       accesosDocentes: 0,
-//       clasesEfectivas: 0,
-//       totalEstudiantes: 0,
-//       accesosEstudiantes: 0,
-//     }
-//   );
-// }
+function construirResumenDetails(items: DetailItem[]) {
+  const detail = sumarDetailItems(items);
+
+  const presenciaDocente = calcularPorcentaje(
+    detail.tasaPresenciaDocente,
+    detail.tasaPresenciaDocenteTotal
+  );
+
+  const presenciaEstudiante = calcularPorcentaje(
+    detail.tasaPresenciaEstudiante,
+    detail.tasaPresenciaEstudianteTotal
+  );
+
+  const logroAcademico = calcularPorcentaje(
+    detail.logroAcademico,
+    detail.logroAcademicoTotal
+  );
+
+  const recursosDigitales = calcularPorcentaje(
+    detail.recursosDigitales,
+    detail.recursosDigitalesTotal
+  );
+
+  const promedioClasesEfectivas =
+    (presenciaDocente +
+      presenciaEstudiante +
+      logroAcademico +
+      recursosDigitales) /
+    4;
+
+  return {
+    valores: {
+      tasaPresenciaDocente: detail.tasaPresenciaDocente,
+      tasaPresenciaDocenteTotal: detail.tasaPresenciaDocenteTotal,
+      tasaPresenciaEstudiante: detail.tasaPresenciaEstudiante,
+      tasaPresenciaEstudianteTotal: detail.tasaPresenciaEstudianteTotal,
+      logroAcademico: detail.logroAcademico,
+      logroAcademicoTotal: detail.logroAcademicoTotal,
+      recursosDigitales: detail.recursosDigitales,
+      recursosDigitalesTotal: detail.recursosDigitalesTotal,
+    },
+    porcentajes: {
+      presenciaDocente,
+      presenciaEstudiante,
+      logroAcademico,
+      recursosDigitales,
+    },
+    promedioClasesEfectivas,
+  };
+}
 
 function SeccionesClasesDashboard() {
   const [gruposSeleccionados, setGruposSeleccionados] = useState<string[]>([
@@ -417,40 +445,16 @@ function SeccionesClasesDashboard() {
       gruposNumerosActivos.includes(item.grupo)
     );
 
-    const detail = sumarDetailItems(detailItems);
-
-    return {
-      tasaPresenciaDocente: detail.tasaPresenciaDocente,
-      tasaPresenciaDocenteTotal: detail.tasaPresenciaDocenteTotal,
-      tasaPresenciaEstudiante: detail.tasaPresenciaEstudiante,
-      tasaPresenciaEstudianteTotal: detail.tasaPresenciaEstudianteTotal,
-      logroAcademico: detail.logroAcademico,
-      logroAcademicoTotal: detail.logroAcademicoTotal,
-      recursosDigitales: detail.recursosDigitales,
-      recursosDigitalesTotal: detail.recursosDigitalesTotal,
-    };
+    return construirResumenDetails(detailItems).valores;
   }, [currentData, gruposNumerosActivos]);
 
   const detailsPorcentajes = useMemo(() => {
-    return {
-      presenciaDocente: calcularPorcentaje(
-        detailsResumen.tasaPresenciaDocente,
-        detailsResumen.tasaPresenciaDocenteTotal
-      ),
-      presenciaEstudiante: calcularPorcentaje(
-        detailsResumen.tasaPresenciaEstudiante,
-        detailsResumen.tasaPresenciaEstudianteTotal
-      ),
-      logroAcademico: calcularPorcentaje(
-        detailsResumen.logroAcademico,
-        detailsResumen.logroAcademicoTotal
-      ),
-      recursosDigitales: calcularPorcentaje(
-        detailsResumen.recursosDigitales,
-        detailsResumen.recursosDigitalesTotal
-      ),
-    };
-  }, [detailsResumen]);
+    const detailItems = currentData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
+
+    return construirResumenDetails(detailItems).porcentajes;
+  }, [currentData, gruposNumerosActivos]);
 
   const variaciones = useMemo(() => {
     const lenguajeActual = sumarClaseItems(
@@ -510,66 +514,65 @@ function SeccionesClasesDashboard() {
   }, [currentData, previousData, gruposNumerosActivos]);
 
   const clasesEfectivasResumen = useMemo(() => {
-    const lenguaje = materiasResumen.find((m) => m.nombre === "Lenguaje");
-    const matematica = materiasResumen.find((m) => m.nombre === "Matemática");
+    const currentDetailItems = currentData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
 
-    const valor =
-      (lenguaje?.clasesEfectivas.valor ?? 0) +
-      (matematica?.clasesEfectivas.valor ?? 0);
+    const previousDetailItems = previousData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
 
-    const total =
-      (lenguaje?.clasesEfectivas.total ?? 0) +
-      (matematica?.clasesEfectivas.total ?? 0);
+    const currentResumen = construirResumenDetails(currentDetailItems);
+    const previousResumen = construirResumenDetails(previousDetailItems);
 
-    const porcentaje = calcularPorcentaje(valor, total);
+    const porcentajeActual = currentResumen.promedioClasesEfectivas;
+    const porcentajeAnterior = previousResumen.promedioClasesEfectivas;
 
-    const variacion =
-      ((variaciones.Lenguaje?.clases ?? 0) +
-        (variaciones["Matemática"]?.clases ?? 0)) /
-      2;
+    const variacion = calcularVariacionPorcentual(
+      porcentajeAnterior,
+      porcentajeActual
+    );
 
     return {
-      valor,
-      total,
-      porcentaje,
+      porcentaje: porcentajeActual,
       variacion,
     };
-  }, [materiasResumen, variaciones]);
+  }, [currentData, previousData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
-  if (!orderedRecords.length) return [];
+    if (!orderedRecords.length) return [];
 
-  const ultimosCinco = [...orderedRecords]
-    .slice(0, 5)
-    .sort(
-      (a, b) =>
-        new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
-    );
+    const ultimosCinco = [...orderedRecords]
+      .slice(0, 5)
+      .sort(
+        (a, b) =>
+          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+      );
 
-  return ultimosCinco.map((record) => {
-    const lenguajeItems = (record.json?.clases?.Lenguaje ?? []).filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
-    );
+    return ultimosCinco.map((record) => {
+      const lenguajeItems = (record.json?.clases?.Lenguaje ?? []).filter((item) =>
+        gruposNumerosActivos.includes(item.grupo)
+      );
 
-    const matematicaItems = (record.json?.clases?.Matematica ?? []).filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
-    );
+      const matematicaItems = (record.json?.clases?.Matematica ?? []).filter(
+        (item) => gruposNumerosActivos.includes(item.grupo)
+      );
 
-    const lenguaje = sumarClaseItems(lenguajeItems);
-    const matematica = sumarClaseItems(matematicaItems);
+      const lenguaje = sumarClaseItems(lenguajeItems);
+      const matematica = sumarClaseItems(matematicaItems);
 
-    return {
-      fecha: formatFullDate(record.dateReported),
-      accesosDocentes:
-        (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
-      accesosEstudiantes:
-        (lenguaje.accesosEstudiantes ?? 0) +
-        (matematica.accesosEstudiantes ?? 0),
-      clasesEfectivas:
-        (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
-    };
-  });
-}, [orderedRecords, gruposNumerosActivos]);
+      return {
+        fecha: formatFullDate(record.dateReported),
+        accesosDocentes:
+          (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
+        accesosEstudiantes:
+          (lenguaje.accesosEstudiantes ?? 0) +
+          (matematica.accesosEstudiantes ?? 0),
+        clasesEfectivas:
+          (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
+      };
+    });
+  }, [orderedRecords, gruposNumerosActivos]);
 
   if (isLoading) {
     return (
@@ -687,13 +690,7 @@ function SeccionesClasesDashboard() {
                 )}
               </div>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(Math.min(clasesEfectivasResumen.porcentaje, 100))}%
-              </p>
-              <p className="mt-3 text-lg text-gray-500 font-semibold">
-                <span className="text-gray-500">
-                  {clasesEfectivasResumen.valor.toLocaleString("en-US")}
-                </span>{" "}
-                de {clasesEfectivasResumen.total.toLocaleString("en-US")}
+                {Math.min(clasesEfectivasResumen.porcentaje, 100).toFixed(2)}%
               </p>
             </div>
           </div>
@@ -919,8 +916,6 @@ function SeccionesClasesDashboard() {
                           </p>
                         </div>
                       </div>
-
-                      
                     </div>
                   </div>
                 );
@@ -935,7 +930,8 @@ function SeccionesClasesDashboard() {
                   Comportamiento semanal
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Tendencia de los últimos 5 días para {etiquetaGrupoActiva.toLowerCase()}.
+                  Tendencia de los últimos 5 días para{" "}
+                  {etiquetaGrupoActiva.toLowerCase()}.
                 </p>
               </div>
 
