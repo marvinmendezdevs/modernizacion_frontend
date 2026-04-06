@@ -1,18 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Phone,
-  MessageSquare,
-  ClipboardCheck,
-  Layers,
-  Loader2,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-} from "lucide-react";
+import {Phone,MessageSquare,ClipboardCheck,Layers,Loader2,Calendar,ChevronLeft,ChevronRight,CalendarDays,} from "lucide-react";
 import { getGestionEscolar } from "@/services/dashboard.services";
 import { formatFullDate } from "@/utils/index.utils";
+import GestionEscolarGrafics from "./GestionEscolarGrafics";
 
 type ApiGestionItem = {
   escuela: number;
@@ -165,8 +156,10 @@ function GestionDashboardPage() {
     refetchOnWindowFocus: false,
   });
 
+  
   const last = data?.data?.last ?? null;
-
+  
+  console.log(data)
   const inputDateValue = selectedDate || last?.dateReported?.slice(0, 10) || "";
 
 const rows: GestionRow[] = useMemo(() => {
@@ -559,6 +552,9 @@ const rows: GestionRow[] = useMemo(() => {
               </div>
             </div>
           </div>
+        </section>
+        <section>
+          <GestionEscolarGrafics/>
         </section>
       </div>
     </div>
