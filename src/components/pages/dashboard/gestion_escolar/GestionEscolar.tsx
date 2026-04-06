@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {Phone,MessageSquare,ClipboardCheck,Layers,Loader2,Calendar,ChevronLeft,ChevronRight,CalendarDays,} from "lucide-react";
+import {
+  Phone,
+  MessageSquare,
+  ClipboardCheck,
+  Layers,
+  Loader2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+} from "lucide-react";
 import { getGestionEscolar } from "@/services/dashboard.services";
 import { formatFullDate } from "@/utils/index.utils";
 import GestionEscolarGrafics from "./GestionEscolarGrafics";
@@ -12,6 +22,19 @@ type ApiGestionItem = {
   gestionPorCE: number;
   totalGestiones: number;
   seguimientoDeIncidencias: number;
+};
+
+type ApiInconsistenciaItem = {
+  accion: string;
+  cantidad: number;
+};
+
+type ApiMetricRecord = {
+  dateReported?: string;
+  json?: {
+    registros?: ApiGestionItem[];
+    inconsistencias?: ApiInconsistenciaItem[];
+  };
 };
 
 type GestionRow = {
@@ -135,7 +158,6 @@ function GestionDashboardPage() {
     return getStartAndEndFromWeek(selectedWeek);
   }, [selectedWeek]);
 
-
   const { isLoading, isError, data, isFetching } = useQuery({
     queryKey: [
       "dashboard-school-management",
@@ -156,18 +178,27 @@ function GestionDashboardPage() {
     refetchOnWindowFocus: false,
   });
 
-  
-  const last = data?.data?.last ?? null;
-  
-  console.log(data)
+  const last = useMemo<ApiMetricRecord | null>(
+    () => data?.data?.last ?? null,
+    [data?.data?.last]
+  );
+
   const inputDateValue = selectedDate || last?.dateReported?.slice(0, 10) || "";
 
-const rows: GestionRow[] = useMemo(() => {
-  const rawRows: ApiGestionItem[] = last?.json ?? [];
+  const rawRows = useMemo<ApiGestionItem[]>(() => {
+  if (!last?.json) return [];
 
+  if (Array.isArray(last.json)) {
+    return last.json;
+  }
+
+  return last.json.registros ?? [];
+}, [last]);
+
+const rows: GestionRow[] = useMemo(() => {
   if (!rawRows.length) return [];
 
-  return rawRows.map((item: ApiGestionItem, index: number) => ({
+  return rawRows.map((item, index) => ({
     id: index + 1,
     unidad: String(index + 1),
     escuelas: item.escuela ?? 0,
@@ -177,29 +208,33 @@ const rows: GestionRow[] = useMemo(() => {
     seguimiento: item.seguimientoDeIncidencias ?? 0,
     total: item.totalGestiones ?? 0,
   }));
-}, [last]);
+}, [rawRows]);
 
-  const totals = useMemo(() => {
-    return rows.reduce(
-      (acc, row) => {
-        acc.escuelas += row.escuelas;
-        acc.llamadas += row.llamadas;
-        acc.whatsapp += row.whatsapp;
-        acc.gestionCE += row.gestionCE;
-        acc.seguimiento += row.seguimiento;
-        acc.total += row.total;
-        return acc;
-      },
-      {
-        escuelas: 0,
-        llamadas: 0,
-        whatsapp: 0,
-        gestionCE: 0,
-        seguimiento: 0,
-        total: 0,
-      }
-    );
-  }, [rows]);
+  const inconsistencias: ApiInconsistenciaItem[] = useMemo(() => {
+    return last?.json?.inconsistencias ?? [];
+  }, [last]);
+
+const totals = useMemo(() => {
+  return rows.reduce(
+    (acc, row) => {
+      acc.escuelas += row.escuelas;
+      acc.llamadas += row.llamadas;
+      acc.whatsapp += row.whatsapp;
+      acc.gestionCE += row.gestionCE;
+      acc.seguimiento += row.seguimiento;
+      acc.total += row.total;
+      return acc;
+    },
+    {
+      escuelas: 0,
+      llamadas: 0,
+      whatsapp: 0,
+      gestionCE: 0,
+      seguimiento: 0,
+      total: 0,
+    }
+  );
+}, [rows]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
 
@@ -348,8 +383,8 @@ const rows: GestionRow[] = useMemo(() => {
 
               {activeCategory === "Acumulado" && (
                 <div className="text-xs text-slate-500">
-                  Rango consultado:{" "}
-                  <strong>{startDate}</strong> al <strong>{endDate}</strong>
+                  Rango consultado: <strong>{startDate}</strong> al{" "}
+                  <strong>{endDate}</strong>
                 </div>
               )}
 
@@ -553,9 +588,11 @@ const rows: GestionRow[] = useMemo(() => {
             </div>
           </div>
         </section>
-        <section>
-          <GestionEscolarGrafics/>
-        </section>
+        {data.data.last !== null && (
+          <section className="bg-white border rounded-lg border-gray-200 shadow p-2">
+            <GestionEscolarGrafics inconsistencias={inconsistencias} />
+          </section>
+        )}
       </div>
     </div>
   );
