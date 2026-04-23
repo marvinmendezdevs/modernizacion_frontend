@@ -27,3 +27,13 @@ export async function deleteMetric(id: number) {
   const { data } = await api.delete(`/metrics/${id}`);
   return data;
 }
+
+export async function getNoAccesos(selectedDate: string) {
+  const { data } = await api.get("/metrics/no-accesos", {
+    params: {
+      selectedDate,
+    },
+  });
+
+  return data;
+}

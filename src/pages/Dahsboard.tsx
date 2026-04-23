@@ -94,6 +94,17 @@ function Dahsboard() {
 
         <Link
           className={`${
+            pathname === "/dashboard/no-accesos"
+              ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
+              : ""
+          } p-2 rounded-lg font-semibold`}
+          to={"/dashboard/no-accesos"}
+        >
+          No accesos
+        </Link>
+
+        <Link
+          className={`${
             pathname === "/dashboard/accesos"
               ? "bg-linear-to-br from-white via-indigo-50 to-white text-indigo-600"
               : ""
