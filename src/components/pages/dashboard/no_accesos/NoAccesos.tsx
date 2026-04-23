@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -31,38 +31,208 @@ type NoAccesosJson = {
   };
 };
 
-type NoAccesosResponse = {
-  last: {
-    id: number;
-    dateReported: string;
-    type: string;
-    category: string;
-    json: NoAccesosJson;
-  } | null;
+type NoAccesosRecord = {
+  id: number;
+  dateReported: string;
+  type: string;
+  category: string;
+  json: NoAccesosJson;
 };
 
+type NoAccesosResponse =
+  | {
+      mode: "Diario";
+      last: NoAccesosRecord | null;
+    }
+  | {
+      mode: "Acumulado";
+      records: NoAccesosRecord[];
+    };
+
+function normalizeText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizeRespuestaLabel(value: string) {
+  const normalized = normalizeText(value);
+
+  if (
+    normalized === "problema de plataforma" ||
+    normalized === "problemas de plataforma"
+  ) {
+    return "Problemas de plataforma";
+  }
+
+  if (
+    normalized === "problema de equipo" ||
+    normalized === "problemas de equipo"
+  ) {
+    return "Problemas de equipo";
+  }
+
+  if (
+    normalized === "problema de conectividad" ||
+    normalized === "problemas de conectividad"
+  ) {
+    return "Problemas de conectividad";
+  }
+
+  if (normalized === "asignacion incorrecta") return "Asignacion incorrecta";
+  if (normalized === "actividad institucional") return "Actividad institucional";
+  if (normalized === "incapacidad o permiso") return "Incapacidad o permiso";
+  if (normalized === "incapacidad") return "Incapacidad";
+  if (normalized === "no corresponde") return "No corresponde";
+  if (normalized === "no corresponde al horario") return "No corresponde al horario";
+  if (normalized === "problema de correo") return "Problema de correo";
+  if (normalized === "uso de cuenta demo") return "Uso de cuenta demo";
+  if (normalized === "uso de cuenta de emergencia") {
+    return "Uso de cuenta de emergencia";
+  }
+
+  return value.trim();
+}
+
 function NoAccesos() {
-  const [selectedDate, setSelectedDate] = useState("2026-04-22");
+  const today = new Date().toLocaleDateString("sv-SE");
+
+  const [category, setCategory] = useState<"Diario" | "Acumulado">("Diario");
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
 
   const { data, isLoading, isError } = useQuery<NoAccesosResponse>({
-    queryKey: ["no-accesos", selectedDate],
-    queryFn: () => getNoAccesos(selectedDate),
-    enabled: !!selectedDate,
+    queryKey: ["no-accesos", category, selectedDate, startDate, endDate],
+    queryFn: () =>
+      getNoAccesos(
+        category === "Acumulado"
+          ? { category, startDate, endDate }
+          : { category, selectedDate }
+      ),
+    enabled:
+      category === "Acumulado"
+        ? Boolean(startDate) && Boolean(endDate)
+        : Boolean(selectedDate),
     retry: false,
     refetchOnWindowFocus: false,
   });
 
-  const registroSeleccionado = data?.last?.json ?? null;
+  const processedData = useMemo(() => {
+    if (!data) {
+      return {
+        totalSecciones: 0,
+        totalDocentesUnicos: 0,
+        totalRespuestas: 0,
+        resumenMotivos: [] as ResumenMotivo[],
+        actividadInstitucionalDetalle: [] as ActividadInstitucionalDetalle[],
+      };
+    }
 
-  const totalSecciones = registroSeleccionado?.noAccesos?.totalSecciones ?? 0;
-  const totalDocentesUnicos =
-    registroSeleccionado?.noAccesos?.totalDocentesUnicos ?? 0;
-  const resumenMotivos =
-    registroSeleccionado?.noAccesos?.resumenMotivos ?? [];
+    if (data.mode === "Diario") {
+      const json = data.last?.json;
 
-  const totalRespuestas = registroSeleccionado?.respuestas?.total ?? 0;
-  const actividadInstitucionalDetalle =
-    registroSeleccionado?.respuestas?.actividadInstitucionalDetalle ?? [];
+      return {
+        totalSecciones: json?.noAccesos?.totalSecciones ?? 0,
+        totalDocentesUnicos: json?.noAccesos?.totalDocentesUnicos ?? 0,
+        totalRespuestas: json?.respuestas?.total ?? 0,
+        resumenMotivos: json?.noAccesos?.resumenMotivos ?? [],
+        actividadInstitucionalDetalle:
+          json?.respuestas?.actividadInstitucionalDetalle ?? [],
+      };
+    }
+
+    const resumenMap = new Map<
+      string,
+      { motivo: string; secciones: number; docentesUnicos: number }
+    >();
+
+    const respuestasMap = new Map<
+      string,
+      { motivo: string; recuento: number }
+    >();
+
+    let totalSecciones = 0;
+    let totalDocentesUnicos = 0;
+
+    for (const record of data.records) {
+      const json = record.json;
+
+      totalSecciones += json?.noAccesos?.totalSecciones ?? 0;
+      totalDocentesUnicos += json?.noAccesos?.totalDocentesUnicos ?? 0;
+
+      for (const item of json?.noAccesos?.resumenMotivos ?? []) {
+        const key = normalizeText(item.motivo);
+        const current = resumenMap.get(key);
+
+        if (!current) {
+          resumenMap.set(key, {
+            motivo: item.motivo.trim(),
+            secciones: item.secciones ?? 0,
+            docentesUnicos: item.docentesUnicos ?? 0,
+          });
+        } else {
+          resumenMap.set(key, {
+            motivo: current.motivo,
+            secciones: current.secciones + (item.secciones ?? 0),
+            docentesUnicos: current.docentesUnicos + (item.docentesUnicos ?? 0),
+          });
+        }
+      }
+
+      for (const item of json?.respuestas?.actividadInstitucionalDetalle ?? []) {
+        const normalizedLabel = normalizeRespuestaLabel(item.motivo);
+        const key = normalizeText(normalizedLabel);
+        const current = respuestasMap.get(key);
+
+        if (!current) {
+          respuestasMap.set(key, {
+            motivo: normalizedLabel,
+            recuento: item.recuento ?? 0,
+          });
+        } else {
+          respuestasMap.set(key, {
+            motivo: current.motivo,
+            recuento: current.recuento + (item.recuento ?? 0),
+          });
+        }
+      }
+    }
+
+    const resumenMotivos = Array.from(resumenMap.values()).sort(
+      (a, b) => b.secciones - a.secciones
+    );
+
+    const actividadInstitucionalDetalle = Array.from(
+      respuestasMap.values()
+    ).sort((a, b) => b.recuento - a.recuento);
+
+    const totalRespuestas = actividadInstitucionalDetalle.reduce(
+      (acc, item) => acc + item.recuento,
+      0
+    );
+
+    return {
+      totalSecciones,
+      totalDocentesUnicos,
+      totalRespuestas,
+      resumenMotivos,
+      actividadInstitucionalDetalle,
+    };
+  }, [data]);
+
+  const {
+    totalSecciones,
+    totalDocentesUnicos,
+    totalRespuestas,
+    resumenMotivos,
+    actividadInstitucionalDetalle,
+  } = processedData;
+
+  const hasData =
+    resumenMotivos.length > 0 || actividadInstitucionalDetalle.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
@@ -80,19 +250,85 @@ function NoAccesos() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex w-full max-w-md flex-col gap-3">
               <label className="text-sm font-medium text-slate-700">
-                Filtrar por fecha
+                Tipo de consulta
               </label>
-              <div className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
-                <CalendarDays className="size-4 text-slate-500" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-transparent text-sm text-slate-700 outline-none"
-                />
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCategory("Diario")}
+                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                    category === "Diario"
+                      ? "border-indigo-600 bg-indigo-600 text-white"
+                      : "border-slate-300 bg-white text-slate-700"
+                  }`}
+                >
+                  Diario
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCategory("Acumulado")}
+                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                    category === "Acumulado"
+                      ? "border-indigo-600 bg-indigo-600 text-white"
+                      : "border-slate-300 bg-white text-slate-700"
+                  }`}
+                >
+                  Acumulado
+                </button>
               </div>
+
+              {category === "Diario" ? (
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Filtrar por fecha
+                  </label>
+                  <div className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
+                    <CalendarDays className="size-4 text-slate-500" />
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full bg-transparent text-sm text-slate-700 outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      Fecha inicio
+                    </label>
+                    <div className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
+                      <CalendarDays className="size-4 text-slate-500" />
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full bg-transparent text-sm text-slate-700 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      Fecha fin
+                    </label>
+                    <div className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 shadow-sm">
+                      <CalendarDays className="size-4 text-slate-500" />
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full bg-transparent text-sm text-slate-700 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -105,9 +341,9 @@ function NoAccesos() {
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-600 shadow-sm">
             Ocurrió un error al cargar los datos.
           </div>
-        ) : !registroSeleccionado ? (
+        ) : !hasData ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 shadow-sm">
-            No hay datos para la fecha seleccionada.
+            No hay datos para la consulta seleccionada.
           </div>
         ) : (
           <>
@@ -200,7 +436,7 @@ function NoAccesos() {
                     Respuestas de campaña
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Detalle de respuestas registradas para esta fecha.
+                    Detalle de respuestas registradas para esta consulta.
                   </p>
                 </div>
 
