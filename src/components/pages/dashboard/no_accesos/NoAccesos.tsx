@@ -6,6 +6,14 @@ import {
   Users,
   MessageSquareText,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { getNoAccesos } from "@/services/metrisc.services";
 
 type ResumenMotivo = {
@@ -49,6 +57,32 @@ type NoAccesosResponse =
       records: NoAccesosRecord[];
     };
 
+type PieMotivoData = {
+  name: string;
+  value: number;
+  docentesUnicos: number;
+};
+
+type PieRespuestaData = {
+  name: string;
+  value: number;
+};
+
+const PIE_COLORS = [
+  "#4F46E5",
+  "#06B6D4",
+  "#8B5CF6",
+  "#F59E0B",
+  "#10B981",
+  "#EF4444",
+  "#3B82F6",
+  "#F97316",
+  "#14B8A6",
+  "#A855F7",
+  "#84CC16",
+  "#EC4899",
+];
+
 function normalizeText(value: string) {
   return value
     .trim()
@@ -86,7 +120,9 @@ function normalizeRespuestaLabel(value: string) {
   if (normalized === "incapacidad o permiso") return "Incapacidad o permiso";
   if (normalized === "incapacidad") return "Incapacidad";
   if (normalized === "no corresponde") return "No corresponde";
-  if (normalized === "no corresponde al horario") return "No corresponde al horario";
+  if (normalized === "no corresponde al horario") {
+    return "No corresponde al horario";
+  }
   if (normalized === "problema de correo") return "Problema de correo";
   if (normalized === "uso de cuenta demo") return "Uso de cuenta demo";
   if (normalized === "uso de cuenta de emergencia") {
@@ -94,6 +130,11 @@ function normalizeRespuestaLabel(value: string) {
   }
 
   return value.trim();
+}
+
+function renderPieLabel(props: unknown) {
+  const { value = 0 } = props as { value?: number };
+  return `${value}`;
 }
 
 function NoAccesos() {
@@ -149,10 +190,7 @@ function NoAccesos() {
       { motivo: string; secciones: number; docentesUnicos: number }
     >();
 
-    const respuestasMap = new Map<
-      string,
-      { motivo: string; recuento: number }
-    >();
+    const respuestasMap = new Map<string, { motivo: string; recuento: number }>();
 
     let totalSecciones = 0;
     let totalDocentesUnicos = 0;
@@ -205,9 +243,9 @@ function NoAccesos() {
       (a, b) => b.secciones - a.secciones
     );
 
-    const actividadInstitucionalDetalle = Array.from(
-      respuestasMap.values()
-    ).sort((a, b) => b.recuento - a.recuento);
+    const actividadInstitucionalDetalle = Array.from(respuestasMap.values()).sort(
+      (a, b) => b.recuento - a.recuento
+    );
 
     const totalRespuestas = actividadInstitucionalDetalle.reduce(
       (acc, item) => acc + item.recuento,
@@ -230,6 +268,21 @@ function NoAccesos() {
     resumenMotivos,
     actividadInstitucionalDetalle,
   } = processedData;
+
+  const pieData = useMemo<PieMotivoData[]>(() => {
+    return resumenMotivos.map((item) => ({
+      name: item.motivo,
+      value: item.secciones,
+      docentesUnicos: item.docentesUnicos,
+    }));
+  }, [resumenMotivos]);
+
+  const pieRespuestasData = useMemo<PieRespuestaData[]>(() => {
+    return actividadInstitucionalDetalle.map((item) => ({
+      name: item.motivo,
+      value: item.recuento,
+    }));
+  }, [actividadInstitucionalDetalle]);
 
   const hasData =
     resumenMotivos.length > 0 || actividadInstitucionalDetalle.length > 0;
@@ -255,11 +308,11 @@ function NoAccesos() {
                 Tipo de consulta
               </label>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full">
                 <button
                   type="button"
                   onClick={() => setCategory("Diario")}
-                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                  className={`w-full rounded-xl border px-4 py-2 text-sm font-semibold transition ${
                     category === "Diario"
                       ? "border-indigo-600 bg-indigo-600 text-white"
                       : "border-slate-300 bg-white text-slate-700"
@@ -271,7 +324,7 @@ function NoAccesos() {
                 <button
                   type="button"
                   onClick={() => setCategory("Acumulado")}
-                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                  className={`w-full rounded-xl border px-4 py-2 text-sm font-semibold transition ${
                     category === "Acumulado"
                       ? "border-indigo-600 bg-indigo-600 text-white"
                       : "border-slate-300 bg-white text-slate-700"
@@ -352,7 +405,9 @@ function NoAccesos() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-indigo-100">Total de secciones</p>
-                    <h2 className="mt-3 text-3xl font-bold">{totalSecciones}</h2>
+                    <h2 className="mt-3 text-3xl font-bold">
+                      {totalSecciones}
+                    </h2>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-3">
                     <ClipboardList className="size-6" />
@@ -382,7 +437,9 @@ function NoAccesos() {
                     <p className="text-sm text-violet-100">
                       Total de respuestas
                     </p>
-                    <h2 className="mt-3 text-3xl font-bold">{totalRespuestas}</h2>
+                    <h2 className="mt-3 text-3xl font-bold">
+                      {totalRespuestas}
+                    </h2>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-3">
                     <MessageSquareText className="size-6" />
@@ -395,38 +452,56 @@ function NoAccesos() {
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-5">
                   <h3 className="text-xl font-semibold text-slate-900">
-                    Resumen de motivos
+                    Gestión de no accesos
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Distribución de los no accesos registrados por motivo.
+                    Comparativo y distribución de los motivos reportados.
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                  {resumenMotivos.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <p className="text-base font-semibold text-slate-800">
-                          {item.motivo}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Motivo reportado
-                        </p>
-                      </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
 
-                      <div className="flex flex-wrap gap-2 md:min-w-[280px] md:justify-end">
-                        <span className="inline-flex min-w-[130px] justify-center rounded-full bg-indigo-100 px-3 py-1 text-sm font-semibold text-indigo-700">
-                          Secciones: {item.secciones}
-                        </span>
-                        <span className="inline-flex min-w-[130px] justify-center rounded-full bg-cyan-100 px-3 py-1 text-sm font-semibold text-cyan-700">
-                          Docentes: {item.docentesUnicos}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    <ResponsiveContainer width="100%" height={360}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={115}
+                          paddingAngle={2}
+                          labelLine={false}
+                          label={renderPieLabel}
+                        >
+                          {pieData.map((_, index) => (
+                            <Cell
+                              key={`motivo-cell-${index}`}
+                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+
+                        <Tooltip
+                          formatter={(value, name) => [
+                            `${value} secciones`,
+                            name,
+                          ]}
+                        />
+
+                        <Legend
+                          verticalAlign="bottom"
+                          height={48}
+                          formatter={(value) => (
+                            <span className="text-sm text-slate-600">
+                              {value}
+                            </span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
@@ -436,32 +511,53 @@ function NoAccesos() {
                     Respuestas de campaña
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Detalle de respuestas registradas para esta consulta.
+                    Comparativo y distribución de respuestas registradas.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {actividadInstitucionalDetalle.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                    >
-                      <div>
-                        <p className="text-base font-semibold text-slate-800">
-                          {item.motivo}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Respuestas registradas
-                        </p>
-                      </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
 
-                      <div className="inline-flex w-fit rounded-2xl bg-violet-100 px-4 py-2 text-violet-700">
-                        <span className="text-2xl font-bold">
-                          {item.recuento}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    <ResponsiveContainer width="100%" height={360}>
+                      <PieChart>
+                        <Pie
+                          data={pieRespuestasData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={115}
+                          paddingAngle={4}
+                          labelLine={false}
+                          label={renderPieLabel}
+                        >
+                          {pieRespuestasData.map((_, index) => (
+                            <Cell
+                              key={`respuesta-cell-${index}`}
+                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+
+                        <Tooltip
+                          formatter={(value, name) => [
+                            `${value} respuestas`,
+                            name,
+                          ]}
+                        />
+
+                        <Legend
+                          verticalAlign="bottom"
+                          height={48}
+                          formatter={(value) => (
+                            <span className="text-sm text-slate-600">
+                              {value}
+                            </span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </div>
