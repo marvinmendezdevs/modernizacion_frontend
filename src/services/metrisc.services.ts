@@ -27,3 +27,16 @@ export async function deleteMetric(id: number) {
   const { data } = await api.delete(`/metrics/${id}`);
   return data;
 }
+
+export async function getNoAccesos(params: {
+  category: "Diario" | "Acumulado";
+  selectedDate?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const { data } = await api.get("/metrics/no-accesos", {
+    params,
+  });
+
+  return data;
+}

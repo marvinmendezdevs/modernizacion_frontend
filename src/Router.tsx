@@ -33,6 +33,7 @@ import FormAccesos from "./components/pages/update/FormAccesos"
 import FormGestionEscolar from "./components/pages/update/FormGestionEscolar"
 import FormSecciones from "./components/pages/update/FormSecciones"
 import GestionEscolar from "./components/pages/dashboard/gestion_escolar/GestionEscolar"
+import NoAccesos from "./components/pages/dashboard/no_accesos/NoAccesos"
 
 function Router() {
 
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/dashboard/accesos" element={<AccesosDashboard />} />
           <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
           <Route path="dashboard/gestion-escolar" element={<GestionEscolar />} />
+          <Route path="dashboard/no-accesos" element={<NoAccesos />} />
 
         </Route>
         <Route element={<ProtectedRoute />}>
