@@ -1,10 +1,13 @@
-import { metricsUpload } from "@/services/metrisc.services";
-import type { MetricData } from "@/types/metrics";
+import {
+  metricsUpload,
+  updateMetricById,
+} from "@/services/metrisc.services";
+import type { MetricData, MetricsInfo } from "@/types/metrics";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
 type ClaseItem = {
   grupo: number;
@@ -77,6 +80,11 @@ function getCurrentLocalTime(): string {
 
 function FormSecciones() {
   const queryClient = useQueryClient();
+  const { state } = useLocation();
+
+  const metricToEdit = state?.metric as MetricsInfo | undefined;
+  const isEditMode = Boolean(metricToEdit?.id);
+
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -98,6 +106,7 @@ function FormSecciones() {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isValid },
   } = useForm<FormValues>({
     mode: "onChange",
@@ -105,6 +114,22 @@ function FormSecciones() {
   });
 
   useEffect(() => {
+    if (!metricToEdit) return;
+
+    const date = new Date(metricToEdit.dateReported);
+
+    reset({
+      dateReported: date.toISOString().slice(0, 10),
+      timeReported: date.toISOString().slice(11, 19),
+      type: metricToEdit.type,
+      category: metricToEdit.category,
+      json: metricToEdit.json as FormValues["json"],
+    });
+  }, [metricToEdit, reset]);
+
+  useEffect(() => {
+    if (isEditMode) return;
+
     const updateTime = () => {
       setValue("timeReported", getCurrentLocalTime(), {
         shouldValidate: true,
@@ -117,34 +142,48 @@ function FormSecciones() {
     const interval = window.setInterval(updateTime, 1000);
 
     return () => window.clearInterval(interval);
-  }, [setValue]);
+  }, [setValue, isEditMode]);
 
-  const mutation = useMutation<ResponseType, Error, MetricData>({
+  const mutation = useMutation({
     mutationKey: ["metrics-secciones"],
-    mutationFn: metricsUpload,
-    onSuccess: async (res) => {
-      if (res) {
-        setSuccessMsg("Datos actualizados correctamente.");
-        setErrorMsg(null);
-        queryClient.invalidateQueries({ queryKey: ["secciones-update"] });
+    mutationFn: (payload: MetricData) => {
+      if (isEditMode && metricToEdit?.id) {
+        return updateMetricById({
+          id: metricToEdit.id,
+          data: payload,
+        });
       }
+
+      return metricsUpload(payload);
     },
-    onError: (err) => {
+    onSuccess: async () => {
+      setSuccessMsg(
+        isEditMode
+          ? "Registro actualizado correctamente."
+          : "Datos guardados correctamente."
+      );
+      setErrorMsg(null);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["secciones-update"],
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: ["accesos-update"],
+      });
+    },
+    onError: (err: Error) => {
       setSuccessMsg(null);
       setErrorMsg(err.message || "Ocurrió un error");
     },
   });
 
   const onSubmit = (values: FormValues) => {
-    const now = new Date();
-    const currentTime = [
-      String(now.getHours()).padStart(2, "0"),
-      String(now.getMinutes()).padStart(2, "0"),
-      String(now.getSeconds()).padStart(2, "0"),
-    ].join(":");
-
     const [year, month, day] = values.dateReported.split("-").map(Number);
-    const [hours, minutes, seconds = "00"] = currentTime.split(":").map(Number);
+
+    const [hours, minutes, seconds = 0] = values.timeReported
+      .split(":")
+      .map(Number);
 
     const payload: MetricData = {
       dateReported: new Date(
@@ -182,7 +221,9 @@ function FormSecciones() {
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Total clases</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Total clases
+            </label>
             <input
               type="number"
               min={0}
@@ -194,109 +235,158 @@ function FormSecciones() {
               })}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.totalClases?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.totalClases
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.totalClases?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.totalClases
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Clases efectivas</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Clases efectivas
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.${materia}.${groupIndex}.clasesEfectivas`, {
-                required: "Las clases efectivas son obligatorias",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.${materia}.${groupIndex}.clasesEfectivas`,
+                {
+                  required: "Las clases efectivas son obligatorias",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.clasesEfectivas?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.clasesEfectivas
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.clasesEfectivas?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.clasesEfectivas
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Total docentes</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Total docentes
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.${materia}.${groupIndex}.totalDocentes`, {
-                required: "El total de docentes es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.${materia}.${groupIndex}.totalDocentes`,
+                {
+                  required: "El total de docentes es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.totalDocentes?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.totalDocentes
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.totalDocentes?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.totalDocentes
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Accesos docentes</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Accesos docentes
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.${materia}.${groupIndex}.accesosDocentes`, {
-                required: "Los accesos de docentes son obligatorios",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.${materia}.${groupIndex}.accesosDocentes`,
+                {
+                  required: "Los accesos de docentes son obligatorios",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.accesosDocentes?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.accesosDocentes
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.accesosDocentes?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.accesosDocentes
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Total estudiantes</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Total estudiantes
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.${materia}.${groupIndex}.totalEstudiantes`, {
-                required: "El total de estudiantes es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.${materia}.${groupIndex}.totalEstudiantes`,
+                {
+                  required: "El total de estudiantes es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.totalEstudiantes?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.totalEstudiantes
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.totalEstudiantes?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.totalEstudiantes
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Accesos estudiantes</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Accesos estudiantes
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.${materia}.${groupIndex}.accesosEstudiantes`, {
-                required: "Los accesos de estudiantes son obligatorios",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.${materia}.${groupIndex}.accesosEstudiantes`,
+                {
+                  required: "Los accesos de estudiantes son obligatorios",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.[materia]?.[groupIndex]?.accesosEstudiantes?.message && (
+            {errors.json?.clases?.[materia]?.[groupIndex]?.accesosEstudiantes
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases[materia][groupIndex]?.accesosEstudiantes?.message}
+                {
+                  errors.json.clases[materia][groupIndex]?.accesosEstudiantes
+                    ?.message
+                }
               </p>
             )}
           </div>
@@ -326,161 +416,235 @@ function FormSecciones() {
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Logro académico</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Logro académico
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.logroAcademico`, {
-                required: "El logro académico es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.logroAcademico`,
+                {
+                  required: "El logro académico es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.logroAcademico?.message && (
+            {errors.json?.clases?.details?.[groupIndex]?.logroAcademico
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.logroAcademico?.message}
+                {
+                  errors.json.clases.details[groupIndex]?.logroAcademico
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Logro académico total</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Logro académico total
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.logroAcademicoTotal`, {
-                required: "El total de logro académico es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.logroAcademicoTotal`,
+                {
+                  required: "El total de logro académico es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.logroAcademicoTotal?.message && (
+            {errors.json?.clases?.details?.[groupIndex]?.logroAcademicoTotal
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.logroAcademicoTotal?.message}
+                {
+                  errors.json.clases.details[groupIndex]?.logroAcademicoTotal
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Recursos digitales</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Recursos digitales
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.recursosDigitales`, {
-                required: "Los recursos digitales son obligatorios",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.recursosDigitales`,
+                {
+                  required: "Los recursos digitales son obligatorios",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.recursosDigitales?.message && (
+            {errors.json?.clases?.details?.[groupIndex]?.recursosDigitales
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.recursosDigitales?.message}
+                {
+                  errors.json.clases.details[groupIndex]?.recursosDigitales
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Recursos digitales total</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Recursos digitales total
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.recursosDigitalesTotal`, {
-                required: "El total de recursos digitales es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.recursosDigitalesTotal`,
+                {
+                  required: "El total de recursos digitales es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.recursosDigitalesTotal?.message && (
+            {errors.json?.clases?.details?.[groupIndex]?.recursosDigitalesTotal
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.recursosDigitalesTotal?.message}
+                {
+                  errors.json.clases.details[groupIndex]?.recursosDigitalesTotal
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Tasa presencia docente</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Tasa presencia docente
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.tasaPresenciaDocente`, {
-                required: "La tasa de presencia docente es obligatoria",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.tasaPresenciaDocente`,
+                {
+                  required: "La tasa de presencia docente es obligatoria",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.tasaPresenciaDocente?.message && (
+            {errors.json?.clases?.details?.[groupIndex]?.tasaPresenciaDocente
+              ?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.tasaPresenciaDocente?.message}
+                {
+                  errors.json.clases.details[groupIndex]?.tasaPresenciaDocente
+                    ?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Tasa presencia docente total</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Tasa presencia docente total
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.tasaPresenciaDocenteTotal`, {
-                required: "El total de tasa de presencia docente es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.tasaPresenciaDocenteTotal`,
+                {
+                  required:
+                    "El total de tasa de presencia docente es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.tasaPresenciaDocenteTotal?.message && (
+            {errors.json?.clases?.details?.[groupIndex]
+              ?.tasaPresenciaDocenteTotal?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.tasaPresenciaDocenteTotal?.message}
+                {
+                  errors.json.clases.details[groupIndex]
+                    ?.tasaPresenciaDocenteTotal?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Tasa presencia estudiante</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Tasa presencia estudiante
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.tasaPresenciaEstudiante`, {
-                required: "La tasa de presencia estudiante es obligatoria",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.tasaPresenciaEstudiante`,
+                {
+                  required: "La tasa de presencia estudiante es obligatoria",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.tasaPresenciaEstudiante?.message && (
+            {errors.json?.clases?.details?.[groupIndex]
+              ?.tasaPresenciaEstudiante?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.tasaPresenciaEstudiante?.message}
+                {
+                  errors.json.clases.details[groupIndex]
+                    ?.tasaPresenciaEstudiante?.message
+                }
               </p>
             )}
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Tasa presencia estudiante total</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Tasa presencia estudiante total
+            </label>
             <input
               type="number"
               min={0}
               disabled={mutation.isPending}
-              {...register(`json.clases.details.${groupIndex}.tasaPresenciaEstudianteTotal`, {
-                required: "El total de tasa de presencia estudiante es obligatorio",
-                valueAsNumber: true,
-                min: { value: 0, message: "Debe ser mayor o igual a 0" },
-              })}
+              {...register(
+                `json.clases.details.${groupIndex}.tasaPresenciaEstudianteTotal`,
+                {
+                  required:
+                    "El total de tasa de presencia estudiante es obligatorio",
+                  valueAsNumber: true,
+                  min: { value: 0, message: "Debe ser mayor o igual a 0" },
+                }
+              )}
               className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-white"
             />
-            {errors.json?.clases?.details?.[groupIndex]?.tasaPresenciaEstudianteTotal?.message && (
+            {errors.json?.clases?.details?.[groupIndex]
+              ?.tasaPresenciaEstudianteTotal?.message && (
               <p className="text-xs text-red-600 mt-1">
-                {errors.json.clases.details[groupIndex]?.tasaPresenciaEstudianteTotal?.message}
+                {
+                  errors.json.clases.details[groupIndex]
+                    ?.tasaPresenciaEstudianteTotal?.message
+                }
               </p>
             )}
           </div>
@@ -503,29 +667,40 @@ function FormSecciones() {
         </p>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} >
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="sticky top-0 z-0 py-8 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 flex items-center justify-between px-8">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-400">Secciones</span>
             <ChevronRight size={14} className="text-slate-300" />
-            <span className="font-bold">Formulario de Secciones</span>
+            <span className="font-bold">
+              {isEditMode ? "Editar Secciones" : "Formulario de Secciones"}
+            </span>
           </div>
+
           <div className="flex items-center gap-5">
             <button
               type="submit"
               disabled={mutation.isPending || !isValid}
               className="px-3 py-2 rounded bg-indigo-600 text-white hover:cursor-pointer disabled:opacity-50"
             >
-              {mutation.isPending ? "Guardando..." : "Guardar"}
+              {mutation.isPending
+                ? isEditMode
+                  ? "Actualizando..."
+                  : "Guardando..."
+                : isEditMode
+                  ? "Actualizar"
+                  : "Guardar"}
             </button>
-              <Link
-                to="/dashboard/update"
-                className="bg-green-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-              >
-                Regresar
-              </Link>
+
+            <Link
+              to="/dashboard/update"
+              className="bg-green-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            >
+              Regresar
+            </Link>
           </div>
         </div>
+
         <fieldset className="p-4 border border-gray-200 rounded-lg mt-5 space-y-6">
           <div className="grid md:grid-cols-4 gap-3">
             <div className="flex flex-col">
@@ -539,12 +714,16 @@ function FormSecciones() {
                 className="border border-gray-200 p-2 rounded-lg text-gray-700"
               />
               {errors.dateReported?.message && (
-                <p className="text-xs text-red-600 mt-1">{errors.dateReported.message}</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.dateReported.message}
+                </p>
               )}
             </div>
 
             <div className="flex flex-col">
-              <label className="font-semibold text-gray-700">Hora de subida</label>
+              <label className="font-semibold text-gray-700">
+                Hora de subida
+              </label>
               <input
                 type="text"
                 readOnly
@@ -555,7 +734,9 @@ function FormSecciones() {
                 className="border border-gray-200 p-2 rounded-lg text-gray-700 bg-gray-100 cursor-not-allowed"
               />
               {errors.timeReported?.message && (
-                <p className="text-xs text-red-600 mt-1">{errors.timeReported.message}</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.timeReported.message}
+                </p>
               )}
             </div>
 
@@ -583,7 +764,9 @@ function FormSecciones() {
                 <option value="Acumulado">Acumulado</option>
               </select>
               {errors.category?.message && (
-                <p className="text-xs text-red-600 mt-1">{errors.category.message}</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.category.message}
+                </p>
               )}
             </div>
           </div>
@@ -591,7 +774,9 @@ function FormSecciones() {
 
         <section className="space-y-6">
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-indigo-600">Resumen general</h2>
+            <h2 className="text-lg font-bold text-indigo-600">
+              Resumen general
+            </h2>
             {renderDetailsFields(0)}
             {renderDetailsFields(1)}
           </div>

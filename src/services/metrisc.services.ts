@@ -40,3 +40,12 @@ export async function getNoAccesos(params: {
 
   return data;
 }
+
+export async function updateMetricById({id,data: payload,}: {
+  id: number;
+  data: MetricData;
+}) {
+  const { data } = await api.put(`/metrics/${id}`, payload);
+
+  return data;
+}

@@ -1,10 +1,13 @@
-import { metricsUpload } from "@/services/metrisc.services";
-import type { MetricData } from "@/types/metrics";
+import {
+  metricsUpload,
+  updateMetricById,
+} from "@/services/metrisc.services";
+import type { MetricData, MetricsInfo } from "@/types/metrics";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
 type GroupMetric = {
   total: number;
@@ -67,6 +70,11 @@ function getCurrentLocalTime(): string {
 
 function FormAccesos() {
   const queryClient = useQueryClient();
+  const { state } = useLocation();
+
+  const metricToEdit = state?.metric as MetricsInfo | undefined;
+  const isEditMode = Boolean(metricToEdit?.id);
+
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -86,6 +94,7 @@ function FormAccesos() {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isValid },
   } = useForm<FormValues>({
     mode: "onChange",
@@ -93,6 +102,22 @@ function FormAccesos() {
   });
 
   useEffect(() => {
+    if (!metricToEdit) return;
+
+    const date = new Date(metricToEdit.dateReported);
+
+    reset({
+      dateReported: date.toISOString().slice(0, 10),
+      timeReported: date.toISOString().slice(11, 19),
+      type: metricToEdit.type,
+      category: metricToEdit.category,
+      json: metricToEdit.json as FormValues["json"],
+    });
+  }, [metricToEdit, reset]);
+
+  useEffect(() => {
+    if (isEditMode) return;
+
     const updateTime = () => {
       setValue("timeReported", getCurrentLocalTime(), {
         shouldValidate: true,
@@ -105,13 +130,26 @@ function FormAccesos() {
     const interval = window.setInterval(updateTime, 1000);
 
     return () => window.clearInterval(interval);
-  }, [setValue]);
+  }, [setValue, isEditMode]);
 
   const mutation = useMutation({
     mutationKey: ["metrics-data"],
-    mutationFn: metricsUpload,
+    mutationFn: (payload: MetricData) => {
+      if (isEditMode && metricToEdit?.id) {
+        return updateMetricById({
+          id: metricToEdit.id,
+          data: payload,
+        });
+      }
+
+      return metricsUpload(payload);
+    },
     onSuccess: async () => {
-      setSuccessMsg("Datos actualizados correctamente.");
+      setSuccessMsg(
+        isEditMode
+          ? "Registro actualizado correctamente."
+          : "Datos guardados correctamente."
+      );
       setErrorMsg(null);
 
       await queryClient.invalidateQueries({
@@ -126,6 +164,7 @@ function FormAccesos() {
 
   const onSubmit = (values: FormValues) => {
     const [year, month, day] = values.dateReported.split("-").map(Number);
+
     const [hours, minutes, seconds = 0] = values.timeReported
       .split(":")
       .map(Number);
@@ -177,7 +216,9 @@ function FormAccesos() {
           </div>
 
           <div className="flex flex-col">
-            <label className="font-semibold text-gray-700 text-sm">Access</label>
+            <label className="font-semibold text-gray-700 text-sm">
+              Access
+            </label>
             <input
               type="number"
               min={0}
@@ -235,7 +276,10 @@ function FormAccesos() {
   return (
     <div>
       <div className="flex justify-between items-center">
-        <h1 className="font-semibold text-indigo-600 text-xl">Agregar acceso</h1>
+        <h1 className="font-semibold text-indigo-600 text-xl">
+          {isEditMode ? "Editar acceso" : "Agregar acceso"}
+        </h1>
+
         <Link
           to="/dashboard/update"
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
@@ -280,7 +324,9 @@ function FormAccesos() {
             </div>
 
             <div className="flex flex-col">
-              <label className="font-semibold text-gray-700">Hora de subida</label>
+              <label className="font-semibold text-gray-700">
+                Hora de subida
+              </label>
               <input
                 type="text"
                 readOnly
@@ -362,7 +408,13 @@ function FormAccesos() {
             disabled={mutation.isPending || !isValid}
             className="px-3 py-2 rounded bg-indigo-600 text-white hover:cursor-pointer disabled:opacity-50"
           >
-            {mutation.isPending ? "Guardando..." : "Guardar"}
+            {mutation.isPending
+              ? isEditMode
+                ? "Actualizando..."
+                : "Guardando..."
+              : isEditMode
+                ? "Actualizar"
+                : "Guardar"}
           </button>
         </div>
       </form>

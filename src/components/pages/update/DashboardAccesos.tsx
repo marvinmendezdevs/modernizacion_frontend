@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { updateMetrics, deleteMetric } from "@/services/metrisc.services";
-import type { MetricsInfo, MetricsUpdate } from "@/types/metrics";
+import { Link } from "react-router";
+import { Pencil, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+
 import Modal from "./Modal";
+import { deleteMetric, updateMetrics } from "@/services/metrisc.services";
+import type { MetricsInfo, MetricsUpdate } from "@/types/metrics";
 import { formatFullDate } from "@/utils/index.utils";
 
 function DashboardAccesos() {
@@ -18,25 +20,46 @@ function DashboardAccesos() {
   const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
   const [deleteInfo, setDeleteInfo] = useState<{
     dateReported: string;
     type: string;
     category: string;
   } | null>(null);
+
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const perPage = 8;
+  const perPage = 15;
 
-  const metricsList = useMemo<MetricsInfo[]>(() => data?.metrics ?? [], [data]);
+  const metricsList = useMemo<MetricsInfo[]>(() => {
+    return data?.metrics ?? [];
+  }, [data]);
 
   const totalPages = Math.ceil(metricsList.length / perPage);
 
   const paginatedMetrics = useMemo<MetricsInfo[]>(() => {
     const start = (page - 1) * perPage;
     const end = start + perPage;
+
     return metricsList.slice(start, end);
   }, [metricsList, page]);
+
+  const getFormRouteByType = (item: MetricsInfo) => {
+    if (item.type === "Accesos") return "/dashboard/accesos/form";
+
+    if (item.type === "Secciones") return "/dashboard/secciones/form";
+
+    if (
+      item.type === "Gestion_Escolar" ||
+      item.type === "Gestión Escolar" ||
+      item.type === "Gestion Escolar"
+    ) {
+      return "/dashboard/gestion-escolar/form";
+    }
+
+    return "/dashboard/update";
+  };
 
   const handlePrevPage = () => {
     setPage((prev) => Math.max(prev - 1, 1));
@@ -84,13 +107,14 @@ function DashboardAccesos() {
 
   const handleDelete = () => {
     if (deleteId === null) return;
+
     deleteMutation.mutate(deleteId);
   };
 
   if (isLoading) {
     return (
       <p className="text-xs text-slate-800 flex justify-center items-center gap-1 p-3">
-        <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin"></span>
+        <span className="h-5 w-5 block rounded-full border-2 border-gray-300 border-t-indigo-600 animate-spin" />
         Cargando información...
       </p>
     );
@@ -154,10 +178,21 @@ function DashboardAccesos() {
                   <td className="px-3 py-2">
                     {formatFullDate(String(item.dateReported))}
                   </td>
+
                   <td className="px-3 py-2">{item.type}</td>
+
                   <td className="px-3 py-2">{item.category}</td>
+
                   <td className="px-3 py-2">
                     <div className="flex justify-center items-center gap-3">
+                      <Link
+                        to={getFormRouteByType(item)}
+                        state={{ metric: item }}
+                        title="Editar registro"
+                      >
+                        <Pencil className="size-5 text-indigo-700 cursor-pointer" />
+                      </Link>
+
                       <Trash2
                         onClick={() =>
                           openDeleteModal({
@@ -225,9 +260,11 @@ function DashboardAccesos() {
                   <span className="font-medium">Fecha:</span>{" "}
                   {formatFullDate(deleteInfo.dateReported)}
                 </p>
+
                 <p>
                   <span className="font-medium">Tipo:</span> {deleteInfo.type}
                 </p>
+
                 <p>
                   <span className="font-medium">Categoría:</span>{" "}
                   {deleteInfo.category}
