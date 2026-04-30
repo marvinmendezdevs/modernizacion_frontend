@@ -1,6 +1,6 @@
 import { login } from "@/services/auth.services";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, GraduationCap, Lock, Mail } from "lucide-react";
+import {  GraduationCap, Lock, Mail } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import type { LoginResponseType, LoginType } from "@/types/auth.types";
 import type { AxiosError } from "axios";
@@ -129,7 +129,7 @@ const redirects: RedirectType = {
           <div>
             <div className="flex justify-between items-center mb-1.5 ml-1">
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide" htmlFor="password">Contraseña</label>
-              <a href="#" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">¿Olvidaste tu contraseña?</a>
+              {/* <a href="#" className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">¿Olvidaste tu contraseña?</a> */}
             </div>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -146,10 +146,10 @@ const redirects: RedirectType = {
             {errors.email && <p className="text-red-500 text-xs my-1">La contraseña es obligatoria</p>}
           </div>
 
-          <button type="submit" className="group w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer">
+          {/* <button type="submit" className="group w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer">
             <span>Iniciar Sesión</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          </button> */}
         </form>
       </div>
     </div>
