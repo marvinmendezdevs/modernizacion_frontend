@@ -104,6 +104,20 @@ type LineChartItem = {
   clasesEfectivas: number;
 };
 
+type ViewMode = "Diario" | "Semanal";
+
+type SeccionesData = {
+  clases: {
+    grados: GradoItem[];
+    Indicadores: IndicadoresItem[];
+    details: DetailItem[];
+    Lenguaje: ClaseItem[];
+    Matematica: ClaseItem[];
+  };
+  remediacion: unknown;
+  refuerzo: unknown;
+};
+
 const EMPTY_CLASES = {
   Lenguaje: [] as ClaseItem[],
   Matematica: [] as ClaseItem[],
@@ -235,12 +249,270 @@ function construirResumenDetails(items: DetailItem[]) {
   };
 }
 
+function getISOWeekValue(dateString: string) {
+  if (!dateString) return "";
+
+  const date = new Date(`${dateString}T00:00:00`);
+  const tempDate = new Date(date.getTime());
+  const dayNumber = (tempDate.getDay() + 6) % 7;
+
+  tempDate.setDate(tempDate.getDate() - dayNumber + 3);
+
+  const firstThursday = new Date(tempDate.getFullYear(), 0, 4);
+  const firstDayNumber = (firstThursday.getDay() + 6) % 7;
+  firstThursday.setDate(firstThursday.getDate() - firstDayNumber + 3);
+
+  const week =
+    1 +
+    Math.round(
+      ((tempDate.getTime() - firstThursday.getTime()) / 86400000 - 3) / 7
+    );
+
+  return `${tempDate.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function getWeekRange(weekValue: string) {
+  const [yearText, weekText] = weekValue.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+
+  const firstThursday = new Date(year, 0, 4);
+  const firstDayNumber = (firstThursday.getDay() + 6) % 7;
+  const firstMonday = new Date(firstThursday);
+
+  firstMonday.setDate(firstThursday.getDate() - firstDayNumber);
+
+  const startDate = new Date(firstMonday);
+  startDate.setDate(firstMonday.getDate() + (week - 1) * 7);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 6);
+
+  return {
+    start: startDate.toLocaleDateString("sv-SE"),
+    end: endDate.toLocaleDateString("sv-SE"),
+  };
+}
+
+function getPreviousWeekValue(weekValue: string) {
+  const { start } = getWeekRange(weekValue);
+  const previousWeekDate = new Date(`${start}T00:00:00`);
+  previousWeekDate.setDate(previousWeekDate.getDate() - 7);
+
+  return getISOWeekValue(previousWeekDate.toLocaleDateString("sv-SE"));
+}
+
+function getWeekNumberLabel(weekValue: string) {
+  return weekValue.split("-W")[1] ?? "";
+}
+
+function isRecordInRange(record: MetricsRecord, start: string, end: string) {
+  const recordDate = normalizeDate(record.dateReported);
+  return recordDate >= start && recordDate <= end;
+}
+
+function emptySeccionesData(): SeccionesData {
+  return {
+    clases: {
+      grados: EMPTY_CLASES.grados,
+      Indicadores: EMPTY_CLASES.Indicadores,
+      details: EMPTY_CLASES.details,
+      Lenguaje: EMPTY_CLASES.Lenguaje,
+      Matematica: EMPTY_CLASES.Matematica,
+    },
+    remediacion: null,
+    refuerzo: null,
+  };
+}
+
+function buildDataFromJson(source?: SeccionesJson | null): SeccionesData {
+  return {
+    clases: {
+      grados: source?.clases?.grados ?? EMPTY_CLASES.grados,
+      Indicadores: source?.clases?.Indicadores ?? EMPTY_CLASES.Indicadores,
+      details: source?.clases?.details ?? EMPTY_CLASES.details,
+      Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
+      Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
+    },
+    remediacion: source?.remediacion ?? null,
+    refuerzo: source?.refuerzo ?? null,
+  };
+}
+
+function sumarGradoItemsPorGrado(items: GradoItem[]): GradoItem[] {
+  const map = new Map<number, GradoItem>();
+
+  items.forEach((item) => {
+    const current = map.get(item.grado) ?? {
+      grado: item.grado,
+      clasesTotales: 0,
+      clasesEfectivas: 0,
+    };
+
+    map.set(item.grado, {
+      grado: item.grado,
+      clasesTotales: current.clasesTotales + (item.clasesTotales ?? 0),
+      clasesEfectivas: current.clasesEfectivas + (item.clasesEfectivas ?? 0),
+    });
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.grado - b.grado);
+}
+
+function sumarIndicadoresItemsPorGrupo(items: IndicadoresItem[]): IndicadoresItem[] {
+  const map = new Map<number, IndicadoresItem>();
+
+  items.forEach((item) => {
+    const current = map.get(item.grupo) ?? {
+      grupo: item.grupo,
+      clasesTotales: 0,
+      totalDocentes: 0,
+      accesosDocentes: 0,
+      clasesEfectivas: 0,
+      totalEstudiantes: 0,
+      accesosEstudiantes: 0,
+    };
+
+    map.set(item.grupo, {
+      grupo: item.grupo,
+      clasesTotales: current.clasesTotales + (item.clasesTotales ?? 0),
+      totalDocentes: current.totalDocentes + (item.totalDocentes ?? 0),
+      accesosDocentes: current.accesosDocentes + (item.accesosDocentes ?? 0),
+      clasesEfectivas: current.clasesEfectivas + (item.clasesEfectivas ?? 0),
+      totalEstudiantes: current.totalEstudiantes + (item.totalEstudiantes ?? 0),
+      accesosEstudiantes:
+        current.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
+    });
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.grupo - b.grupo);
+}
+
+function sumarClaseItemsPorGrupo(items: ClaseItem[]): ClaseItem[] {
+  const map = new Map<number, ClaseItem>();
+
+  items.forEach((item) => {
+    const current = map.get(item.grupo) ?? {
+      grupo: item.grupo,
+      totalClases: 0,
+      totalDocentes: 0,
+      accesosDocentes: 0,
+      clasesEfectivas: 0,
+      totalEstudiantes: 0,
+      accesosEstudiantes: 0,
+    };
+
+    map.set(item.grupo, {
+      grupo: item.grupo,
+      totalClases: current.totalClases + (item.totalClases ?? 0),
+      totalDocentes: current.totalDocentes + (item.totalDocentes ?? 0),
+      accesosDocentes: current.accesosDocentes + (item.accesosDocentes ?? 0),
+      clasesEfectivas: current.clasesEfectivas + (item.clasesEfectivas ?? 0),
+      totalEstudiantes: current.totalEstudiantes + (item.totalEstudiantes ?? 0),
+      accesosEstudiantes:
+        current.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
+    });
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.grupo - b.grupo);
+}
+
+function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
+  const map = new Map<number, DetailItem>();
+
+  items.forEach((item) => {
+    const current = map.get(item.grupo) ?? {
+      grupo: item.grupo,
+      tasaPresenciaDocente: 0,
+      tasaPresenciaDocenteTotal: 0,
+      tasaPresenciaEstudiante: 0,
+      tasaPresenciaEstudianteTotal: 0,
+      logroAcademico: 0,
+      logroAcademicoTotal: 0,
+      recursosDigitales: 0,
+      recursosDigitalesTotal: 0,
+    };
+
+    map.set(item.grupo, {
+      grupo: item.grupo,
+      tasaPresenciaDocente:
+        current.tasaPresenciaDocente + (item.tasaPresenciaDocente ?? 0),
+      tasaPresenciaDocenteTotal:
+        current.tasaPresenciaDocenteTotal +
+        (item.tasaPresenciaDocenteTotal ?? 0),
+      tasaPresenciaEstudiante:
+        current.tasaPresenciaEstudiante +
+        (item.tasaPresenciaEstudiante ?? 0),
+      tasaPresenciaEstudianteTotal:
+        current.tasaPresenciaEstudianteTotal +
+        (item.tasaPresenciaEstudianteTotal ?? 0),
+      logroAcademico: current.logroAcademico + (item.logroAcademico ?? 0),
+      logroAcademicoTotal:
+        current.logroAcademicoTotal + (item.logroAcademicoTotal ?? 0),
+      recursosDigitales: current.recursosDigitales + (item.recursosDigitales ?? 0),
+      recursosDigitalesTotal:
+        current.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+    });
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.grupo - b.grupo);
+}
+
+function buildWeeklyData(records: MetricsRecord[]): SeccionesData {
+  if (records.length === 0) return emptySeccionesData();
+
+  return {
+    clases: {
+      grados: sumarGradoItemsPorGrado(
+        records.flatMap((record) => record.json?.clases?.grados ?? [])
+      ),
+      Indicadores: sumarIndicadoresItemsPorGrupo(
+        records.flatMap((record) => record.json?.clases?.Indicadores ?? [])
+      ),
+      details: sumarDetailItemsPorGrupo(
+        records.flatMap((record) => record.json?.clases?.details ?? [])
+      ),
+      Lenguaje: sumarClaseItemsPorGrupo(
+        records.flatMap((record) => record.json?.clases?.Lenguaje ?? [])
+      ),
+      Matematica: sumarClaseItemsPorGrupo(
+        records.flatMap((record) => record.json?.clases?.Matematica ?? [])
+      ),
+    },
+    remediacion: null,
+    refuerzo: null,
+  };
+}
+
+function buildLineChartItem(label: string, data: SeccionesData, grupos: number[]): LineChartItem {
+  const lenguaje = sumarClaseItems(
+    data.clases.Lenguaje.filter((item) => grupos.includes(item.grupo))
+  );
+
+  const matematica = sumarClaseItems(
+    data.clases.Matematica.filter((item) => grupos.includes(item.grupo))
+  );
+
+  return {
+    fecha: label,
+    accesosDocentes:
+      (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
+    accesosEstudiantes:
+      (lenguaje.accesosEstudiantes ?? 0) +
+      (matematica.accesosEstudiantes ?? 0),
+    clasesEfectivas:
+      (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
+  };
+}
+
 function SeccionesClasesDashboard() {
   const [gruposSeleccionados, setGruposSeleccionados] = useState<string[]>([
     "Grupo 1",
     "Grupo 2",
   ]);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedWeek, setSelectedWeek] = useState<string>("");
+  const [viewMode, setViewMode] = useState<ViewMode>("Diario");
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
     queryKey: ["dashboard-secciones", selectedDate],
@@ -267,7 +539,29 @@ function SeccionesClasesDashboard() {
     return formatFullDate(orderedRecords[0].dateReported);
   }, [orderedRecords]);
 
+  const effectiveSelectedWeek = useMemo(() => {
+    if (selectedWeek) return selectedWeek;
+    if (effectiveSelectedDate) return getISOWeekValue(effectiveSelectedDate);
+    return "";
+  }, [selectedWeek, effectiveSelectedDate]);
+
+  const previousSelectedWeek = useMemo(() => {
+    if (!effectiveSelectedWeek) return "";
+    return getPreviousWeekValue(effectiveSelectedWeek);
+  }, [effectiveSelectedWeek]);
+
+  const currentWeekRange = useMemo(() => {
+    if (!effectiveSelectedWeek) return null;
+    return getWeekRange(effectiveSelectedWeek);
+  }, [effectiveSelectedWeek]);
+
+  const previousWeekRange = useMemo(() => {
+    if (!previousSelectedWeek) return null;
+    return getWeekRange(previousSelectedWeek);
+  }, [previousSelectedWeek]);
+
   const sourceRecord = useMemo<MetricsRecord | null>(() => {
+    if (viewMode !== "Diario") return null;
     if (orderedRecords.length === 0) return null;
 
     const matchedRecord = orderedRecords.find(
@@ -275,9 +569,10 @@ function SeccionesClasesDashboard() {
     );
 
     return matchedRecord ?? null;
-  }, [orderedRecords, effectiveSelectedDate]);
+  }, [orderedRecords, effectiveSelectedDate, viewMode]);
 
   const previousRecord = useMemo<MetricsRecord | null>(() => {
+    if (viewMode !== "Diario") return null;
     if (!sourceRecord || orderedRecords.length === 0) return null;
 
     const currentIndex = orderedRecords.findIndex(
@@ -287,39 +582,39 @@ function SeccionesClasesDashboard() {
     if (currentIndex === -1) return null;
 
     return orderedRecords[currentIndex + 1] ?? null;
-  }, [sourceRecord, orderedRecords]);
+  }, [sourceRecord, orderedRecords, viewMode]);
 
-  const currentData = useMemo(() => {
-    const source = sourceRecord?.json ?? null;
+  const currentWeekRecords = useMemo(() => {
+    if (viewMode !== "Semanal" || !currentWeekRange) return [];
 
-    return {
-      clases: {
-        grados: source?.clases?.grados ?? EMPTY_CLASES.grados,
-        Indicadores: source?.clases?.Indicadores ?? EMPTY_CLASES.Indicadores,
-        details: source?.clases?.details ?? EMPTY_CLASES.details,
-        Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
-        Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
-      },
-      remediacion: source?.remediacion ?? null,
-      refuerzo: source?.refuerzo ?? null,
-    };
-  }, [sourceRecord]);
+    return orderedRecords.filter((record) =>
+      isRecordInRange(record, currentWeekRange.start, currentWeekRange.end)
+    );
+  }, [orderedRecords, currentWeekRange, viewMode]);
 
-  const previousData = useMemo(() => {
-    const source = previousRecord?.json ?? null;
+  const previousWeekRecords = useMemo(() => {
+    if (viewMode !== "Semanal" || !previousWeekRange) return [];
 
-    return {
-      clases: {
-        grados: source?.clases?.grados ?? EMPTY_CLASES.grados,
-        Indicadores: source?.clases?.Indicadores ?? EMPTY_CLASES.Indicadores,
-        details: source?.clases?.details ?? EMPTY_CLASES.details,
-        Lenguaje: source?.clases?.Lenguaje ?? EMPTY_CLASES.Lenguaje,
-        Matematica: source?.clases?.Matematica ?? EMPTY_CLASES.Matematica,
-      },
-      remediacion: source?.remediacion ?? null,
-      refuerzo: source?.refuerzo ?? null,
-    };
-  }, [previousRecord]);
+    return orderedRecords.filter((record) =>
+      isRecordInRange(record, previousWeekRange.start, previousWeekRange.end)
+    );
+  }, [orderedRecords, previousWeekRange, viewMode]);
+
+  const currentData = useMemo<SeccionesData>(() => {
+    if (viewMode === "Semanal") {
+      return buildWeeklyData(currentWeekRecords);
+    }
+
+    return buildDataFromJson(sourceRecord?.json ?? null);
+  }, [viewMode, currentWeekRecords, sourceRecord]);
+
+  const previousData = useMemo<SeccionesData>(() => {
+    if (viewMode === "Semanal") {
+      return buildWeeklyData(previousWeekRecords);
+    }
+
+    return buildDataFromJson(previousRecord?.json ?? null);
+  }, [viewMode, previousWeekRecords, previousRecord]);
 
   const hasData = useMemo(() => {
     return (
@@ -540,6 +835,23 @@ function SeccionesClasesDashboard() {
   }, [currentData, previousData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
+    if (viewMode === "Semanal") {
+      if (!effectiveSelectedWeek || !previousSelectedWeek) return [];
+
+      return [
+        buildLineChartItem(
+          `Semana ${getWeekNumberLabel(previousSelectedWeek)}`,
+          previousData,
+          gruposNumerosActivos
+        ),
+        buildLineChartItem(
+          `Semana ${getWeekNumberLabel(effectiveSelectedWeek)}`,
+          currentData,
+          gruposNumerosActivos
+        ),
+      ];
+    }
+
     if (!orderedRecords.length) return [];
 
     const ultimosCinco = [...orderedRecords]
@@ -549,30 +861,22 @@ function SeccionesClasesDashboard() {
           new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
       );
 
-    return ultimosCinco.map((record) => {
-      const lenguajeItems = (record.json?.clases?.Lenguaje ?? []).filter((item) =>
-        gruposNumerosActivos.includes(item.grupo)
-      );
-
-      const matematicaItems = (record.json?.clases?.Matematica ?? []).filter(
-        (item) => gruposNumerosActivos.includes(item.grupo)
-      );
-
-      const lenguaje = sumarClaseItems(lenguajeItems);
-      const matematica = sumarClaseItems(matematicaItems);
-
-      return {
-        fecha: formatFullDate(record.dateReported),
-        accesosDocentes:
-          (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
-        accesosEstudiantes:
-          (lenguaje.accesosEstudiantes ?? 0) +
-          (matematica.accesosEstudiantes ?? 0),
-        clasesEfectivas:
-          (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
-      };
-    });
-  }, [orderedRecords, gruposNumerosActivos]);
+    return ultimosCinco.map((record) =>
+      buildLineChartItem(
+        formatFullDate(record.dateReported),
+        buildDataFromJson(record.json),
+        gruposNumerosActivos
+      )
+    );
+  }, [
+    orderedRecords,
+    gruposNumerosActivos,
+    viewMode,
+    effectiveSelectedWeek,
+    previousSelectedWeek,
+    currentData,
+    previousData,
+  ]);
 
   if (isLoading) {
     return (
@@ -616,16 +920,50 @@ function SeccionesClasesDashboard() {
       </div>
 
       <div className="flex flex-col md:flex-row justify-end items-center gap-2 text-xs my-5">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode("Diario")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${viewMode === "Diario"
+              ? "bg-indigo-600 text-white"
+              : "text-slate-600 hover:bg-slate-100"
+              }`}
+          >
+            Diario
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("Semanal")}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${viewMode === "Semanal"
+              ? "bg-indigo-600 text-white"
+              : "text-slate-600 hover:bg-slate-100"
+              }`}
+          >
+            Semanal
+          </button>
+        </div>
+
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
           <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
             <Calendar size={16} />
           </div>
-          <input
-            type="date"
-            className="w-full"
-            value={effectiveSelectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
+
+          {viewMode === "Diario" ? (
+            <input
+              type="date"
+              className="w-full"
+              value={effectiveSelectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          ) : (
+            <input
+              type="week"
+              className="w-full"
+              value={effectiveSelectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm w-full md:w-auto">
@@ -666,7 +1004,9 @@ function SeccionesClasesDashboard() {
 
       {!hasData ? (
         <p className="border-l-2 border-green-700 text-green-700 p-2 bg-green-50 text-center">
-          No hay datos para la fecha seleccionada.
+          {viewMode === "Diario"
+            ? "No hay datos para la fecha seleccionada."
+            : "No hay datos para la semana seleccionada."}
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
@@ -789,15 +1129,15 @@ function SeccionesClasesDashboard() {
                 const porcentajeDocentes =
                   materia.docentesAccesos.total > 0
                     ? (materia.docentesAccesos.valor /
-                        materia.docentesAccesos.total) *
-                      100
+                      materia.docentesAccesos.total) *
+                    100
                     : 0;
 
                 const porcentajeEstudiantes =
                   materia.estudiantesAccesos.total > 0
                     ? (materia.estudiantesAccesos.valor /
-                        materia.estudiantesAccesos.total) *
-                      100
+                      materia.estudiantesAccesos.total) *
+                    100
                     : 0;
 
                 const variacionMateria = variaciones[materia.nombre];
@@ -927,22 +1267,29 @@ function SeccionesClasesDashboard() {
             <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">
-                  Comportamiento semanal
+                  {viewMode === "Diario"
+                    ? "Comportamiento diario"
+                    : "Comparación semanal"}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Tendencia de los últimos 5 días para{" "}
-                  {etiquetaGrupoActiva.toLowerCase()}.
+                  {viewMode === "Diario"
+                    ? `Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`
+                    : `Semana ${getWeekNumberLabel(
+                      effectiveSelectedWeek
+                    )} comparada contra semana ${getWeekNumberLabel(
+                      previousSelectedWeek
+                    )}.`}
                 </p>
               </div>
 
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-                Últimos 5 días
+                {viewMode === "Diario" ? "Últimos 5 días" : "Semana anterior vs actual"}
               </div>
             </div>
 
             {lineChartData.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                No hay datos suficientes para mostrar la tendencia semanal.
+                No hay datos suficientes para mostrar la información.
               </div>
             ) : (
               <div className="h-[340px] w-full">
