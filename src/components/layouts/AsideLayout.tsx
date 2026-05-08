@@ -1,5 +1,5 @@
 import Env from "@/utils/index.utils";
-import { GraduationCap, HatGlasses, LayoutDashboard, LogOut } from "lucide-react";
+import { GraduationCap, LayoutDashboard, LogOut } from "lucide-react";
 import SidebarItem from "./SidebarItem";
 import { useActiveNavItem, useNavbar } from "@/stores/index.store";
 import { useNavigate } from "react-router";
@@ -46,33 +46,33 @@ function AsideLayout() {
               active={activeTab === "/"}
               path="/"
             />
-            <NavLinksVerificator allowedRoles={["Tutor", "Tutor (Supervisor)"]} userRole={user.role.name}>
+            {/* <NavLinksVerificator allowedRoles={["Tutor", "Tutor (Supervisor)"]} userRole={user.role.name}>
               <SidebarItem
                 icon={<GraduationCap />}
                 label="Tutoría"
                 active={activeTab === "/tutoria"}
                 path="tutoria"
               />
-            </NavLinksVerificator>
+            </NavLinksVerificator> */}
 
-            <NavLinksVerificator allowedRoles={["Monitor (Gestión Escolar)"]} userRole={user.role.name}>
+            {/* <NavLinksVerificator allowedRoles={["Monitor (Gestión Escolar)"]} userRole={user.role.name}>
               <SidebarItem
                 icon={<HatGlasses />}
                 label="Monitoreo"
                 active={activeTab === "/monitores"}
                 path="monitores"
               />
-            </NavLinksVerificator>
+            </NavLinksVerificator> */}
           </div>
 
-          <NavLinksVerificator allowedRoles={["Facilitador (Gestión Escolar)"]} userRole={user.role.name}>
+          {/* <NavLinksVerificator allowedRoles={["Facilitador (Gestión Escolar)"]} userRole={user.role.name}>
             <SidebarItem
               icon={<GraduationCap />}
               label="Centros Escolares"
               active={activeTab === "/facilitadores"}
               path="facilitadores"
             />
-          </NavLinksVerificator>
+          </NavLinksVerificator> */}
 
           <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-8">
             Administración

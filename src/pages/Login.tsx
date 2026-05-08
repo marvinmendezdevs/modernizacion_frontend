@@ -1,6 +1,6 @@
 import { login } from "@/services/auth.services";
 import { useMutation } from "@tanstack/react-query";
-import {  GraduationCap, Lock, Mail } from "lucide-react";
+import {  ArrowRight, GraduationCap, Lock, Mail } from "lucide-react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import type { LoginResponseType, LoginType } from "@/types/auth.types";
 import type { AxiosError } from "axios";
@@ -146,10 +146,10 @@ const redirects: RedirectType = {
             {errors.email && <p className="text-red-500 text-xs my-1">La contraseña es obligatoria</p>}
           </div>
 
-          {/* <button type="submit" className="group w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer">
+          <button type="submit" className="group w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer">
             <span>Iniciar Sesión</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button> */}
+          </button>
         </form>
       </div>
     </div>
