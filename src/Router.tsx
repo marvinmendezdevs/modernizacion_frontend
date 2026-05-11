@@ -1,100 +1,37 @@
-import { BrowserRouter, Routes, Route } from "react-router"
-import Login from "./pages/Login"
-import AppLayout from "./components/layouts/AppLayout"
-import ProtectedRoute from "./components/layouts/ProtectedRoute"
-import Home from "./pages/Home"
-import Tutorship from "./pages/Tutorship"
-import Diagnostic from "./pages/Diagnostic"
-import Observations from "./pages/Observations"
-import ObservationForm from "./components/pages/ObservationForm"
-import Feedback from "./pages/Feedback"
-import FeedBackCreate from "./components/pages/FeedBackCreate"
-import FeedBackView from "./components/pages/FeedBackView"
-import TutorshipInfoTutor from "./components/pages/TutorshipInfoTutor"
-import Facilitadores from "./pages/Facilitadores"
-import Monitores from "./pages/Monitores"
-import AppRoleValidator from "./components/layouts/AppRoleValidator"
-import MonitorOptimizationForm from "./pages/MonitorOptimizationForm"
-import MonitorDashboard from "./components/pages/MonitorDashboard"
-import SchoolUpdate from "./components/pages/SchoolUpdate"
-import Remediation from "./components/pages/Remediation"
-import ReinforcementForm from "./components/pages/ReinforcementForm"
-import RemediationForm from "./components/pages/RemediationForm"
-import BaseFormRemediation from "./components/pages/BaseFormRemediation"
-import FacilitatorTeacherList from "./pages/FacilitatorTeacherList"
-import FacilitadoresHome from "./pages/FacilitadoresHome"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router"
 import Dahsboard from "./pages/Dahsboard"
 import TutorshipDashboard from "./components/pages/dashboard/TutorshipDashboard"
 import SchoolsDashboard from "./components/pages/dashboard/SchoolsDashboard"
 import AccesosDashboard from "./components/pages/dashboard/AccesosDashboard"
 import SeccionesClasesDashboard from "./components/pages/dashboard/SeccionesClasesDashboard"
-import DashboardAccesos from "./components/pages/update/DashboardAccesos"
-import FormAccesos from "./components/pages/update/FormAccesos"
-import FormGestionEscolar from "./components/pages/update/FormGestionEscolar"
-import FormSecciones from "./components/pages/update/FormSecciones"
 import GestionEscolar from "./components/pages/dashboard/gestion_escolar/GestionEscolar"
 import NoAccesos from "./components/pages/dashboard/no_accesos/NoAccesos"
 
 function Router() {
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Ruta principal */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Rutas permitidas del dashboard */}
         <Route element={<Dahsboard />}>
-          <Route index path="dashboard" element={<SeccionesClasesDashboard />} />
-          <Route path="dashboard/centros-educativos" element={<SchoolsDashboard />} />
+          <Route path="/dashboard" element={<SeccionesClasesDashboard />} />
+          <Route
+            path="/dashboard/centros-educativos"
+            element={<SchoolsDashboard />}
+          />
+          <Route path="/dashboard/tutoria" element={<TutorshipDashboard />} />
+          <Route
+            path="/dashboard/gestion-escolar"
+            element={<GestionEscolar />}
+          />
+          <Route path="/dashboard/no-accesos" element={<NoAccesos />} />
           <Route path="/dashboard/accesos" element={<AccesosDashboard />} />
-          <Route path="dashboard/tutoria" element={<TutorshipDashboard />} />
-          <Route path="dashboard/gestion-escolar" element={<GestionEscolar />} />
-          <Route path="dashboard/no-accesos" element={<NoAccesos />} />
-
         </Route>
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Home />} />
 
-            {/* Tutoria */}
-            <Route element={<AppRoleValidator allowedRoles={["Tutor (Supervisor)", "Tutor"]} />}>
-              <Route path="/tutoria" element={<Tutorship />} />
-              <Route path="/diagnostico/:teacher/:section" element={<Diagnostic />} />
-              <Route path="/observaciones/:teacherDui" element={<Observations />} />
-              <Route path="/observaciones/:teacherId/:sectionId" element={<ObservationForm />} />
-              <Route path="/retroalimentacion/:observationId" element={<Feedback />} />
-              <Route path="/retroalimentacion/:idFeedBack/view" element={<FeedBackView />} />
-              <Route path="/retroalimentacion/:observationId/create" element={<FeedBackCreate />} />
-              <Route path="/tutoria/tutor/:username" element={<TutorshipInfoTutor />} />
-            </Route>
-
-            {/* Gestion Escolar */}
-            <Route path="/monitores" element={<AppRoleValidator allowedRoles={["Monitor (Gestión Escolar)"]} />}>
-              <Route index element={<Monitores />} />
-              <Route path="dashboard" element={<MonitorDashboard />} />
-              <Route path="formulario/:schoolCode/optimizacion" element={<MonitorOptimizationForm />} />
-            </Route>
-
-            <Route path="/schools" element={<AppRoleValidator allowedRoles={["Monitor (Gestión Escolar)"]} />}>
-              <Route path=":schoolCode/update" element={<SchoolUpdate />} />
-              <Route path=":schoolCode/remediation" element={<Remediation />} />
-              <Route path="general/form" element={<BaseFormRemediation />} />
-              <Route path="reinforcement/form" element={<ReinforcementForm />} />
-              <Route path="remediation/form" element={<RemediationForm />} />
-            </Route>
-
-            <Route path="/facilitadores" element={<AppRoleValidator allowedRoles={["Facilitador (Gestión Escolar)"]} />}>
-              <Route element={<FacilitadoresHome />} />
-              <Route index element={<Facilitadores />} />
-              <Route path=":schoolCode/escuela" element={<FacilitatorTeacherList />} />
-            </Route>
-
-            <Route path="/dashboard" element={<AppRoleValidator allowedRoles={["Administrador"]} />}>
-              <Route path="update" element={<DashboardAccesos />} />
-              <Route path="accesos/form" element={<FormAccesos />} />
-              <Route path="gestion-escolar/form" element={<FormGestionEscolar />} />
-              <Route path="secciones/form" element={<FormSecciones />} />
-            </Route>
-          </Route>
-        </Route>
+        {/* Cualquier otra ruta redirige al dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   )
