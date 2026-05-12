@@ -1,4 +1,4 @@
-import { getSeccionClasses } from "@/services/dashboard.services";
+import { getSeccionClasses, getTeacherInfo } from "@/services/dashboard.services";
 import { formatFullDate } from "@/utils/index.utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import type { DashboardRecord } from "@/types/dashboard.types";
 
 type MateriaNombre = "Matemática" | "Lenguaje";
 
@@ -95,6 +96,29 @@ type MetricsRecord = {
 type ApiResponse = {
   last: MetricsRecord | null;
   cumulative: MetricsRecord[];
+};
+
+type SubtypeBlock = {
+  docentes: DashboardRecord[];
+  secciones: DashboardRecord[];
+  estudiantes: DashboardRecord[];
+};
+
+type DashboardJsonApi = {
+  clases: SubtypeBlock;
+};
+
+type DashboardReportApi = {
+  id: number;
+  category: string;
+  dateReported: string;
+  type: string;
+  json: DashboardJsonApi;
+};
+
+type TeacherInfoResponse = {
+  last: DashboardReportApi | null;
+  cumulative: DashboardReportApi[];
 };
 
 type LineChartItem = {
@@ -458,6 +482,12 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
   return Array.from(map.values()).sort((a, b) => a.grupo - b.grupo);
 }
 
+function sumTotals(items: DashboardRecord[], groups: number[], field: "total" | "access" | "demo") {
+  return items
+    .filter((item) => groups.includes(item.group))
+    .reduce((acc, item) => acc + (item[field] ?? 0), 0);
+}
+
 function buildWeeklyData(records: MetricsRecord[]): SeccionesData {
   if (records.length === 0) return emptySeccionesData();
 
@@ -484,7 +514,12 @@ function buildWeeklyData(records: MetricsRecord[]): SeccionesData {
   };
 }
 
-function buildLineChartItem(label: string, data: SeccionesData, grupos: number[]): LineChartItem {
+function buildLineChartItem(
+  label: string,
+  data: SeccionesData,
+  grupos: number[],
+  teacherData?: DashboardReportApi | null
+): LineChartItem {
   const lenguaje = sumarClaseItems(
     data.clases.Lenguaje.filter((item) => grupos.includes(item.grupo))
   );
@@ -493,13 +528,18 @@ function buildLineChartItem(label: string, data: SeccionesData, grupos: number[]
     data.clases.Matematica.filter((item) => grupos.includes(item.grupo))
   );
 
+  const accesosDocentes = teacherData
+    ? sumTotals(teacherData.json.clases.docentes, grupos, "access")
+    : (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0);
+
+  const accesosEstudiantes = teacherData
+    ? sumTotals(teacherData.json.clases.estudiantes, grupos, "access")
+    : (lenguaje.accesosEstudiantes ?? 0) + (matematica.accesosEstudiantes ?? 0);
+
   return {
     fecha: label,
-    accesosDocentes:
-      (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0),
-    accesosEstudiantes:
-      (lenguaje.accesosEstudiantes ?? 0) +
-      (matematica.accesosEstudiantes ?? 0),
+    accesosDocentes,
+    accesosEstudiantes,
     clasesEfectivas:
       (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
   };
@@ -525,6 +565,21 @@ function SeccionesClasesDashboard() {
   const effectiveSelectedDate = selectedDate || lastReportedDate;
   const cumulative = data?.cumulative;
 
+  // Rango para getTeacherInfo
+  const rangeDates = useMemo(() => {
+    const end = new Date().toLocaleDateString("sv-SE");
+    const start = new Date();
+    start.setDate(start.getDate() - 60); // Un rango amplio para cubrir historial
+    return { start: start.toLocaleDateString("sv-SE"), end };
+  }, []);
+
+  const { data: teacherInfoData } = useQuery<TeacherInfoResponse>({
+    queryKey: ["dashboard", rangeDates.start, rangeDates.end],
+    queryFn: () => getTeacherInfo(rangeDates.start, rangeDates.end),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
   const orderedRecords = useMemo<MetricsRecord[]>(() => {
     if (!Array.isArray(cumulative)) return [];
 
@@ -533,6 +588,17 @@ function SeccionesClasesDashboard() {
         new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
     );
   }, [cumulative]);
+
+  const teacherRecords = useMemo<DashboardReportApi[]>(() => {
+    if (!teacherInfoData) return [];
+    return [
+      ...(teacherInfoData.last ? [teacherInfoData.last] : []),
+      ...(teacherInfoData.cumulative ?? []),
+    ].sort(
+      (a, b) =>
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+    );
+  }, [teacherInfoData]);
 
   const lastReportDate = useMemo(() => {
     if (orderedRecords.length === 0) return "Sin registros";
@@ -571,6 +637,17 @@ function SeccionesClasesDashboard() {
     return matchedRecord ?? null;
   }, [orderedRecords, effectiveSelectedDate, viewMode]);
 
+  const sourceTeacherRecord = useMemo<DashboardReportApi | null>(() => {
+    if (viewMode !== "Diario") return null;
+    if (teacherRecords.length === 0) return null;
+
+    return (
+      teacherRecords.find(
+        (record) => normalizeDate(record.dateReported) === effectiveSelectedDate
+      ) ?? null
+    );
+  }, [teacherRecords, effectiveSelectedDate, viewMode]);
+
   const previousRecord = useMemo<MetricsRecord | null>(() => {
     if (viewMode !== "Diario") return null;
     if (!sourceRecord || orderedRecords.length === 0) return null;
@@ -592,6 +669,15 @@ function SeccionesClasesDashboard() {
     );
   }, [orderedRecords, currentWeekRange, viewMode]);
 
+  const currentWeekTeacherRecords = useMemo(() => {
+    if (viewMode !== "Semanal" || !currentWeekRange) return [];
+
+    return teacherRecords.filter((record) => {
+      const d = normalizeDate(record.dateReported);
+      return d >= currentWeekRange.start && d <= currentWeekRange.end;
+    });
+  }, [teacherRecords, currentWeekRange, viewMode]);
+
   const previousWeekRecords = useMemo(() => {
     if (viewMode !== "Semanal" || !previousWeekRange) return [];
 
@@ -606,11 +692,28 @@ function SeccionesClasesDashboard() {
     return currentWeekRecords[0] ?? null;
   }, [currentWeekRecords, viewMode]);
 
+  const currentWeekLatestTeacherRecord = useMemo<DashboardReportApi | null>(() => {
+    if (viewMode !== "Semanal") return null;
+
+    return currentWeekTeacherRecords[0] ?? null;
+  }, [currentWeekTeacherRecords, viewMode]);
+
   const previousWeekLatestRecord = useMemo<MetricsRecord | null>(() => {
     if (viewMode !== "Semanal") return null;
 
     return previousWeekRecords[0] ?? null;
   }, [previousWeekRecords, viewMode]);
+
+  const previousWeekLatestTeacherRecord = useMemo<DashboardReportApi | null>(() => {
+    if (viewMode !== "Semanal" || !previousWeekRange) return null;
+
+    return (
+      teacherRecords.filter((record) => {
+        const d = normalizeDate(record.dateReported);
+        return d >= previousWeekRange.start && d <= previousWeekRange.end;
+      })[0] ?? null
+    );
+  }, [teacherRecords, previousWeekRange, viewMode]);
 
   // Datos que se muestran en pantalla.
   // En Semanal no se suman los valores absolutos; se toma el registro más reciente de la semana.
@@ -768,11 +871,13 @@ function SeccionesClasesDashboard() {
   }, [hasData, currentData, gruposNumerosActivos]);
 
   const materiasPorcentajes = useMemo(() => {
-    const lenguajeItems = currentPercentageData.clases.Lenguaje.filter((item) =>
+    // Resumen por materia: se mantiene con los datos visibles actuales.
+    // El acumulado semanal solo debe afectar los porcentajes de las cards superiores.
+    const lenguajeItems = currentData.clases.Lenguaje.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
     );
 
-    const matematicaItems = currentPercentageData.clases.Matematica.filter((item) =>
+    const matematicaItems = currentData.clases.Matematica.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
     );
 
@@ -798,7 +903,7 @@ function SeccionesClasesDashboard() {
         ),
       },
     };
-  }, [currentPercentageData, gruposNumerosActivos]);
+  }, [currentData, gruposNumerosActivos]);
 
   const detailsResumen = useMemo(() => {
     const detailItems = currentData.clases.details.filter((item) =>
@@ -817,26 +922,28 @@ function SeccionesClasesDashboard() {
   }, [currentPercentageData, gruposNumerosActivos]);
 
   const variaciones = useMemo(() => {
+    // Variaciones del resumen por materia: no usan el acumulado semanal.
+    // Se calculan con los datos visibles actuales/anterior para no alterar este bloque.
     const lenguajeActual = sumarClaseItems(
-      currentPercentageData.clases.Lenguaje.filter((item) =>
+      currentData.clases.Lenguaje.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const lenguajeAnterior = sumarClaseItems(
-      previousPercentageData.clases.Lenguaje.filter((item) =>
+      previousData.clases.Lenguaje.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const matematicaActual = sumarClaseItems(
-      currentPercentageData.clases.Matematica.filter((item) =>
+      currentData.clases.Matematica.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const matematicaAnterior = sumarClaseItems(
-      previousPercentageData.clases.Matematica.filter((item) =>
+      previousData.clases.Matematica.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
@@ -897,7 +1004,63 @@ function SeccionesClasesDashboard() {
         ),
       },
     };
-  }, [currentPercentageData, previousPercentageData, gruposNumerosActivos]);
+  }, [currentData, previousData, gruposNumerosActivos]);
+
+  const platformDocentes = useMemo(() => {
+    const record = viewMode === "Semanal" ? currentWeekLatestTeacherRecord : sourceTeacherRecord;
+    const total = (record?.json.clases.docentes ?? [])
+      .filter((item) => gruposNumerosActivos.includes(item.group))
+      .reduce((acc, i) => acc + (i.total ?? 0), 0);
+    const access = (record?.json.clases.docentes ?? [])
+      .filter((item) => gruposNumerosActivos.includes(item.group))
+      .reduce((acc, i) => acc + (i.access ?? 0), 0);
+
+    let percentage = calcularPorcentaje(access, total);
+
+    if (viewMode === "Semanal" && currentWeekTeacherRecords.length > 0) {
+      const totalWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
+        return acc + (rec.json.clases.docentes ?? [])
+          .filter((item) => gruposNumerosActivos.includes(item.group))
+          .reduce((accI, i) => accI + (i.total ?? 0), 0);
+      }, 0);
+      const accessWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
+        return acc + (rec.json.clases.docentes ?? [])
+          .filter((item) => gruposNumerosActivos.includes(item.group))
+          .reduce((accI, i) => accI + (i.access ?? 0), 0);
+      }, 0);
+      percentage = calcularPorcentaje(accessWeek, totalWeek);
+    }
+
+    return { total, access, percentage };
+  }, [viewMode, currentWeekLatestTeacherRecord, sourceTeacherRecord, currentWeekTeacherRecords, gruposNumerosActivos]);
+
+  const platformEstudiantes = useMemo(() => {
+    const record = viewMode === "Semanal" ? currentWeekLatestTeacherRecord : sourceTeacherRecord;
+    const total = (record?.json.clases.estudiantes ?? [])
+      .filter((item) => gruposNumerosActivos.includes(item.group))
+      .reduce((acc, i) => acc + (i.total ?? 0), 0);
+    const access = (record?.json.clases.estudiantes ?? [])
+      .filter((item) => gruposNumerosActivos.includes(item.group))
+      .reduce((acc, i) => acc + (i.access ?? 0), 0);
+
+    let percentage = calcularPorcentaje(access, total);
+
+    if (viewMode === "Semanal" && currentWeekTeacherRecords.length > 0) {
+      const totalWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
+        return acc + (rec.json.clases.estudiantes ?? [])
+          .filter((item) => gruposNumerosActivos.includes(item.group))
+          .reduce((accI, i) => accI + (i.total ?? 0), 0);
+      }, 0);
+      const accessWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
+        return acc + (rec.json.clases.estudiantes ?? [])
+          .filter((item) => gruposNumerosActivos.includes(item.group))
+          .reduce((accI, i) => accI + (i.access ?? 0), 0);
+      }, 0);
+      percentage = calcularPorcentaje(accessWeek, totalWeek);
+    }
+
+    return { total, access, percentage };
+  }, [viewMode, currentWeekLatestTeacherRecord, sourceTeacherRecord, currentWeekTeacherRecords, gruposNumerosActivos]);
 
   const clasesEfectivasResumen = useMemo(() => {
     const currentDetailItems = currentPercentageData.clases.details.filter((item) =>
@@ -933,12 +1096,14 @@ function SeccionesClasesDashboard() {
         buildLineChartItem(
           `Semana ${getWeekNumberLabel(previousSelectedWeek)}`,
           previousData,
-          gruposNumerosActivos
+          gruposNumerosActivos,
+          previousWeekLatestTeacherRecord
         ),
         buildLineChartItem(
           `Semana ${getWeekNumberLabel(effectiveSelectedWeek)}`,
           currentData,
-          gruposNumerosActivos
+          gruposNumerosActivos,
+          currentWeekLatestTeacherRecord
         ),
       ];
     }
@@ -952,13 +1117,15 @@ function SeccionesClasesDashboard() {
           new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
       );
 
-    return ultimosCinco.map((record) =>
-      buildLineChartItem(
+    return ultimosCinco.map((record) => {
+      const matchedTeacher = teacherRecords.find(tr => normalizeDate(tr.dateReported) === normalizeDate(record.dateReported));
+      return buildLineChartItem(
         formatFullDate(record.dateReported),
         buildDataFromJson(record.json),
-        gruposNumerosActivos
-      )
-    );
+        gruposNumerosActivos,
+        matchedTeacher
+      );
+    });
   }, [
     orderedRecords,
     gruposNumerosActivos,
@@ -967,6 +1134,9 @@ function SeccionesClasesDashboard() {
     previousSelectedWeek,
     currentData,
     previousData,
+    teacherRecords,
+    currentWeekLatestTeacherRecord,
+    previousWeekLatestTeacherRecord
   ]);
 
   if (isLoading) {
@@ -1132,13 +1302,13 @@ function SeccionesClasesDashboard() {
                 Tasa de presencia de docentes
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.presenciaDocente, 100))}%
+                {Math.round(Math.min(platformDocentes.percentage, 100))}%
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
-                {detailsResumen.tasaPresenciaDocente.toLocaleString("en-US")}{" "}
+                {platformDocentes.access.toLocaleString("en-US")}{" "}
                 <span>
                   de{" "}
-                  {detailsResumen.tasaPresenciaDocenteTotal.toLocaleString(
+                  {platformDocentes.total.toLocaleString(
                     "en-US"
                   )}
                 </span>
@@ -1151,15 +1321,15 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
                 {Math.round(
-                  Math.min(detailsPorcentajes.presenciaEstudiante, 100)
+                  Math.min(platformEstudiantes.percentage, 100)
                 )}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
-                {detailsResumen.tasaPresenciaEstudiante.toLocaleString("en-US")}{" "}
+                {platformEstudiantes.access.toLocaleString("en-US")}{" "}
                 <span>
                   de{" "}
-                  {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString(
+                  {platformEstudiantes.total.toLocaleString(
                     "en-US"
                   )}
                 </span>
@@ -1387,7 +1557,7 @@ function SeccionesClasesDashboard() {
                     <Line
                       type="monotone"
                       dataKey="accesosDocentes"
-                      name="Accesos secciones docentes"
+                      name="Accesos docentes"
                       stroke="#4f46e5"
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -1396,7 +1566,7 @@ function SeccionesClasesDashboard() {
                     <Line
                       type="monotone"
                       dataKey="accesosEstudiantes"
-                      name="Accesos secciones estudiantes"
+                      name="Accesos estudiantes"
                       stroke="#059669"
                       strokeWidth={3}
                       dot={{ r: 4 }}
