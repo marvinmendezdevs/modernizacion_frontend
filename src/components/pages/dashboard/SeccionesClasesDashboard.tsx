@@ -600,21 +600,53 @@ function SeccionesClasesDashboard() {
     );
   }, [orderedRecords, previousWeekRange, viewMode]);
 
+  const currentWeekLatestRecord = useMemo<MetricsRecord | null>(() => {
+    if (viewMode !== "Semanal") return null;
+
+    return currentWeekRecords[0] ?? null;
+  }, [currentWeekRecords, viewMode]);
+
+  const previousWeekLatestRecord = useMemo<MetricsRecord | null>(() => {
+    if (viewMode !== "Semanal") return null;
+
+    return previousWeekRecords[0] ?? null;
+  }, [previousWeekRecords, viewMode]);
+
+  // Datos que se muestran en pantalla.
+  // En Semanal no se suman los valores absolutos; se toma el registro más reciente de la semana.
   const currentData = useMemo<SeccionesData>(() => {
+    if (viewMode === "Semanal") {
+      return buildDataFromJson(currentWeekLatestRecord?.json ?? null);
+    }
+
+    return buildDataFromJson(sourceRecord?.json ?? null);
+  }, [viewMode, currentWeekLatestRecord, sourceRecord]);
+
+  const previousData = useMemo<SeccionesData>(() => {
+    if (viewMode === "Semanal") {
+      return buildDataFromJson(previousWeekLatestRecord?.json ?? null);
+    }
+
+    return buildDataFromJson(previousRecord?.json ?? null);
+  }, [viewMode, previousWeekLatestRecord, previousRecord]);
+
+  // Datos usados únicamente para calcular porcentajes y variaciones porcentuales.
+  // En Semanal sí se acumula la semana, pero solo para porcentajes.
+  const currentPercentageData = useMemo<SeccionesData>(() => {
     if (viewMode === "Semanal") {
       return buildWeeklyData(currentWeekRecords);
     }
 
-    return buildDataFromJson(sourceRecord?.json ?? null);
-  }, [viewMode, currentWeekRecords, sourceRecord]);
+    return currentData;
+  }, [viewMode, currentWeekRecords, currentData]);
 
-  const previousData = useMemo<SeccionesData>(() => {
+  const previousPercentageData = useMemo<SeccionesData>(() => {
     if (viewMode === "Semanal") {
       return buildWeeklyData(previousWeekRecords);
     }
 
-    return buildDataFromJson(previousRecord?.json ?? null);
-  }, [viewMode, previousWeekRecords, previousRecord]);
+    return previousData;
+  }, [viewMode, previousWeekRecords, previousData]);
 
   const hasData = useMemo(() => {
     return (
@@ -735,6 +767,39 @@ function SeccionesClasesDashboard() {
     ];
   }, [hasData, currentData, gruposNumerosActivos]);
 
+  const materiasPorcentajes = useMemo(() => {
+    const lenguajeItems = currentPercentageData.clases.Lenguaje.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
+
+    const matematicaItems = currentPercentageData.clases.Matematica.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo)
+    );
+
+    const lenguaje = sumarClaseItems(lenguajeItems);
+    const matematica = sumarClaseItems(matematicaItems);
+
+    return {
+      Lenguaje: {
+        docentes: calcularPorcentaje(lenguaje.accesosDocentes, lenguaje.totalDocentes),
+        estudiantes: calcularPorcentaje(
+          lenguaje.accesosEstudiantes,
+          lenguaje.totalEstudiantes
+        ),
+      },
+      Matemática: {
+        docentes: calcularPorcentaje(
+          matematica.accesosDocentes,
+          matematica.totalDocentes
+        ),
+        estudiantes: calcularPorcentaje(
+          matematica.accesosEstudiantes,
+          matematica.totalEstudiantes
+        ),
+      },
+    };
+  }, [currentPercentageData, gruposNumerosActivos]);
+
   const detailsResumen = useMemo(() => {
     const detailItems = currentData.clases.details.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
@@ -744,76 +809,102 @@ function SeccionesClasesDashboard() {
   }, [currentData, gruposNumerosActivos]);
 
   const detailsPorcentajes = useMemo(() => {
-    const detailItems = currentData.clases.details.filter((item) =>
+    const detailItems = currentPercentageData.clases.details.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
     );
 
     return construirResumenDetails(detailItems).porcentajes;
-  }, [currentData, gruposNumerosActivos]);
+  }, [currentPercentageData, gruposNumerosActivos]);
 
   const variaciones = useMemo(() => {
     const lenguajeActual = sumarClaseItems(
-      currentData.clases.Lenguaje.filter((item) =>
+      currentPercentageData.clases.Lenguaje.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const lenguajeAnterior = sumarClaseItems(
-      previousData.clases.Lenguaje.filter((item) =>
+      previousPercentageData.clases.Lenguaje.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const matematicaActual = sumarClaseItems(
-      currentData.clases.Matematica.filter((item) =>
+      currentPercentageData.clases.Matematica.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
     );
 
     const matematicaAnterior = sumarClaseItems(
-      previousData.clases.Matematica.filter((item) =>
+      previousPercentageData.clases.Matematica.filter((item) =>
         gruposNumerosActivos.includes(item.grupo)
       )
+    );
+
+    const lenguajeDocentesActual = calcularPorcentaje(
+      lenguajeActual.accesosDocentes,
+      lenguajeActual.totalDocentes
+    );
+    const lenguajeDocentesAnterior = calcularPorcentaje(
+      lenguajeAnterior.accesosDocentes,
+      lenguajeAnterior.totalDocentes
+    );
+    const lenguajeEstudiantesActual = calcularPorcentaje(
+      lenguajeActual.accesosEstudiantes,
+      lenguajeActual.totalEstudiantes
+    );
+    const lenguajeEstudiantesAnterior = calcularPorcentaje(
+      lenguajeAnterior.accesosEstudiantes,
+      lenguajeAnterior.totalEstudiantes
+    );
+
+    const matematicaDocentesActual = calcularPorcentaje(
+      matematicaActual.accesosDocentes,
+      matematicaActual.totalDocentes
+    );
+    const matematicaDocentesAnterior = calcularPorcentaje(
+      matematicaAnterior.accesosDocentes,
+      matematicaAnterior.totalDocentes
+    );
+    const matematicaEstudiantesActual = calcularPorcentaje(
+      matematicaActual.accesosEstudiantes,
+      matematicaActual.totalEstudiantes
+    );
+    const matematicaEstudiantesAnterior = calcularPorcentaje(
+      matematicaAnterior.accesosEstudiantes,
+      matematicaAnterior.totalEstudiantes
     );
 
     return {
       Lenguaje: {
         docentes: calcularVariacionPorcentual(
-          lenguajeAnterior.accesosDocentes,
-          lenguajeActual.accesosDocentes
+          lenguajeDocentesAnterior,
+          lenguajeDocentesActual
         ),
         estudiantes: calcularVariacionPorcentual(
-          lenguajeAnterior.accesosEstudiantes,
-          lenguajeActual.accesosEstudiantes
-        ),
-        clases: calcularVariacionPorcentual(
-          lenguajeAnterior.clasesEfectivas,
-          lenguajeActual.clasesEfectivas
+          lenguajeEstudiantesAnterior,
+          lenguajeEstudiantesActual
         ),
       },
       Matemática: {
         docentes: calcularVariacionPorcentual(
-          matematicaAnterior.accesosDocentes,
-          matematicaActual.accesosDocentes
+          matematicaDocentesAnterior,
+          matematicaDocentesActual
         ),
         estudiantes: calcularVariacionPorcentual(
-          matematicaAnterior.accesosEstudiantes,
-          matematicaActual.accesosEstudiantes
-        ),
-        clases: calcularVariacionPorcentual(
-          matematicaAnterior.clasesEfectivas,
-          matematicaActual.clasesEfectivas
+          matematicaEstudiantesAnterior,
+          matematicaEstudiantesActual
         ),
       },
     };
-  }, [currentData, previousData, gruposNumerosActivos]);
+  }, [currentPercentageData, previousPercentageData, gruposNumerosActivos]);
 
   const clasesEfectivasResumen = useMemo(() => {
-    const currentDetailItems = currentData.clases.details.filter((item) =>
+    const currentDetailItems = currentPercentageData.clases.details.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
     );
 
-    const previousDetailItems = previousData.clases.details.filter((item) =>
+    const previousDetailItems = previousPercentageData.clases.details.filter((item) =>
       gruposNumerosActivos.includes(item.grupo)
     );
 
@@ -832,7 +923,7 @@ function SeccionesClasesDashboard() {
       porcentaje: porcentajeActual,
       variacion,
     };
-  }, [currentData, previousData, gruposNumerosActivos]);
+  }, [currentPercentageData, previousPercentageData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
     if (viewMode === "Semanal") {
@@ -1126,19 +1217,9 @@ function SeccionesClasesDashboard() {
 
             <div className="grid gap-4 xl:grid-cols-2">
               {materiasResumen.map((materia) => {
-                const porcentajeDocentes =
-                  materia.docentesAccesos.total > 0
-                    ? (materia.docentesAccesos.valor /
-                      materia.docentesAccesos.total) *
-                    100
-                    : 0;
-
+                const porcentajeDocentes = materiasPorcentajes[materia.nombre].docentes;
                 const porcentajeEstudiantes =
-                  materia.estudiantesAccesos.total > 0
-                    ? (materia.estudiantesAccesos.valor /
-                      materia.estudiantesAccesos.total) *
-                    100
-                    : 0;
+                  materiasPorcentajes[materia.nombre].estudiantes;
 
                 const variacionMateria = variaciones[materia.nombre];
 
@@ -1306,7 +1387,7 @@ function SeccionesClasesDashboard() {
                     <Line
                       type="monotone"
                       dataKey="accesosDocentes"
-                      name="Accesos docentes"
+                      name="Accesos secciones docentes"
                       stroke="#4f46e5"
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -1315,7 +1396,7 @@ function SeccionesClasesDashboard() {
                     <Line
                       type="monotone"
                       dataKey="accesosEstudiantes"
-                      name="Accesos estudiantes"
+                      name="Accesos secciones estudiantes"
                       stroke="#059669"
                       strokeWidth={3}
                       dot={{ r: 4 }}

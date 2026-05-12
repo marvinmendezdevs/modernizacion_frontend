@@ -5,6 +5,10 @@ import {
   ClipboardList,
   Users,
   MessageSquareText,
+  BookOpen,
+  UserCheck,
+  GraduationCap,
+  Laptop,
 } from "lucide-react";
 import {
   PieChart,
@@ -15,11 +19,43 @@ import {
   Legend,
 } from "recharts";
 import { getNoAccesos } from "@/services/metrisc.services";
+import { getSeccionClasses } from "@/services/dashboard.services";
 
 type ResumenMotivo = {
   motivo: string;
   secciones: number;
   docentesUnicos: number;
+};
+
+type DetailItem = {
+  grupo: number;
+  tasaPresenciaDocente: number;
+  tasaPresenciaDocenteTotal: number;
+  tasaPresenciaEstudiante: number;
+  tasaPresenciaEstudianteTotal: number;
+  logroAcademico: number;
+  logroAcademicoTotal: number;
+  recursosDigitales: number;
+  recursosDigitalesTotal: number;
+};
+
+type SeccionesJson = {
+  clases?: {
+    details?: DetailItem[];
+  };
+};
+
+type MetricsRecord = {
+  id: number;
+  dateReported: string;
+  type: string;
+  category: string;
+  json: SeccionesJson;
+};
+
+type SeccionesApiResponse = {
+  last: MetricsRecord | null;
+  cumulative: MetricsRecord[];
 };
 
 type ActividadInstitucionalDetalle = {
@@ -137,6 +173,45 @@ function renderPieLabel(props: unknown) {
   return `${value}`;
 }
 
+function calcularPorcentaje(valor: number, total: number) {
+  if (total === 0) return 0;
+  return (valor / total) * 100;
+}
+
+function sumarDetailItems(items: DetailItem[]): DetailItem {
+  return items.reduce(
+    (acc, item) => ({
+      grupo: 0,
+      tasaPresenciaDocente:
+        acc.tasaPresenciaDocente + (item.tasaPresenciaDocente ?? 0),
+      tasaPresenciaDocenteTotal:
+        acc.tasaPresenciaDocenteTotal + (item.tasaPresenciaDocenteTotal ?? 0),
+      tasaPresenciaEstudiante:
+        acc.tasaPresenciaEstudiante + (item.tasaPresenciaEstudiante ?? 0),
+      tasaPresenciaEstudianteTotal:
+        acc.tasaPresenciaEstudianteTotal +
+        (item.tasaPresenciaEstudianteTotal ?? 0),
+      logroAcademico: acc.logroAcademico + (item.logroAcademico ?? 0),
+      logroAcademicoTotal:
+        acc.logroAcademicoTotal + (item.logroAcademicoTotal ?? 0),
+      recursosDigitales: acc.recursosDigitales + (item.recursosDigitales ?? 0),
+      recursosDigitalesTotal:
+        acc.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+    }),
+    {
+      grupo: 0,
+      tasaPresenciaDocente: 0,
+      tasaPresenciaDocenteTotal: 0,
+      tasaPresenciaEstudiante: 0,
+      tasaPresenciaEstudianteTotal: 0,
+      logroAcademico: 0,
+      logroAcademicoTotal: 0,
+      recursosDigitales: 0,
+      recursosDigitalesTotal: 0,
+    }
+  );
+}
+
 function NoAccesos() {
   const today = new Date().toLocaleDateString("sv-SE");
 
@@ -160,6 +235,69 @@ function NoAccesos() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  const { data: seccionData } = useQuery<SeccionesApiResponse>({
+    queryKey: ["dashboard-secciones", selectedDate],
+    queryFn: () => getSeccionClasses(selectedDate),
+    enabled: category === "Diario" && Boolean(selectedDate),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const seccionMetrics = useMemo(() => {
+    if (!seccionData) return null;
+
+    const records = seccionData.cumulative || [];
+    const matchedRecord =
+      records.find(
+        (record) => record.dateReported.slice(0, 10) === selectedDate
+      ) ||
+      (seccionData.last?.dateReported.slice(0, 10) === selectedDate
+        ? seccionData.last
+        : null);
+
+    if (!matchedRecord?.json?.clases?.details) {
+      return null;
+    }
+
+    const details = matchedRecord.json.clases.details.filter((item) =>
+      [1, 2].includes(item.grupo)
+    );
+
+    const summed = sumarDetailItems(details);
+
+    const presenciaDocente = calcularPorcentaje(
+      summed.tasaPresenciaDocente,
+      summed.tasaPresenciaDocenteTotal
+    );
+    const presenciaEstudiante = calcularPorcentaje(
+      summed.tasaPresenciaEstudiante,
+      summed.tasaPresenciaEstudianteTotal
+    );
+    const logroAcademico = calcularPorcentaje(
+      summed.logroAcademico,
+      summed.logroAcademicoTotal
+    );
+    const recursosDigitales = calcularPorcentaje(
+      summed.recursosDigitales,
+      summed.recursosDigitalesTotal
+    );
+
+    const promedioClasesEfectivas =
+      (presenciaDocente +
+        presenciaEstudiante +
+        logroAcademico +
+        recursosDigitales) /
+      4;
+
+    return {
+      clasesEfectivas: Math.max(0, 100 - promedioClasesEfectivas),
+      presenciaDocente: Math.max(0, 100 - presenciaDocente),
+      presenciaEstudiante: Math.max(0, 100 - presenciaEstudiante),
+      logroAcademico: Math.max(0, 100 - logroAcademico),
+      recursosDigitales: Math.max(0, 100 - recursosDigitales),
+    };
+  }, [seccionData, selectedDate]);
 
   const processedData = useMemo(() => {
     if (!data) {
@@ -447,6 +585,60 @@ function NoAccesos() {
                 </div>
               </div>
             </div>
+
+            {category === "Diario" && seccionMetrics && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <BookOpen size={16} />
+                    <p className="text-xs font-medium">Clases efectivas</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-indigo-600">
+                    {seccionMetrics.clasesEfectivas.toFixed(2)}%
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <UserCheck size={16} />
+                    <p className="text-xs font-medium">Presencia docentes</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-indigo-600">
+                    {Math.round(seccionMetrics.presenciaDocente)}%
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Users size={16} />
+                    <p className="text-xs font-medium">Presencia estudiantes</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-indigo-600">
+                    {Math.round(seccionMetrics.presenciaEstudiante)}%
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <GraduationCap size={16} />
+                    <p className="text-xs font-medium">Logro académico</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-green-700">
+                    {Math.round(seccionMetrics.logroAcademico)}%
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Laptop size={16} />
+                    <p className="text-xs font-medium">Recursos digitales</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-green-700">
+                    {Math.round(seccionMetrics.recursosDigitales)}%
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col gap-6">
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
