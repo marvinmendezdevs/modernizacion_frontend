@@ -96,12 +96,14 @@ type NoAccesosResponse =
 type PieMotivoData = {
   name: string;
   value: number;
+  rawValue: number;
   docentesUnicos: number;
 };
 
 type PieRespuestaData = {
   name: string;
   value: number;
+  rawValue: number;
 };
 
 const PIE_COLORS = [
@@ -168,9 +170,13 @@ function normalizeRespuestaLabel(value: string) {
   return value.trim();
 }
 
+function formatPercent(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
 function renderPieLabel(props: unknown) {
   const { value = 0 } = props as { value?: number };
-  return `${value}`;
+  return formatPercent(value);
 }
 
 function calcularPorcentaje(valor: number, total: number) {
@@ -408,22 +414,50 @@ function NoAccesos() {
   } = processedData;
 
   const pieData = useMemo<PieMotivoData[]>(() => {
-    return resumenMotivos.map((item) => ({
-      name: item.motivo,
-      value: item.secciones,
-      docentesUnicos: item.docentesUnicos,
-    }));
+    const total = resumenMotivos.reduce(
+      (acc, item) => acc + (item.secciones ?? 0),
+      0
+    );
+
+    if (total === 0) return [];
+
+    return resumenMotivos
+      .filter((item) => (item.secciones ?? 0) > 0)
+      .map((item) => ({
+        name: item.motivo,
+        value: calcularPorcentaje(item.secciones, total),
+        rawValue: item.secciones,
+        docentesUnicos: item.docentesUnicos,
+      }));
   }, [resumenMotivos]);
 
   const pieRespuestasData = useMemo<PieRespuestaData[]>(() => {
-    return actividadInstitucionalDetalle.map((item) => ({
-      name: item.motivo,
-      value: item.recuento,
-    }));
+    const total = actividadInstitucionalDetalle.reduce(
+      (acc, item) => acc + (item.recuento ?? 0),
+      0
+    );
+
+    if (total === 0) return [];
+
+    return actividadInstitucionalDetalle
+      .filter((item) => (item.recuento ?? 0) > 0)
+      .map((item) => ({
+        name: item.motivo,
+        value: calcularPorcentaje(item.recuento, total),
+        rawValue: item.recuento,
+      }));
   }, [actividadInstitucionalDetalle]);
 
+  const hasGestionNoAccesosChart = pieData.length > 0;
+  const hasRespuestasCampaniaChart = pieRespuestasData.length > 0;
+
   const hasData =
-    resumenMotivos.length > 0 || actividadInstitucionalDetalle.length > 0;
+    totalSecciones > 0 ||
+    totalDocentesUnicos > 0 ||
+    totalRespuestas > 0 ||
+    Boolean(seccionMetrics) ||
+    hasGestionNoAccesosChart ||
+    hasRespuestasCampaniaChart;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
@@ -641,117 +675,119 @@ function NoAccesos() {
             )}
 
             <div className="flex flex-col gap-6">
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-5">
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    Gestión de no accesos
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Comparativo y distribución de los motivos reportados.
-                  </p>
-                </div>
+              {hasGestionNoAccesosChart && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-5">
+                    <h3 className="text-xl font-semibold text-slate-900">
+                      Gestión de no accesos
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Comparativo y distribución de los motivos reportados.
+                    </p>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      <ResponsiveContainer width="100%" height={360}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={115}
+                            paddingAngle={2}
+                            labelLine={false}
+                            label={renderPieLabel}
+                          >
+                            {pieData.map((_, index) => (
+                              <Cell
+                                key={`motivo-cell-${index}`}
+                                fill={PIE_COLORS[index % PIE_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
 
-                    <ResponsiveContainer width="100%" height={360}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={115}
-                          paddingAngle={2}
-                          labelLine={false}
-                          label={renderPieLabel}
-                        >
-                          {pieData.map((_, index) => (
-                            <Cell
-                              key={`motivo-cell-${index}`}
-                              fill={PIE_COLORS[index % PIE_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [
+                              formatPercent(Number(value)),
+                              name,
+                            ]}
+                          />
 
-                        <Tooltip
-                          formatter={(value, name) => [
-                            `${value} secciones`,
-                            name,
-                          ]}
-                        />
-
-                        <Legend
-                          verticalAlign="bottom"
-                          height={48}
-                          formatter={(value) => (
-                            <span className="text-sm text-slate-600">
-                              {value}
-                            </span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                          <Legend
+                            verticalAlign="bottom"
+                            height={48}
+                            formatter={(value) => (
+                              <span className="text-sm text-slate-600">
+                                {value}
+                              </span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-5">
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    Respuestas de campaña
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Comparativo y distribución de respuestas registradas.
-                  </p>
-                </div>
+              {hasRespuestasCampaniaChart && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-5">
+                    <h3 className="text-xl font-semibold text-slate-900">
+                      Respuestas de campaña
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Comparativo y distribución de respuestas registradas.
+                    </p>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      <ResponsiveContainer width="100%" height={360}>
+                        <PieChart>
+                          <Pie
+                            data={pieRespuestasData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={115}
+                            paddingAngle={4}
+                            labelLine={false}
+                            label={renderPieLabel}
+                          >
+                            {pieRespuestasData.map((_, index) => (
+                              <Cell
+                                key={`respuesta-cell-${index}`}
+                                fill={PIE_COLORS[index % PIE_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
 
-                    <ResponsiveContainer width="100%" height={360}>
-                      <PieChart>
-                        <Pie
-                          data={pieRespuestasData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={115}
-                          paddingAngle={4}
-                          labelLine={false}
-                          label={renderPieLabel}
-                        >
-                          {pieRespuestasData.map((_, index) => (
-                            <Cell
-                              key={`respuesta-cell-${index}`}
-                              fill={PIE_COLORS[index % PIE_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [
+                              formatPercent(Number(value)),
+                              name,
+                            ]}
+                          />
 
-                        <Tooltip
-                          formatter={(value, name) => [
-                            `${value} respuestas`,
-                            name,
-                          ]}
-                        />
-
-                        <Legend
-                          verticalAlign="bottom"
-                          height={48}
-                          formatter={(value) => (
-                            <span className="text-sm text-slate-600">
-                              {value}
-                            </span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                          <Legend
+                            verticalAlign="bottom"
+                            height={48}
+                            formatter={(value) => (
+                              <span className="text-sm text-slate-600">
+                                {value}
+                              </span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </>
         )}
