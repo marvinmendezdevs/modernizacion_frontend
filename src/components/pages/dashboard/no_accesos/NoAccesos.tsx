@@ -154,7 +154,8 @@ function normalizeRespuestaLabel(value: string) {
   }
 
   if (normalized === "asignacion incorrecta") return "Asignacion incorrecta";
-  if (normalized === "actividad institucional") return "Actividad institucional";
+  if (normalized === "actividad institucional")
+    return "Actividad institucional";
   if (normalized === "incapacidad o permiso") return "Incapacidad o permiso";
   if (normalized === "incapacidad") return "Incapacidad";
   if (normalized === "no corresponde") return "No corresponde";
@@ -182,6 +183,27 @@ function renderPieLabel(props: unknown) {
 function calcularPorcentaje(valor: number, total: number) {
   if (total === 0) return 0;
   return (valor / total) * 100;
+}
+
+function normalizeDate(value?: string | null) {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
+function limitarPorcentaje(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(Math.max(value, 0), 100);
+}
+
+function calcularFaltante(value: number) {
+  return limitarPorcentaje(100 - limitarPorcentaje(value));
+}
+
+function formatNoAccesoPercent(value: number) {
+  if (!Number.isFinite(value)) return "0.00%";
+
+  const truncated = Math.trunc(value * 100) / 100;
+  return `${truncated.toFixed(2)}%`;
 }
 
 function sumarDetailItems(items: DetailItem[]): DetailItem {
@@ -214,7 +236,7 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       logroAcademicoTotal: 0,
       recursosDigitales: 0,
       recursosDigitalesTotal: 0,
-    }
+    },
   );
 }
 
@@ -232,7 +254,7 @@ function NoAccesos() {
       getNoAccesos(
         category === "Acumulado"
           ? { category, startDate, endDate }
-          : { category, selectedDate }
+          : { category, selectedDate },
       ),
     enabled:
       category === "Acumulado"
@@ -243,7 +265,7 @@ function NoAccesos() {
   });
 
   const { data: seccionData } = useQuery<SeccionesApiResponse>({
-    queryKey: ["dashboard-secciones", selectedDate],
+    queryKey: ["dashboard-secciones-no-accesos", selectedDate],
     queryFn: () => getSeccionClasses(selectedDate),
     enabled: category === "Diario" && Boolean(selectedDate),
     retry: false,
@@ -251,42 +273,48 @@ function NoAccesos() {
   });
 
   const seccionMetrics = useMemo(() => {
-    if (!seccionData) return null;
+    if (!seccionData || category !== "Diario") return null;
 
-    const records = seccionData.cumulative || [];
-    const matchedRecord =
-      records.find(
-        (record) => record.dateReported.slice(0, 10) === selectedDate
-      ) ||
-      (seccionData.last?.dateReported.slice(0, 10) === selectedDate
-        ? seccionData.last
-        : null);
-
-    if (!matchedRecord?.json?.clases?.details) {
-      return null;
-    }
-
-    const details = matchedRecord.json.clases.details.filter((item) =>
-      [1, 2].includes(item.grupo)
+    const orderedRecords = [
+      ...(seccionData.last ? [seccionData.last] : []),
+      ...(seccionData.cumulative ?? []),
+    ].sort(
+      (a, b) =>
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime(),
     );
 
-    const summed = sumarDetailItems(details);
+    const sourceRecord = orderedRecords.find(
+      (record) => normalizeDate(record.dateReported) === selectedDate,
+    );
+
+    const details = sourceRecord?.json?.clases?.details ?? [];
+
+    if (details.length === 0) return null;
+
+    const detailsGruposUnoYDos = details.filter((item) =>
+      [1, 2].includes(item.grupo),
+    );
+
+    const summed = sumarDetailItems(detailsGruposUnoYDos);
 
     const presenciaDocente = calcularPorcentaje(
       summed.tasaPresenciaDocente,
-      summed.tasaPresenciaDocenteTotal
+      summed.tasaPresenciaDocenteTotal,
     );
+
     const presenciaEstudiante = calcularPorcentaje(
       summed.tasaPresenciaEstudiante,
-      summed.tasaPresenciaEstudianteTotal
+      summed.tasaPresenciaEstudianteTotal,
     );
+
     const logroAcademico = calcularPorcentaje(
       summed.logroAcademico,
-      summed.logroAcademicoTotal
+      summed.logroAcademicoTotal,
     );
+
     const recursosDigitales = calcularPorcentaje(
       summed.recursosDigitales,
-      summed.recursosDigitalesTotal
+      summed.recursosDigitalesTotal,
     );
 
     const promedioClasesEfectivas =
@@ -297,13 +325,13 @@ function NoAccesos() {
       4;
 
     return {
-      clasesEfectivas: Math.max(0, 100 - promedioClasesEfectivas),
-      presenciaDocente: Math.max(0, 100 - presenciaDocente),
-      presenciaEstudiante: Math.max(0, 100 - presenciaEstudiante),
-      logroAcademico: Math.max(0, 100 - logroAcademico),
-      recursosDigitales: Math.max(0, 100 - recursosDigitales),
+      clasesEfectivas: calcularFaltante(promedioClasesEfectivas),
+      presenciaDocente: calcularFaltante(presenciaDocente),
+      presenciaEstudiante: calcularFaltante(presenciaEstudiante),
+      logroAcademico: calcularFaltante(logroAcademico),
+      recursosDigitales: calcularFaltante(recursosDigitales),
     };
-  }, [seccionData, selectedDate]);
+  }, [seccionData, selectedDate, category]);
 
   const processedData = useMemo(() => {
     if (!data) {
@@ -334,7 +362,10 @@ function NoAccesos() {
       { motivo: string; secciones: number; docentesUnicos: number }
     >();
 
-    const respuestasMap = new Map<string, { motivo: string; recuento: number }>();
+    const respuestasMap = new Map<
+      string,
+      { motivo: string; recuento: number }
+    >();
 
     let totalSecciones = 0;
     let totalDocentesUnicos = 0;
@@ -364,7 +395,8 @@ function NoAccesos() {
         }
       }
 
-      for (const item of json?.respuestas?.actividadInstitucionalDetalle ?? []) {
+      for (const item of json?.respuestas?.actividadInstitucionalDetalle ??
+        []) {
         const normalizedLabel = normalizeRespuestaLabel(item.motivo);
         const key = normalizeText(normalizedLabel);
         const current = respuestasMap.get(key);
@@ -384,16 +416,16 @@ function NoAccesos() {
     }
 
     const resumenMotivos = Array.from(resumenMap.values()).sort(
-      (a, b) => b.secciones - a.secciones
+      (a, b) => b.secciones - a.secciones,
     );
 
-    const actividadInstitucionalDetalle = Array.from(respuestasMap.values()).sort(
-      (a, b) => b.recuento - a.recuento
-    );
+    const actividadInstitucionalDetalle = Array.from(
+      respuestasMap.values(),
+    ).sort((a, b) => b.recuento - a.recuento);
 
     const totalRespuestas = actividadInstitucionalDetalle.reduce(
       (acc, item) => acc + item.recuento,
-      0
+      0,
     );
 
     return {
@@ -416,7 +448,7 @@ function NoAccesos() {
   const pieData = useMemo<PieMotivoData[]>(() => {
     const total = resumenMotivos.reduce(
       (acc, item) => acc + (item.secciones ?? 0),
-      0
+      0,
     );
 
     if (total === 0) return [];
@@ -434,7 +466,7 @@ function NoAccesos() {
   const pieRespuestasData = useMemo<PieRespuestaData[]>(() => {
     const total = actividadInstitucionalDetalle.reduce(
       (acc, item) => acc + (item.recuento ?? 0),
-      0
+      0,
     );
 
     if (total === 0) return [];
@@ -470,8 +502,9 @@ function NoAccesos() {
               </h1>
 
               <p className="mt-2 text-sm text-slate-600 md:text-base">
-                Visualiza los motivos reportados, el total de secciones afectadas
-                y el detalle de respuestas relacionadas con la campaña.
+                Visualiza los motivos reportados, el total de secciones
+                afectadas y el detalle de respuestas relacionadas con la
+                campaña.
               </p>
             </div>
 
@@ -576,7 +609,9 @@ function NoAccesos() {
               <div className="rounded-3xl border border-indigo-200 bg-indigo-600 p-5 text-white shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-indigo-100">Total de secciones</p>
+                    <p className="text-sm text-indigo-100">
+                      Total de secciones
+                    </p>
                     <h2 className="mt-3 text-3xl font-bold">
                       {totalSecciones}
                     </h2>
@@ -628,7 +663,7 @@ function NoAccesos() {
                     <p className="text-xs font-medium">Clases efectivas</p>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {seccionMetrics.clasesEfectivas.toFixed(2)}%
+                    {formatNoAccesoPercent(seccionMetrics.clasesEfectivas)}
                   </p>
                 </div>
 
@@ -638,7 +673,7 @@ function NoAccesos() {
                     <p className="text-xs font-medium">Presencia docentes</p>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {Math.round(seccionMetrics.presenciaDocente)}%
+                    {formatNoAccesoPercent(seccionMetrics.presenciaDocente)}
                   </p>
                 </div>
 
@@ -648,7 +683,7 @@ function NoAccesos() {
                     <p className="text-xs font-medium">Presencia estudiantes</p>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {Math.round(seccionMetrics.presenciaEstudiante)}%
+                    {formatNoAccesoPercent(seccionMetrics.presenciaEstudiante)}
                   </p>
                 </div>
 
@@ -658,7 +693,7 @@ function NoAccesos() {
                     <p className="text-xs font-medium">Logro académico</p>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-green-700">
-                    {Math.round(seccionMetrics.logroAcademico)}%
+                    {formatNoAccesoPercent(seccionMetrics.logroAcademico)}
                   </p>
                 </div>
 
@@ -668,7 +703,7 @@ function NoAccesos() {
                     <p className="text-xs font-medium">Recursos digitales</p>
                   </div>
                   <p className="mt-2 text-2xl font-bold text-green-700">
-                    {Math.round(seccionMetrics.recursosDigitales)}%
+                    {formatNoAccesoPercent(seccionMetrics.recursosDigitales)}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,7 @@
-import { getSeccionClasses, getTeacherInfo } from "@/services/dashboard.services";
+import {
+  getSeccionClasses,
+  getTeacherInfo,
+} from "@/services/dashboard.services";
 import { formatFullDate } from "@/utils/index.utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -174,7 +177,8 @@ function sumarClaseItems(items: ClaseItem[]): ClaseItem {
       accesosDocentes: acc.accesosDocentes + (item.accesosDocentes ?? 0),
       clasesEfectivas: acc.clasesEfectivas + (item.clasesEfectivas ?? 0),
       totalEstudiantes: acc.totalEstudiantes + (item.totalEstudiantes ?? 0),
-      accesosEstudiantes: acc.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
+      accesosEstudiantes:
+        acc.accesosEstudiantes + (item.accesosEstudiantes ?? 0),
     }),
     {
       grupo: 0,
@@ -184,7 +188,7 @@ function sumarClaseItems(items: ClaseItem[]): ClaseItem {
       clasesEfectivas: 0,
       totalEstudiantes: 0,
       accesosEstudiantes: 0,
-    }
+    },
   );
 }
 
@@ -218,7 +222,7 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       logroAcademicoTotal: 0,
       recursosDigitales: 0,
       recursosDigitalesTotal: 0,
-    }
+    },
   );
 }
 
@@ -227,22 +231,22 @@ function construirResumenDetails(items: DetailItem[]) {
 
   const presenciaDocente = calcularPorcentaje(
     detail.tasaPresenciaDocente,
-    detail.tasaPresenciaDocenteTotal
+    detail.tasaPresenciaDocenteTotal,
   );
 
   const presenciaEstudiante = calcularPorcentaje(
     detail.tasaPresenciaEstudiante,
-    detail.tasaPresenciaEstudianteTotal
+    detail.tasaPresenciaEstudianteTotal,
   );
 
   const logroAcademico = calcularPorcentaje(
     detail.logroAcademico,
-    detail.logroAcademicoTotal
+    detail.logroAcademicoTotal,
   );
 
   const recursosDigitales = calcularPorcentaje(
     detail.recursosDigitales,
-    detail.recursosDigitalesTotal
+    detail.recursosDigitalesTotal,
   );
 
   const promedioClasesEfectivas =
@@ -289,7 +293,7 @@ function getISOWeekValue(dateString: string) {
   const week =
     1 +
     Math.round(
-      ((tempDate.getTime() - firstThursday.getTime()) / 86400000 - 3) / 7
+      ((tempDate.getTime() - firstThursday.getTime()) / 86400000 - 3) / 7,
     );
 
   return `${tempDate.getFullYear()}-W${String(week).padStart(2, "0")}`;
@@ -383,7 +387,9 @@ function sumarGradoItemsPorGrado(items: GradoItem[]): GradoItem[] {
   return Array.from(map.values()).sort((a, b) => a.grado - b.grado);
 }
 
-function sumarIndicadoresItemsPorGrupo(items: IndicadoresItem[]): IndicadoresItem[] {
+function sumarIndicadoresItemsPorGrupo(
+  items: IndicadoresItem[],
+): IndicadoresItem[] {
   const map = new Map<number, IndicadoresItem>();
 
   items.forEach((item) => {
@@ -465,15 +471,15 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
         current.tasaPresenciaDocenteTotal +
         (item.tasaPresenciaDocenteTotal ?? 0),
       tasaPresenciaEstudiante:
-        current.tasaPresenciaEstudiante +
-        (item.tasaPresenciaEstudiante ?? 0),
+        current.tasaPresenciaEstudiante + (item.tasaPresenciaEstudiante ?? 0),
       tasaPresenciaEstudianteTotal:
         current.tasaPresenciaEstudianteTotal +
         (item.tasaPresenciaEstudianteTotal ?? 0),
       logroAcademico: current.logroAcademico + (item.logroAcademico ?? 0),
       logroAcademicoTotal:
         current.logroAcademicoTotal + (item.logroAcademicoTotal ?? 0),
-      recursosDigitales: current.recursosDigitales + (item.recursosDigitales ?? 0),
+      recursosDigitales:
+        current.recursosDigitales + (item.recursosDigitales ?? 0),
       recursosDigitalesTotal:
         current.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
     });
@@ -482,7 +488,11 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
   return Array.from(map.values()).sort((a, b) => a.grupo - b.grupo);
 }
 
-function sumTotals(items: DashboardRecord[], groups: number[], field: "total" | "access" | "demo") {
+function sumTotals(
+  items: DashboardRecord[],
+  groups: number[],
+  field: "total" | "access" | "demo",
+) {
   return items
     .filter((item) => groups.includes(item.group))
     .reduce((acc, item) => acc + (item[field] ?? 0), 0);
@@ -494,19 +504,19 @@ function buildWeeklyData(records: MetricsRecord[]): SeccionesData {
   return {
     clases: {
       grados: sumarGradoItemsPorGrado(
-        records.flatMap((record) => record.json?.clases?.grados ?? [])
+        records.flatMap((record) => record.json?.clases?.grados ?? []),
       ),
       Indicadores: sumarIndicadoresItemsPorGrupo(
-        records.flatMap((record) => record.json?.clases?.Indicadores ?? [])
+        records.flatMap((record) => record.json?.clases?.Indicadores ?? []),
       ),
       details: sumarDetailItemsPorGrupo(
-        records.flatMap((record) => record.json?.clases?.details ?? [])
+        records.flatMap((record) => record.json?.clases?.details ?? []),
       ),
       Lenguaje: sumarClaseItemsPorGrupo(
-        records.flatMap((record) => record.json?.clases?.Lenguaje ?? [])
+        records.flatMap((record) => record.json?.clases?.Lenguaje ?? []),
       ),
       Matematica: sumarClaseItemsPorGrupo(
-        records.flatMap((record) => record.json?.clases?.Matematica ?? [])
+        records.flatMap((record) => record.json?.clases?.Matematica ?? []),
       ),
     },
     remediacion: null,
@@ -518,14 +528,14 @@ function buildLineChartItem(
   label: string,
   data: SeccionesData,
   grupos: number[],
-  teacherData?: DashboardReportApi | null
+  teacherData?: DashboardReportApi | null,
 ): LineChartItem {
   const lenguaje = sumarClaseItems(
-    data.clases.Lenguaje.filter((item) => grupos.includes(item.grupo))
+    data.clases.Lenguaje.filter((item) => grupos.includes(item.grupo)),
   );
 
   const matematica = sumarClaseItems(
-    data.clases.Matematica.filter((item) => grupos.includes(item.grupo))
+    data.clases.Matematica.filter((item) => grupos.includes(item.grupo)),
   );
 
   const accesosDocentes = teacherData
@@ -565,11 +575,11 @@ function SeccionesClasesDashboard() {
   const effectiveSelectedDate = selectedDate || lastReportedDate;
   const cumulative = data?.cumulative;
 
-  // Rango para getTeacherInfo
   const rangeDates = useMemo(() => {
     const end = new Date().toLocaleDateString("sv-SE");
     const start = new Date();
-    start.setDate(start.getDate() - 60); // Un rango amplio para cubrir historial
+    start.setDate(start.getDate() - 60);
+
     return { start: start.toLocaleDateString("sv-SE"), end };
   }, []);
 
@@ -585,18 +595,19 @@ function SeccionesClasesDashboard() {
 
     return [...cumulative].sort(
       (a, b) =>
-        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime(),
     );
   }, [cumulative]);
 
   const teacherRecords = useMemo<DashboardReportApi[]>(() => {
     if (!teacherInfoData) return [];
+
     return [
       ...(teacherInfoData.last ? [teacherInfoData.last] : []),
       ...(teacherInfoData.cumulative ?? []),
     ].sort(
       (a, b) =>
-        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime()
+        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime(),
     );
   }, [teacherInfoData]);
 
@@ -631,29 +642,18 @@ function SeccionesClasesDashboard() {
     if (orderedRecords.length === 0) return null;
 
     const matchedRecord = orderedRecords.find(
-      (record) => normalizeDate(record.dateReported) === effectiveSelectedDate
+      (record) => normalizeDate(record.dateReported) === effectiveSelectedDate,
     );
 
     return matchedRecord ?? null;
   }, [orderedRecords, effectiveSelectedDate, viewMode]);
-
-  const sourceTeacherRecord = useMemo<DashboardReportApi | null>(() => {
-    if (viewMode !== "Diario") return null;
-    if (teacherRecords.length === 0) return null;
-
-    return (
-      teacherRecords.find(
-        (record) => normalizeDate(record.dateReported) === effectiveSelectedDate
-      ) ?? null
-    );
-  }, [teacherRecords, effectiveSelectedDate, viewMode]);
 
   const previousRecord = useMemo<MetricsRecord | null>(() => {
     if (viewMode !== "Diario") return null;
     if (!sourceRecord || orderedRecords.length === 0) return null;
 
     const currentIndex = orderedRecords.findIndex(
-      (record) => record.id === sourceRecord.id
+      (record) => record.id === sourceRecord.id,
     );
 
     if (currentIndex === -1) return null;
@@ -665,91 +665,33 @@ function SeccionesClasesDashboard() {
     if (viewMode !== "Semanal" || !currentWeekRange) return [];
 
     return orderedRecords.filter((record) =>
-      isRecordInRange(record, currentWeekRange.start, currentWeekRange.end)
+      isRecordInRange(record, currentWeekRange.start, currentWeekRange.end),
     );
   }, [orderedRecords, currentWeekRange, viewMode]);
-
-  const currentWeekTeacherRecords = useMemo(() => {
-    if (viewMode !== "Semanal" || !currentWeekRange) return [];
-
-    return teacherRecords.filter((record) => {
-      const d = normalizeDate(record.dateReported);
-      return d >= currentWeekRange.start && d <= currentWeekRange.end;
-    });
-  }, [teacherRecords, currentWeekRange, viewMode]);
 
   const previousWeekRecords = useMemo(() => {
     if (viewMode !== "Semanal" || !previousWeekRange) return [];
 
     return orderedRecords.filter((record) =>
-      isRecordInRange(record, previousWeekRange.start, previousWeekRange.end)
+      isRecordInRange(record, previousWeekRange.start, previousWeekRange.end),
     );
   }, [orderedRecords, previousWeekRange, viewMode]);
 
-  const currentWeekLatestRecord = useMemo<MetricsRecord | null>(() => {
-    if (viewMode !== "Semanal") return null;
-
-    return currentWeekRecords[0] ?? null;
-  }, [currentWeekRecords, viewMode]);
-
-  const currentWeekLatestTeacherRecord = useMemo<DashboardReportApi | null>(() => {
-    if (viewMode !== "Semanal") return null;
-
-    return currentWeekTeacherRecords[0] ?? null;
-  }, [currentWeekTeacherRecords, viewMode]);
-
-  const previousWeekLatestRecord = useMemo<MetricsRecord | null>(() => {
-    if (viewMode !== "Semanal") return null;
-
-    return previousWeekRecords[0] ?? null;
-  }, [previousWeekRecords, viewMode]);
-
-  const previousWeekLatestTeacherRecord = useMemo<DashboardReportApi | null>(() => {
-    if (viewMode !== "Semanal" || !previousWeekRange) return null;
-
-    return (
-      teacherRecords.filter((record) => {
-        const d = normalizeDate(record.dateReported);
-        return d >= previousWeekRange.start && d <= previousWeekRange.end;
-      })[0] ?? null
-    );
-  }, [teacherRecords, previousWeekRange, viewMode]);
-
-  // Datos que se muestran en pantalla.
-  // En Semanal no se suman los valores absolutos; se toma el registro más reciente de la semana.
   const currentData = useMemo<SeccionesData>(() => {
-    if (viewMode === "Semanal") {
-      return buildDataFromJson(currentWeekLatestRecord?.json ?? null);
-    }
-
-    return buildDataFromJson(sourceRecord?.json ?? null);
-  }, [viewMode, currentWeekLatestRecord, sourceRecord]);
-
-  const previousData = useMemo<SeccionesData>(() => {
-    if (viewMode === "Semanal") {
-      return buildDataFromJson(previousWeekLatestRecord?.json ?? null);
-    }
-
-    return buildDataFromJson(previousRecord?.json ?? null);
-  }, [viewMode, previousWeekLatestRecord, previousRecord]);
-
-  // Datos usados únicamente para calcular porcentajes y variaciones porcentuales.
-  // En Semanal sí se acumula la semana, pero solo para porcentajes.
-  const currentPercentageData = useMemo<SeccionesData>(() => {
     if (viewMode === "Semanal") {
       return buildWeeklyData(currentWeekRecords);
     }
 
-    return currentData;
-  }, [viewMode, currentWeekRecords, currentData]);
+    return buildDataFromJson(sourceRecord?.json ?? null);
+  }, [viewMode, currentWeekRecords, sourceRecord]);
 
-  const previousPercentageData = useMemo<SeccionesData>(() => {
+  const previousData = useMemo<SeccionesData>(() => {
     if (viewMode === "Semanal") {
       return buildWeeklyData(previousWeekRecords);
     }
 
-    return previousData;
-  }, [viewMode, previousWeekRecords, previousData]);
+    return buildDataFromJson(previousRecord?.json ?? null);
+  }, [viewMode, previousWeekRecords, previousRecord]);
 
   const hasData = useMemo(() => {
     return (
@@ -777,7 +719,7 @@ function SeccionesClasesDashboard() {
     if (!hasData && gruposDisponibles.length === 0) return ["Grupo 1"];
 
     const validos = gruposSeleccionados.filter((grupo) =>
-      gruposDisponibles.includes(grupo)
+      gruposDisponibles.includes(grupo),
     );
 
     if (validos.length > 0) return validos;
@@ -792,7 +734,7 @@ function SeccionesClasesDashboard() {
 
   const gruposNumerosActivos = useMemo(() => {
     return gruposActivosResolved.map((grupo) =>
-      Number(grupo.replace("Grupo ", ""))
+      Number(grupo.replace("Grupo ", "")),
     );
   }, [gruposActivosResolved]);
 
@@ -826,11 +768,11 @@ function SeccionesClasesDashboard() {
     }
 
     const lenguajeItems = currentData.clases.Lenguaje.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+      gruposNumerosActivos.includes(item.grupo),
     );
 
     const matematicaItems = currentData.clases.Matematica.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+      gruposNumerosActivos.includes(item.grupo),
     );
 
     const lenguaje = sumarClaseItems(lenguajeItems);
@@ -870,205 +812,86 @@ function SeccionesClasesDashboard() {
     ];
   }, [hasData, currentData, gruposNumerosActivos]);
 
-  const materiasPorcentajes = useMemo(() => {
-    // Resumen por materia: se mantiene con los datos visibles actuales.
-    // El acumulado semanal solo debe afectar los porcentajes de las cards superiores.
-    const lenguajeItems = currentData.clases.Lenguaje.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
-    );
-
-    const matematicaItems = currentData.clases.Matematica.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
-    );
-
-    const lenguaje = sumarClaseItems(lenguajeItems);
-    const matematica = sumarClaseItems(matematicaItems);
-
-    return {
-      Lenguaje: {
-        docentes: calcularPorcentaje(lenguaje.accesosDocentes, lenguaje.totalDocentes),
-        estudiantes: calcularPorcentaje(
-          lenguaje.accesosEstudiantes,
-          lenguaje.totalEstudiantes
-        ),
-      },
-      Matemática: {
-        docentes: calcularPorcentaje(
-          matematica.accesosDocentes,
-          matematica.totalDocentes
-        ),
-        estudiantes: calcularPorcentaje(
-          matematica.accesosEstudiantes,
-          matematica.totalEstudiantes
-        ),
-      },
-    };
-  }, [currentData, gruposNumerosActivos]);
-
   const detailsResumen = useMemo(() => {
     const detailItems = currentData.clases.details.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+      gruposNumerosActivos.includes(item.grupo),
     );
 
     return construirResumenDetails(detailItems).valores;
   }, [currentData, gruposNumerosActivos]);
 
   const detailsPorcentajes = useMemo(() => {
-    const detailItems = currentPercentageData.clases.details.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+    const detailItems = currentData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo),
     );
 
     return construirResumenDetails(detailItems).porcentajes;
-  }, [currentPercentageData, gruposNumerosActivos]);
+  }, [currentData, gruposNumerosActivos]);
 
   const variaciones = useMemo(() => {
-    // Variaciones del resumen por materia: no usan el acumulado semanal.
-    // Se calculan con los datos visibles actuales/anterior para no alterar este bloque.
     const lenguajeActual = sumarClaseItems(
       currentData.clases.Lenguaje.filter((item) =>
-        gruposNumerosActivos.includes(item.grupo)
-      )
+        gruposNumerosActivos.includes(item.grupo),
+      ),
     );
 
     const lenguajeAnterior = sumarClaseItems(
       previousData.clases.Lenguaje.filter((item) =>
-        gruposNumerosActivos.includes(item.grupo)
-      )
+        gruposNumerosActivos.includes(item.grupo),
+      ),
     );
 
     const matematicaActual = sumarClaseItems(
       currentData.clases.Matematica.filter((item) =>
-        gruposNumerosActivos.includes(item.grupo)
-      )
+        gruposNumerosActivos.includes(item.grupo),
+      ),
     );
 
     const matematicaAnterior = sumarClaseItems(
       previousData.clases.Matematica.filter((item) =>
-        gruposNumerosActivos.includes(item.grupo)
-      )
-    );
-
-    const lenguajeDocentesActual = calcularPorcentaje(
-      lenguajeActual.accesosDocentes,
-      lenguajeActual.totalDocentes
-    );
-    const lenguajeDocentesAnterior = calcularPorcentaje(
-      lenguajeAnterior.accesosDocentes,
-      lenguajeAnterior.totalDocentes
-    );
-    const lenguajeEstudiantesActual = calcularPorcentaje(
-      lenguajeActual.accesosEstudiantes,
-      lenguajeActual.totalEstudiantes
-    );
-    const lenguajeEstudiantesAnterior = calcularPorcentaje(
-      lenguajeAnterior.accesosEstudiantes,
-      lenguajeAnterior.totalEstudiantes
-    );
-
-    const matematicaDocentesActual = calcularPorcentaje(
-      matematicaActual.accesosDocentes,
-      matematicaActual.totalDocentes
-    );
-    const matematicaDocentesAnterior = calcularPorcentaje(
-      matematicaAnterior.accesosDocentes,
-      matematicaAnterior.totalDocentes
-    );
-    const matematicaEstudiantesActual = calcularPorcentaje(
-      matematicaActual.accesosEstudiantes,
-      matematicaActual.totalEstudiantes
-    );
-    const matematicaEstudiantesAnterior = calcularPorcentaje(
-      matematicaAnterior.accesosEstudiantes,
-      matematicaAnterior.totalEstudiantes
+        gruposNumerosActivos.includes(item.grupo),
+      ),
     );
 
     return {
       Lenguaje: {
         docentes: calcularVariacionPorcentual(
-          lenguajeDocentesAnterior,
-          lenguajeDocentesActual
+          lenguajeAnterior.accesosDocentes,
+          lenguajeActual.accesosDocentes,
         ),
         estudiantes: calcularVariacionPorcentual(
-          lenguajeEstudiantesAnterior,
-          lenguajeEstudiantesActual
+          lenguajeAnterior.accesosEstudiantes,
+          lenguajeActual.accesosEstudiantes,
+        ),
+        clases: calcularVariacionPorcentual(
+          lenguajeAnterior.clasesEfectivas,
+          lenguajeActual.clasesEfectivas,
         ),
       },
       Matemática: {
         docentes: calcularVariacionPorcentual(
-          matematicaDocentesAnterior,
-          matematicaDocentesActual
+          matematicaAnterior.accesosDocentes,
+          matematicaActual.accesosDocentes,
         ),
         estudiantes: calcularVariacionPorcentual(
-          matematicaEstudiantesAnterior,
-          matematicaEstudiantesActual
+          matematicaAnterior.accesosEstudiantes,
+          matematicaActual.accesosEstudiantes,
+        ),
+        clases: calcularVariacionPorcentual(
+          matematicaAnterior.clasesEfectivas,
+          matematicaActual.clasesEfectivas,
         ),
       },
     };
   }, [currentData, previousData, gruposNumerosActivos]);
 
-  const platformDocentes = useMemo(() => {
-    const record = viewMode === "Semanal" ? currentWeekLatestTeacherRecord : sourceTeacherRecord;
-    const total = (record?.json.clases.docentes ?? [])
-      .filter((item) => gruposNumerosActivos.includes(item.group))
-      .reduce((acc, i) => acc + (i.total ?? 0), 0);
-    const access = (record?.json.clases.docentes ?? [])
-      .filter((item) => gruposNumerosActivos.includes(item.group))
-      .reduce((acc, i) => acc + (i.access ?? 0), 0);
-
-    let percentage = calcularPorcentaje(access, total);
-
-    if (viewMode === "Semanal" && currentWeekTeacherRecords.length > 0) {
-      const totalWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
-        return acc + (rec.json.clases.docentes ?? [])
-          .filter((item) => gruposNumerosActivos.includes(item.group))
-          .reduce((accI, i) => accI + (i.total ?? 0), 0);
-      }, 0);
-      const accessWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
-        return acc + (rec.json.clases.docentes ?? [])
-          .filter((item) => gruposNumerosActivos.includes(item.group))
-          .reduce((accI, i) => accI + (i.access ?? 0), 0);
-      }, 0);
-      percentage = calcularPorcentaje(accessWeek, totalWeek);
-    }
-
-    return { total, access, percentage };
-  }, [viewMode, currentWeekLatestTeacherRecord, sourceTeacherRecord, currentWeekTeacherRecords, gruposNumerosActivos]);
-
-  const platformEstudiantes = useMemo(() => {
-    const record = viewMode === "Semanal" ? currentWeekLatestTeacherRecord : sourceTeacherRecord;
-    const total = (record?.json.clases.estudiantes ?? [])
-      .filter((item) => gruposNumerosActivos.includes(item.group))
-      .reduce((acc, i) => acc + (i.total ?? 0), 0);
-    const access = (record?.json.clases.estudiantes ?? [])
-      .filter((item) => gruposNumerosActivos.includes(item.group))
-      .reduce((acc, i) => acc + (i.access ?? 0), 0);
-
-    let percentage = calcularPorcentaje(access, total);
-
-    if (viewMode === "Semanal" && currentWeekTeacherRecords.length > 0) {
-      const totalWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
-        return acc + (rec.json.clases.estudiantes ?? [])
-          .filter((item) => gruposNumerosActivos.includes(item.group))
-          .reduce((accI, i) => accI + (i.total ?? 0), 0);
-      }, 0);
-      const accessWeek = currentWeekTeacherRecords.reduce((acc, rec) => {
-        return acc + (rec.json.clases.estudiantes ?? [])
-          .filter((item) => gruposNumerosActivos.includes(item.group))
-          .reduce((accI, i) => accI + (i.access ?? 0), 0);
-      }, 0);
-      percentage = calcularPorcentaje(accessWeek, totalWeek);
-    }
-
-    return { total, access, percentage };
-  }, [viewMode, currentWeekLatestTeacherRecord, sourceTeacherRecord, currentWeekTeacherRecords, gruposNumerosActivos]);
-
   const clasesEfectivasResumen = useMemo(() => {
-    const currentDetailItems = currentPercentageData.clases.details.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+    const currentDetailItems = currentData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo),
     );
 
-    const previousDetailItems = previousPercentageData.clases.details.filter((item) =>
-      gruposNumerosActivos.includes(item.grupo)
+    const previousDetailItems = previousData.clases.details.filter((item) =>
+      gruposNumerosActivos.includes(item.grupo),
     );
 
     const currentResumen = construirResumenDetails(currentDetailItems);
@@ -1079,14 +902,14 @@ function SeccionesClasesDashboard() {
 
     const variacion = calcularVariacionPorcentual(
       porcentajeAnterior,
-      porcentajeActual
+      porcentajeActual,
     );
 
     return {
       porcentaje: porcentajeActual,
       variacion,
     };
-  }, [currentPercentageData, previousPercentageData, gruposNumerosActivos]);
+  }, [currentData, previousData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
     if (viewMode === "Semanal") {
@@ -1097,13 +920,11 @@ function SeccionesClasesDashboard() {
           `Semana ${getWeekNumberLabel(previousSelectedWeek)}`,
           previousData,
           gruposNumerosActivos,
-          previousWeekLatestTeacherRecord
         ),
         buildLineChartItem(
           `Semana ${getWeekNumberLabel(effectiveSelectedWeek)}`,
           currentData,
           gruposNumerosActivos,
-          currentWeekLatestTeacherRecord
         ),
       ];
     }
@@ -1114,16 +935,22 @@ function SeccionesClasesDashboard() {
       .slice(0, 5)
       .sort(
         (a, b) =>
-          new Date(a.dateReported).getTime() - new Date(b.dateReported).getTime()
+          new Date(a.dateReported).getTime() -
+          new Date(b.dateReported).getTime(),
       );
 
     return ultimosCinco.map((record) => {
-      const matchedTeacher = teacherRecords.find(tr => normalizeDate(tr.dateReported) === normalizeDate(record.dateReported));
+      const matchedTeacher = teacherRecords.find(
+        (teacherRecord) =>
+          normalizeDate(teacherRecord.dateReported) ===
+          normalizeDate(record.dateReported),
+      );
+
       return buildLineChartItem(
         formatFullDate(record.dateReported),
         buildDataFromJson(record.json),
         gruposNumerosActivos,
-        matchedTeacher
+        matchedTeacher,
       );
     });
   }, [
@@ -1135,8 +962,6 @@ function SeccionesClasesDashboard() {
     currentData,
     previousData,
     teacherRecords,
-    currentWeekLatestTeacherRecord,
-    previousWeekLatestTeacherRecord
   ]);
 
   if (isLoading) {
@@ -1166,8 +991,8 @@ function SeccionesClasesDashboard() {
             </h1>
 
             <p className="max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-              Accesos de docentes y estudiantes, clases efectivas y variación por
-              materia.
+              Accesos de docentes y estudiantes, clases efectivas y variación
+              por materia.
             </p>
           </div>
 
@@ -1185,10 +1010,11 @@ function SeccionesClasesDashboard() {
           <button
             type="button"
             onClick={() => setViewMode("Diario")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${viewMode === "Diario"
-              ? "bg-indigo-600 text-white"
-              : "text-slate-600 hover:bg-slate-100"
-              }`}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
+              viewMode === "Diario"
+                ? "bg-indigo-600 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
           >
             Diario
           </button>
@@ -1196,10 +1022,11 @@ function SeccionesClasesDashboard() {
           <button
             type="button"
             onClick={() => setViewMode("Semanal")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${viewMode === "Semanal"
-              ? "bg-indigo-600 text-white"
-              : "text-slate-600 hover:bg-slate-100"
-              }`}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
+              viewMode === "Semanal"
+                ? "bg-indigo-600 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
           >
             Semanal
           </button>
@@ -1302,14 +1129,15 @@ function SeccionesClasesDashboard() {
                 Tasa de presencia de docentes
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(Math.min(platformDocentes.percentage, 100))}%
+                {Math.round(Math.min(detailsPorcentajes.presenciaDocente, 100))}
+                %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
-                {platformDocentes.access.toLocaleString("en-US")}{" "}
+                {detailsResumen.tasaPresenciaDocente.toLocaleString("en-US")}{" "}
                 <span>
                   de{" "}
-                  {platformDocentes.total.toLocaleString(
-                    "en-US"
+                  {detailsResumen.tasaPresenciaDocenteTotal.toLocaleString(
+                    "en-US",
                   )}
                 </span>
               </p>
@@ -1321,16 +1149,16 @@ function SeccionesClasesDashboard() {
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
                 {Math.round(
-                  Math.min(platformEstudiantes.percentage, 100)
+                  Math.min(detailsPorcentajes.presenciaEstudiante, 100),
                 )}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
-                {platformEstudiantes.access.toLocaleString("en-US")}{" "}
+                {detailsResumen.tasaPresenciaEstudiante.toLocaleString("en-US")}{" "}
                 <span>
                   de{" "}
-                  {platformEstudiantes.total.toLocaleString(
-                    "en-US"
+                  {detailsResumen.tasaPresenciaEstudianteTotal.toLocaleString(
+                    "en-US",
                   )}
                 </span>
               </p>
@@ -1346,7 +1174,8 @@ function SeccionesClasesDashboard() {
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.logroAcademico.toLocaleString("en-US")}{" "}
                 <span>
-                  de {detailsResumen.logroAcademicoTotal.toLocaleString("en-US")}
+                  de{" "}
+                  {detailsResumen.logroAcademicoTotal.toLocaleString("en-US")}
                 </span>
               </p>
             </div>
@@ -1356,14 +1185,18 @@ function SeccionesClasesDashboard() {
                 Uso de recursos digitales
               </p>
               <p className="mt-2 font-bold text-green-700 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.recursosDigitales, 100))}
+                {Math.round(
+                  Math.min(detailsPorcentajes.recursosDigitales, 100),
+                )}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.recursosDigitales.toLocaleString("en-US")}{" "}
                 <span>
                   de{" "}
-                  {detailsResumen.recursosDigitalesTotal.toLocaleString("en-US")}
+                  {detailsResumen.recursosDigitalesTotal.toLocaleString(
+                    "en-US",
+                  )}
                 </span>
               </p>
             </div>
@@ -1387,9 +1220,19 @@ function SeccionesClasesDashboard() {
 
             <div className="grid gap-4 xl:grid-cols-2">
               {materiasResumen.map((materia) => {
-                const porcentajeDocentes = materiasPorcentajes[materia.nombre].docentes;
+                const porcentajeDocentes =
+                  materia.docentesAccesos.total > 0
+                    ? (materia.docentesAccesos.valor /
+                        materia.docentesAccesos.total) *
+                      100
+                    : 0;
+
                 const porcentajeEstudiantes =
-                  materiasPorcentajes[materia.nombre].estudiantes;
+                  materia.estudiantesAccesos.total > 0
+                    ? (materia.estudiantesAccesos.valor /
+                        materia.estudiantesAccesos.total) *
+                      100
+                    : 0;
 
                 const variacionMateria = variaciones[materia.nombre];
 
@@ -1436,10 +1279,13 @@ function SeccionesClasesDashboard() {
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
                             {materia.docentesAccesos.valor.toLocaleString(
-                              "en-US"
+                              "en-US",
                             )}
                           </span>{" "}
-                          / {materia.docentesAccesos.total.toLocaleString("en-US")}
+                          /{" "}
+                          {materia.docentesAccesos.total.toLocaleString(
+                            "en-US",
+                          )}
                         </p>
 
                         <div className="flex items-center justify-center mt-4 gap-2">
@@ -1481,12 +1327,12 @@ function SeccionesClasesDashboard() {
                         <p className="mt-3 text-2xl font-bold text-slate-900">
                           <span className="text-gray-500 text-xl">
                             {materia.estudiantesAccesos.valor.toLocaleString(
-                              "en-US"
+                              "en-US",
                             )}
                           </span>{" "}
                           /{" "}
                           {materia.estudiantesAccesos.total.toLocaleString(
-                            "en-US"
+                            "en-US",
                           )}
                         </p>
 
@@ -1497,7 +1343,7 @@ function SeccionesClasesDashboard() {
                               style={{
                                 width: `${Math.min(
                                   porcentajeEstudiantes,
-                                  100
+                                  100,
                                 )}%`,
                               }}
                             />
@@ -1526,15 +1372,17 @@ function SeccionesClasesDashboard() {
                   {viewMode === "Diario"
                     ? `Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`
                     : `Semana ${getWeekNumberLabel(
-                      effectiveSelectedWeek
-                    )} comparada contra semana ${getWeekNumberLabel(
-                      previousSelectedWeek
-                    )}.`}
+                        effectiveSelectedWeek,
+                      )} comparada contra semana ${getWeekNumberLabel(
+                        previousSelectedWeek,
+                      )}.`}
                 </p>
               </div>
 
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-                {viewMode === "Diario" ? "Últimos 5 días" : "Semana anterior vs actual"}
+                {viewMode === "Diario"
+                  ? "Últimos 5 días"
+                  : "Semana anterior vs actual"}
               </div>
             </div>
 
