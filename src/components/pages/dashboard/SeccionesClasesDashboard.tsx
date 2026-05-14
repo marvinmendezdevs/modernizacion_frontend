@@ -133,7 +133,7 @@ type LineChartItem = {
   clasesEfectivas: number;
 };
 
-type ViewMode = "Diario" | "Semanal";
+type ViewMode = "Diario" | "Acumulado";
 
 type SeccionesData = {
   clases: {
@@ -294,61 +294,27 @@ function construirResumenDetails(items: DetailItem[]) {
   };
 }
 
-function getISOWeekValue(dateString: string) {
-  if (!dateString) return "";
+function getPreviousDateRange(start: string, end: string) {
+  if (!start || !end) return null;
 
-  const date = new Date(`${dateString}T00:00:00`);
-  const tempDate = new Date(date.getTime());
-  const dayNumber = (tempDate.getDay() + 6) % 7;
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
 
-  tempDate.setDate(tempDate.getDate() - dayNumber + 3);
+  const diffDays =
+    Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
 
-  const firstThursday = new Date(tempDate.getFullYear(), 0, 4);
-  const firstDayNumber = (firstThursday.getDay() + 6) % 7;
-  firstThursday.setDate(firstThursday.getDate() - firstDayNumber + 3);
+  const totalDays = Math.max(diffDays, 1);
 
-  const week =
-    1 +
-    Math.round(
-      ((tempDate.getTime() - firstThursday.getTime()) / 86400000 - 3) / 7,
-    );
+  const previousEndDate = new Date(startDate);
+  previousEndDate.setDate(startDate.getDate() - 1);
 
-  return `${tempDate.getFullYear()}-W${String(week).padStart(2, "0")}`;
-}
-
-function getWeekRange(weekValue: string) {
-  const [yearText, weekText] = weekValue.split("-W");
-  const year = Number(yearText);
-  const week = Number(weekText);
-
-  const firstThursday = new Date(year, 0, 4);
-  const firstDayNumber = (firstThursday.getDay() + 6) % 7;
-  const firstMonday = new Date(firstThursday);
-
-  firstMonday.setDate(firstThursday.getDate() - firstDayNumber);
-
-  const startDate = new Date(firstMonday);
-  startDate.setDate(firstMonday.getDate() + (week - 1) * 7);
-
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 6);
+  const previousStartDate = new Date(previousEndDate);
+  previousStartDate.setDate(previousEndDate.getDate() - totalDays + 1);
 
   return {
-    start: startDate.toLocaleDateString("sv-SE"),
-    end: endDate.toLocaleDateString("sv-SE"),
+    start: previousStartDate.toLocaleDateString("sv-SE"),
+    end: previousEndDate.toLocaleDateString("sv-SE"),
   };
-}
-
-function getPreviousWeekValue(weekValue: string) {
-  const { start } = getWeekRange(weekValue);
-  const previousWeekDate = new Date(`${start}T00:00:00`);
-  previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-
-  return getISOWeekValue(previousWeekDate.toLocaleDateString("sv-SE"));
-}
-
-function getWeekNumberLabel(weekValue: string) {
-  return weekValue.split("-W")[1] ?? "";
 }
 
 function isRecordInRange(record: MetricsRecord, start: string, end: string) {
@@ -523,7 +489,7 @@ function sumTotals(
     .reduce((acc, item) => acc + (item[field] ?? 0), 0);
 }
 
-function buildWeeklyData(records: MetricsRecord[]): SeccionesData {
+function buildAccumulatedData(records: MetricsRecord[]): SeccionesData {
   if (records.length === 0) return emptySeccionesData();
 
   return {
@@ -586,7 +552,8 @@ function SeccionesClasesDashboard() {
     "Grupo 2",
   ]);
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedWeek, setSelectedWeek] = useState<string>("");
+  const [selectedStartDate, setSelectedStartDate] = useState<string>("");
+  const [selectedEndDate, setSelectedEndDate] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>("Diario");
 
   const { data, isLoading, isError } = useQuery<ApiResponse>({
@@ -641,26 +608,30 @@ function SeccionesClasesDashboard() {
     return formatFullDate(orderedRecords[0].dateReported);
   }, [orderedRecords]);
 
-  const effectiveSelectedWeek = useMemo(() => {
-    if (selectedWeek) return selectedWeek;
-    if (effectiveSelectedDate) return getISOWeekValue(effectiveSelectedDate);
-    return "";
-  }, [selectedWeek, effectiveSelectedDate]);
+  const effectiveStartDate = selectedStartDate || effectiveSelectedDate;
+  const effectiveEndDate = selectedEndDate || effectiveSelectedDate;
 
-  const previousSelectedWeek = useMemo(() => {
-    if (!effectiveSelectedWeek) return "";
-    return getPreviousWeekValue(effectiveSelectedWeek);
-  }, [effectiveSelectedWeek]);
+  const currentDateRange = useMemo(() => {
+    if (!effectiveStartDate || !effectiveEndDate) return null;
 
-  const currentWeekRange = useMemo(() => {
-    if (!effectiveSelectedWeek) return null;
-    return getWeekRange(effectiveSelectedWeek);
-  }, [effectiveSelectedWeek]);
+    if (effectiveStartDate > effectiveEndDate) {
+      return {
+        start: effectiveEndDate,
+        end: effectiveStartDate,
+      };
+    }
 
-  const previousWeekRange = useMemo(() => {
-    if (!previousSelectedWeek) return null;
-    return getWeekRange(previousSelectedWeek);
-  }, [previousSelectedWeek]);
+    return {
+      start: effectiveStartDate,
+      end: effectiveEndDate,
+    };
+  }, [effectiveStartDate, effectiveEndDate]);
+
+  const previousDateRange = useMemo(() => {
+    if (!currentDateRange) return null;
+
+    return getPreviousDateRange(currentDateRange.start, currentDateRange.end);
+  }, [currentDateRange]);
 
   const sourceRecord = useMemo<MetricsRecord | null>(() => {
     if (viewMode !== "Diario") return null;
@@ -686,37 +657,37 @@ function SeccionesClasesDashboard() {
     return orderedRecords[currentIndex + 1] ?? null;
   }, [sourceRecord, orderedRecords, viewMode]);
 
-  const currentWeekRecords = useMemo(() => {
-    if (viewMode !== "Semanal" || !currentWeekRange) return [];
+  const currentRangeRecords = useMemo(() => {
+    if (viewMode !== "Acumulado" || !currentDateRange) return [];
 
     return orderedRecords.filter((record) =>
-      isRecordInRange(record, currentWeekRange.start, currentWeekRange.end),
+      isRecordInRange(record, currentDateRange.start, currentDateRange.end),
     );
-  }, [orderedRecords, currentWeekRange, viewMode]);
+  }, [orderedRecords, currentDateRange, viewMode]);
 
-  const previousWeekRecords = useMemo(() => {
-    if (viewMode !== "Semanal" || !previousWeekRange) return [];
+  const previousRangeRecords = useMemo(() => {
+    if (viewMode !== "Acumulado" || !previousDateRange) return [];
 
     return orderedRecords.filter((record) =>
-      isRecordInRange(record, previousWeekRange.start, previousWeekRange.end),
+      isRecordInRange(record, previousDateRange.start, previousDateRange.end),
     );
-  }, [orderedRecords, previousWeekRange, viewMode]);
+  }, [orderedRecords, previousDateRange, viewMode]);
 
   const currentData = useMemo<SeccionesData>(() => {
-    if (viewMode === "Semanal") {
-      return buildWeeklyData(currentWeekRecords);
+    if (viewMode === "Acumulado") {
+      return buildAccumulatedData(currentRangeRecords);
     }
 
     return buildDataFromJson(sourceRecord?.json ?? null);
-  }, [viewMode, currentWeekRecords, sourceRecord]);
+  }, [viewMode, currentRangeRecords, sourceRecord]);
 
   const previousData = useMemo<SeccionesData>(() => {
-    if (viewMode === "Semanal") {
-      return buildWeeklyData(previousWeekRecords);
+    if (viewMode === "Acumulado") {
+      return buildAccumulatedData(previousRangeRecords);
     }
 
     return buildDataFromJson(previousRecord?.json ?? null);
-  }, [viewMode, previousWeekRecords, previousRecord]);
+  }, [viewMode, previousRangeRecords, previousRecord]);
 
   const hasData = useMemo(() => {
     return (
@@ -953,23 +924,6 @@ function SeccionesClasesDashboard() {
   }, [currentData, previousData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
-    if (viewMode === "Semanal") {
-      if (!effectiveSelectedWeek || !previousSelectedWeek) return [];
-
-      return [
-        buildLineChartItem(
-          `Semana ${getWeekNumberLabel(previousSelectedWeek)}`,
-          previousData,
-          gruposNumerosActivos,
-        ),
-        buildLineChartItem(
-          `Semana ${getWeekNumberLabel(effectiveSelectedWeek)}`,
-          currentData,
-          gruposNumerosActivos,
-        ),
-      ];
-    }
-
     if (!orderedRecords.length) return [];
 
     const ultimosCinco = [...orderedRecords]
@@ -994,16 +948,7 @@ function SeccionesClasesDashboard() {
         matchedTeacher,
       );
     });
-  }, [
-    orderedRecords,
-    gruposNumerosActivos,
-    viewMode,
-    effectiveSelectedWeek,
-    previousSelectedWeek,
-    currentData,
-    previousData,
-    teacherRecords,
-  ]);
+  }, [orderedRecords, gruposNumerosActivos, teacherRecords]);
 
   if (isLoading) {
     return (
@@ -1062,36 +1007,51 @@ function SeccionesClasesDashboard() {
 
           <button
             type="button"
-            onClick={() => setViewMode("Semanal")}
+            onClick={() => setViewMode("Acumulado")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition ${
-              viewMode === "Semanal"
+              viewMode === "Acumulado"
                 ? "bg-indigo-600 text-white"
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
-            Semanal
+            Acumulado
           </button>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-full md:w-auto">
-          <div className="flex h-9 w-15 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 shadow-sm w-full md:w-auto">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
             <Calendar size={16} />
           </div>
 
           {viewMode === "Diario" ? (
             <input
               type="date"
-              className="w-full"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
               value={effectiveSelectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           ) : (
-            <input
-              type="week"
-              className="w-full"
-              value={effectiveSelectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
-            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-slate-700">
+                Fecha inicio
+                <input
+                  type="date"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-normal text-slate-700"
+                  value={effectiveStartDate}
+                  onChange={(e) => setSelectedStartDate(e.target.value)}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1 text-[11px] font-semibold text-slate-700">
+                Fecha fin
+                <input
+                  type="date"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-normal text-slate-700"
+                  value={effectiveEndDate}
+                  onChange={(e) => setSelectedEndDate(e.target.value)}
+                />
+              </label>
+            </div>
           )}
         </div>
 
@@ -1135,7 +1095,7 @@ function SeccionesClasesDashboard() {
         <p className="border-l-2 border-green-700 text-green-700 p-2 bg-green-50 text-center">
           {viewMode === "Diario"
             ? "No hay datos para la fecha seleccionada."
-            : "No hay datos para la semana seleccionada."}
+            : "No hay datos para el rango de fechas seleccionado."}
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
@@ -1168,7 +1128,7 @@ function SeccionesClasesDashboard() {
             {mostrarTasaAccesosSecciones && (
               <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
                 <p className="text-sm font-medium text-slate-500">
-                  Tasa de accesos docentes a secciones
+                  Tasa de secciones ejecutadas.
                 </p>
                 <p className="mt-2 font-bold text-indigo-600 text-5xl">
                   {Math.round(
@@ -1189,7 +1149,7 @@ function SeccionesClasesDashboard() {
             )}
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
-                Tasa de presencia de docentes
+                Tasa de presencia de docentes unicos
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
                 {Math.round(Math.min(detailsPorcentajes.presenciaDocente, 100))}
@@ -1426,26 +1386,16 @@ function SeccionesClasesDashboard() {
           <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
             <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  {viewMode === "Diario"
-                    ? "Comportamiento diario"
-                    : "Comparación semanal"}
+                <h2 className="text-4xl font-semibold text-slate-900">
+                  Comportamiento de Clases Efectivas
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {viewMode === "Diario"
-                    ? `Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`
-                    : `Semana ${getWeekNumberLabel(
-                        effectiveSelectedWeek,
-                      )} comparada contra semana ${getWeekNumberLabel(
-                        previousSelectedWeek,
-                      )}.`}
+                  {`Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
                 </p>
               </div>
 
               <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-                {viewMode === "Diario"
-                  ? "Últimos 5 días"
-                  : "Semana anterior vs actual"}
+                Últimos 5 días
               </div>
             </div>
 

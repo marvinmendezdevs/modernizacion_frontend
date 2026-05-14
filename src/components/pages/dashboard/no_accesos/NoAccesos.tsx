@@ -16,7 +16,6 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  Legend,
 } from "recharts";
 import { getNoAccesos } from "@/services/metrisc.services";
 import { getSeccionClasses } from "@/services/dashboard.services";
@@ -108,6 +107,21 @@ type PieRespuestaData = {
   rawValue: number;
 };
 
+type TooltipPayloadItem = {
+  payload?: {
+    name?: string;
+    rawValue?: number;
+    docentesUnicos?: number;
+  };
+};
+
+type CustomPieTooltipProps = {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  rawLabel: string;
+  showDocentes?: boolean;
+};
+
 const PIE_COLORS = [
   "#4F46E5",
   "#06B6D4",
@@ -180,6 +194,41 @@ function formatPercent(value: number) {
 function renderPieLabel(props: unknown) {
   const { value = 0 } = props as { value?: number };
   return formatPercent(value);
+}
+
+function CustomPieTooltip({
+  active,
+  payload,
+  rawLabel,
+  showDocentes = false,
+}: CustomPieTooltipProps) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0]?.payload;
+
+  if (!item) return null;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg">
+      <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+
+      <p className="mt-1 text-sm text-slate-600">
+        {rawLabel}:{" "}
+        <span className="font-semibold text-slate-900">
+          {(item.rawValue ?? 0).toLocaleString("en-US")}
+        </span>
+      </p>
+
+      {showDocentes && (
+        <p className="text-sm text-slate-600">
+          Docentes únicos:{" "}
+          <span className="font-semibold text-slate-900">
+            {(item.docentesUnicos ?? 0).toLocaleString("en-US")}
+          </span>
+        </p>
+      )}
+    </div>
+  );
 }
 
 function calcularPorcentaje(valor: number, total: number) {
@@ -387,10 +436,7 @@ function NoAccesos() {
       { motivo: string; secciones: number; docentesUnicos: number }
     >();
 
-    const respuestasMap = new Map<
-      string,
-      { motivo: string; recuento: number }
-    >();
+    const respuestasMap = new Map<string, { motivo: string; recuento: number }>();
 
     let totalSecciones = 0;
     let totalDocentesUnicos = 0;
@@ -420,8 +466,7 @@ function NoAccesos() {
         }
       }
 
-      for (const item of json?.respuestas?.actividadInstitucionalDetalle ??
-        []) {
+      for (const item of json?.respuestas?.actividadInstitucionalDetalle ?? []) {
         const normalizedLabel = normalizeRespuestaLabel(item.motivo);
         const key = normalizeText(normalizedLabel);
         const current = respuestasMap.get(key);
@@ -470,23 +515,23 @@ function NoAccesos() {
     actividadInstitucionalDetalle,
   } = processedData;
 
-  const pieData = useMemo<PieMotivoData[]>(() => {
-    const total = resumenMotivos.reduce(
-      (acc, item) => acc + (item.secciones ?? 0),
-      0,
-    );
+const pieData = useMemo<PieMotivoData[]>(() => {
+  const total = resumenMotivos.reduce(
+    (acc, item) => acc + (item.secciones ?? 0),
+    0,
+  );
 
-    if (total === 0) return [];
+  if (total === 0) return [];
 
-    return resumenMotivos
-      .filter((item) => (item.secciones ?? 0) > 0)
-      .map((item) => ({
-        name: item.motivo,
-        value: calcularPorcentaje(item.secciones, total),
-        rawValue: item.secciones,
-        docentesUnicos: item.docentesUnicos,
-      }));
-  }, [resumenMotivos]);
+  return resumenMotivos
+    .filter((item) => (item.secciones ?? 0) > 0)
+    .map((item) => ({
+      name: item.motivo,
+      value: calcularPorcentaje(item.secciones, total),
+      rawValue: (item.secciones ?? 0) + (item.docentesUnicos ?? 0),
+      docentesUnicos: item.docentesUnicos,
+    }));
+}, [resumenMotivos]);
 
   const pieRespuestasData = useMemo<PieRespuestaData[]>(() => {
     const total = actividadInstitucionalDetalle.reduce(
@@ -698,7 +743,7 @@ function NoAccesos() {
                     <div className="flex items-center gap-2 text-slate-700">
                       <UserCheck size={16} />
                       <p className="text-xs font-medium">
-                        Tasa de accesos docentes a secciones
+                        Tasa de secciones no ejecutadas
                       </p>
                     </div>
 
@@ -717,6 +762,7 @@ function NoAccesos() {
                     </p>
                   </div>
                 )}
+
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-2 text-slate-700">
                     <BookOpen size={16} />
@@ -805,19 +851,12 @@ function NoAccesos() {
                           </Pie>
 
                           <Tooltip
-                            formatter={(value, name) => [
-                              formatPercent(Number(value)),
-                              name,
-                            ]}
-                          />
-
-                          <Legend
-                            verticalAlign="bottom"
-                            height={48}
-                            formatter={(value) => (
-                              <span className="text-sm text-slate-600">
-                                {value}
-                              </span>
+                            content={({ active, payload }) => (
+                              <CustomPieTooltip
+                                active={active}
+                                payload={payload as TooltipPayloadItem[]}
+                                rawLabel="Total"
+                              />
                             )}
                           />
                         </PieChart>
@@ -862,19 +901,12 @@ function NoAccesos() {
                           </Pie>
 
                           <Tooltip
-                            formatter={(value, name) => [
-                              formatPercent(Number(value)),
-                              name,
-                            ]}
-                          />
-
-                          <Legend
-                            verticalAlign="bottom"
-                            height={48}
-                            formatter={(value) => (
-                              <span className="text-sm text-slate-600">
-                                {value}
-                              </span>
+                            content={({ active, payload }) => (
+                              <CustomPieTooltip
+                                active={active}
+                                payload={payload as TooltipPayloadItem[]}
+                                rawLabel="Recuento"
+                              />
                             )}
                           />
                         </PieChart>
