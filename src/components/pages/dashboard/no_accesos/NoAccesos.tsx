@@ -324,35 +324,56 @@ function NoAccesos() {
   });
 
   const { data: seccionData } = useQuery<SeccionesApiResponse>({
-    queryKey: ["dashboard-secciones-no-accesos", selectedDate],
-    queryFn: () => getSeccionClasses(selectedDate),
-    enabled: category === "Diario" && Boolean(selectedDate),
+    queryKey: [
+      "dashboard-secciones-no-accesos",
+      category,
+      selectedDate,
+      startDate,
+      endDate,
+    ],
+    queryFn: () =>
+      getSeccionClasses(category === "Acumulado" ? endDate : selectedDate),
+    enabled:
+      category === "Acumulado"
+        ? Boolean(startDate) && Boolean(endDate)
+        : Boolean(selectedDate),
     retry: false,
     refetchOnWindowFocus: false,
   });
 
   const seccionMetrics = useMemo(() => {
-    if (!seccionData || category !== "Diario") return null;
+    if (!seccionData) return null;
 
     const orderedRecords = [
       ...(seccionData.last ? [seccionData.last] : []),
       ...(seccionData.cumulative ?? []),
     ].sort(
       (a, b) =>
-        new Date(b.dateReported).getTime() - new Date(a.dateReported).getTime(),
+        new Date(b.dateReported).getTime() -
+        new Date(a.dateReported).getTime(),
     );
 
-    const sourceRecord = orderedRecords.find(
-      (record) => normalizeDate(record.dateReported) === selectedDate,
-    );
+    const recordsToUse =
+      category === "Diario"
+        ? orderedRecords.filter(
+            (record) => normalizeDate(record.dateReported) === selectedDate,
+          )
+        : orderedRecords.filter((record) => {
+            const recordDate = normalizeDate(record.dateReported);
+            return recordDate >= startDate && recordDate <= endDate;
+          });
 
-    const details = sourceRecord?.json?.clases?.details ?? [];
+    const details = recordsToUse.flatMap(
+      (record) => record.json?.clases?.details ?? [],
+    );
 
     if (details.length === 0) return null;
 
     const detailsGruposUnoYDos = details.filter((item) =>
       [1, 2].includes(item.grupo),
     );
+
+    if (detailsGruposUnoYDos.length === 0) return null;
 
     const summed = sumarDetailItems(detailsGruposUnoYDos);
 
@@ -405,7 +426,7 @@ function NoAccesos() {
       tasaAccesosDocentesASeccionesTotal:
         summed.tasaAccesosDocentesASeccionesTotal ?? 0,
     };
-  }, [seccionData, selectedDate, category]);
+  }, [seccionData, selectedDate, startDate, endDate, category]);
 
   const processedData = useMemo(() => {
     if (!data) {
@@ -515,23 +536,23 @@ function NoAccesos() {
     actividadInstitucionalDetalle,
   } = processedData;
 
-const pieData = useMemo<PieMotivoData[]>(() => {
-  const total = resumenMotivos.reduce(
-    (acc, item) => acc + (item.secciones ?? 0),
-    0,
-  );
+  const pieData = useMemo<PieMotivoData[]>(() => {
+    const total = resumenMotivos.reduce(
+      (acc, item) => acc + (item.secciones ?? 0),
+      0,
+    );
 
-  if (total === 0) return [];
+    if (total === 0) return [];
 
-  return resumenMotivos
-    .filter((item) => (item.secciones ?? 0) > 0)
-    .map((item) => ({
-      name: item.motivo,
-      value: calcularPorcentaje(item.secciones, total),
-      rawValue: (item.secciones ?? 0) + (item.docentesUnicos ?? 0),
-      docentesUnicos: item.docentesUnicos,
-    }));
-}, [resumenMotivos]);
+    return resumenMotivos
+      .filter((item) => (item.secciones ?? 0) > 0)
+      .map((item) => ({
+        name: item.motivo,
+        value: calcularPorcentaje(item.secciones, total),
+        rawValue: (item.secciones ?? 0) + (item.docentesUnicos ?? 0),
+        docentesUnicos: item.docentesUnicos,
+      }));
+  }, [resumenMotivos]);
 
   const pieRespuestasData = useMemo<PieRespuestaData[]>(() => {
     const total = actividadInstitucionalDetalle.reduce(
@@ -736,7 +757,7 @@ const pieData = useMemo<PieMotivoData[]>(() => {
               </div>
             </div>
 
-            {category === "Diario" && seccionMetrics && (
+            {seccionMetrics && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {seccionMetrics.hasTasaAccesosDocentesASecciones && (
                   <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -849,7 +870,6 @@ const pieData = useMemo<PieMotivoData[]>(() => {
                               />
                             ))}
                           </Pie>
-
                           <Tooltip
                             content={({ active, payload }) => (
                               <CustomPieTooltip
