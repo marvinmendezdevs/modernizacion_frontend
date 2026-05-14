@@ -14,8 +14,8 @@ import {
 import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -68,6 +68,8 @@ type DetailItem = {
   logroAcademicoTotal: number;
   recursosDigitales: number;
   recursosDigitalesTotal: number;
+  tasaAccesosDocentesASecciones?: number;
+  tasaAccesosDocentesASeccionesTotal?: number;
 };
 
 type GradoItem = {
@@ -211,6 +213,11 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       recursosDigitales: acc.recursosDigitales + (item.recursosDigitales ?? 0),
       recursosDigitalesTotal:
         acc.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+      tasaAccesosDocentesASecciones:
+        (acc.tasaAccesosDocentesASecciones ?? 0) + (item.tasaAccesosDocentesASecciones ?? 0),
+      tasaAccesosDocentesASeccionesTotal:
+        (acc.tasaAccesosDocentesASeccionesTotal ?? 0) +
+        (item.tasaAccesosDocentesASeccionesTotal ?? 0),
     }),
     {
       grupo: 0,
@@ -222,6 +229,8 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       logroAcademicoTotal: 0,
       recursosDigitales: 0,
       recursosDigitalesTotal: 0,
+      tasaAccesosDocentesASecciones: 0,
+      tasaAccesosDocentesASeccionesTotal: 0,
     },
   );
 }
@@ -249,6 +258,11 @@ function construirResumenDetails(items: DetailItem[]) {
     detail.recursosDigitalesTotal,
   );
 
+  const accesosSecciones = calcularPorcentaje(
+    detail.tasaAccesosDocentesASecciones ?? 0,
+    detail.tasaAccesosDocentesASeccionesTotal ?? 0,
+  );
+
   const promedioClasesEfectivas =
     (presenciaDocente +
       presenciaEstudiante +
@@ -266,12 +280,15 @@ function construirResumenDetails(items: DetailItem[]) {
       logroAcademicoTotal: detail.logroAcademicoTotal,
       recursosDigitales: detail.recursosDigitales,
       recursosDigitalesTotal: detail.recursosDigitalesTotal,
+      tasaAccesosDocentesASecciones: detail.tasaAccesosDocentesASecciones ?? 0,
+      tasaAccesosDocentesASeccionesTotal: detail.tasaAccesosDocentesASeccionesTotal ?? 0,
     },
     porcentajes: {
       presenciaDocente,
       presenciaEstudiante,
       logroAcademico,
       recursosDigitales,
+      accesosSecciones,
     },
     promedioClasesEfectivas,
   };
@@ -461,6 +478,8 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
       logroAcademicoTotal: 0,
       recursosDigitales: 0,
       recursosDigitalesTotal: 0,
+      tasaAccesosDocentesASecciones: 0,
+      tasaAccesosDocentesASeccionesTotal: 0,
     };
 
     map.set(item.grupo, {
@@ -482,6 +501,12 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
         current.recursosDigitales + (item.recursosDigitales ?? 0),
       recursosDigitalesTotal:
         current.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+      tasaAccesosDocentesASecciones:
+        (current.tasaAccesosDocentesASecciones ?? 0) +
+        (item.tasaAccesosDocentesASecciones ?? 0),
+      tasaAccesosDocentesASeccionesTotal:
+        (current.tasaAccesosDocentesASeccionesTotal ?? 0) +
+        (item.tasaAccesosDocentesASeccionesTotal ?? 0),
     });
   });
 
@@ -828,6 +853,22 @@ function SeccionesClasesDashboard() {
     return construirResumenDetails(detailItems).porcentajes;
   }, [currentData, gruposNumerosActivos]);
 
+  const mostrarTasaAccesosSecciones = useMemo(() => {
+    return currentData.clases.details
+      .filter((item) => gruposNumerosActivos.includes(item.grupo))
+      .some(
+        (item) =>
+          Object.prototype.hasOwnProperty.call(
+            item,
+            "tasaAccesosDocentesASecciones",
+          ) &&
+          Object.prototype.hasOwnProperty.call(
+            item,
+            "tasaAccesosDocentesASeccionesTotal",
+          ),
+      );
+  }, [currentData, gruposNumerosActivos]);
+
   const variaciones = useMemo(() => {
     const lenguajeActual = sumarClaseItems(
       currentData.clases.Lenguaje.filter((item) =>
@@ -1098,7 +1139,7 @@ function SeccionesClasesDashboard() {
         </p>
       ) : (
         <div className="mx-auto max-w-7xl space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2 text-slate-700">
@@ -1123,7 +1164,29 @@ function SeccionesClasesDashboard() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {mostrarTasaAccesosSecciones && (
+              <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p className="text-sm font-medium text-slate-500">
+                  Tasa de accesos docentes a secciones
+                </p>
+                <p className="mt-2 font-bold text-indigo-600 text-5xl">
+                  {Math.round(
+                    Math.min(detailsPorcentajes.accesosSecciones, 100),
+                  )}
+                  %
+                </p>
+                <p className="mt-3 text-lg text-gray-500 font-semibold">
+                  {detailsResumen.tasaAccesosDocentesASecciones.toLocaleString("en-US")}{" "}
+                  <span>
+                    de{" "}
+                    {detailsResumen.tasaAccesosDocentesASeccionesTotal.toLocaleString(
+                      "en-US",
+                    )}
+                  </span>
+                </p>
+              </div>
+            )}
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm font-medium text-slate-500">
                 Tasa de presencia de docentes
@@ -1393,7 +1456,7 @@ function SeccionesClasesDashboard() {
             ) : (
               <div className="h-[340px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <BarChart
                     data={lineChartData}
                     margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
                   >
@@ -1402,34 +1465,14 @@ function SeccionesClasesDashboard() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="accesosDocentes"
-                      name="Accesos docentes"
-                      stroke="#4f46e5"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="accesosEstudiantes"
-                      name="Accesos estudiantes"
-                      stroke="#059669"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                    <Line
-                      type="monotone"
+                    <Bar
                       dataKey="clasesEfectivas"
                       name="Clases efectivas"
-                      stroke="#ea580c"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
+                      fill="#ea580c"
+                      radius={[10, 10, 0, 0]}
+                      barSize={55}
                     />
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             )}

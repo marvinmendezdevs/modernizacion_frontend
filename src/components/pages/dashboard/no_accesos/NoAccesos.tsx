@@ -37,6 +37,8 @@ type DetailItem = {
   logroAcademicoTotal: number;
   recursosDigitales: number;
   recursosDigitalesTotal: number;
+  tasaAccesosDocentesASecciones?: number;
+  tasaAccesosDocentesASeccionesTotal?: number;
 };
 
 type SeccionesJson = {
@@ -225,6 +227,12 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       recursosDigitales: acc.recursosDigitales + (item.recursosDigitales ?? 0),
       recursosDigitalesTotal:
         acc.recursosDigitalesTotal + (item.recursosDigitalesTotal ?? 0),
+      tasaAccesosDocentesASecciones:
+        (acc.tasaAccesosDocentesASecciones ?? 0) +
+        (item.tasaAccesosDocentesASecciones ?? 0),
+      tasaAccesosDocentesASeccionesTotal:
+        (acc.tasaAccesosDocentesASeccionesTotal ?? 0) +
+        (item.tasaAccesosDocentesASeccionesTotal ?? 0),
     }),
     {
       grupo: 0,
@@ -236,6 +244,8 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
       logroAcademicoTotal: 0,
       recursosDigitales: 0,
       recursosDigitalesTotal: 0,
+      tasaAccesosDocentesASecciones: 0,
+      tasaAccesosDocentesASeccionesTotal: 0,
     },
   );
 }
@@ -297,6 +307,18 @@ function NoAccesos() {
 
     const summed = sumarDetailItems(detailsGruposUnoYDos);
 
+    const hasTasaAccesosDocentesASecciones = detailsGruposUnoYDos.some(
+      (item) =>
+        Object.prototype.hasOwnProperty.call(
+          item,
+          "tasaAccesosDocentesASecciones",
+        ) &&
+        Object.prototype.hasOwnProperty.call(
+          item,
+          "tasaAccesosDocentesASeccionesTotal",
+        ),
+    );
+
     const presenciaDocente = calcularPorcentaje(
       summed.tasaPresenciaDocente,
       summed.tasaPresenciaDocenteTotal,
@@ -330,6 +352,9 @@ function NoAccesos() {
       presenciaEstudiante: calcularFaltante(presenciaEstudiante),
       logroAcademico: calcularFaltante(logroAcademico),
       recursosDigitales: calcularFaltante(recursosDigitales),
+      hasTasaAccesosDocentesASecciones,
+      tasaAccesosDocentesASeccionesTotal:
+        summed.tasaAccesosDocentesASeccionesTotal ?? 0,
     };
   }, [seccionData, selectedDate, category]);
 
@@ -482,6 +507,17 @@ function NoAccesos() {
 
   const hasGestionNoAccesosChart = pieData.length > 0;
   const hasRespuestasCampaniaChart = pieRespuestasData.length > 0;
+
+  const porcentajeNoAccesosDocentesASecciones = useMemo(() => {
+    if (!seccionMetrics?.hasTasaAccesosDocentesASecciones) return 0;
+
+    return limitarPorcentaje(
+      calcularPorcentaje(
+        totalSecciones,
+        seccionMetrics.tasaAccesosDocentesASeccionesTotal,
+      ),
+    );
+  }, [seccionMetrics, totalSecciones]);
 
   const hasData =
     totalSecciones > 0 ||
@@ -656,14 +692,14 @@ function NoAccesos() {
             </div>
 
             {category === "Diario" && seccionMetrics && (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center gap-2 text-slate-700">
                     <BookOpen size={16} />
                     <p className="text-xs font-medium">Clases efectivas</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {formatNoAccesoPercent(seccionMetrics.clasesEfectivas)}
+                  <p className="mt-2 text-2xl font-bold text-red-700">
+                    -{formatNoAccesoPercent(seccionMetrics.clasesEfectivas)}
                   </p>
                 </div>
 
@@ -672,8 +708,8 @@ function NoAccesos() {
                     <UserCheck size={16} />
                     <p className="text-xs font-medium">Presencia docentes</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {formatNoAccesoPercent(seccionMetrics.presenciaDocente)}
+                  <p className="mt-2 text-2xl font-bold text-red-700">
+                    -{formatNoAccesoPercent(seccionMetrics.presenciaDocente)}
                   </p>
                 </div>
 
@@ -682,8 +718,8 @@ function NoAccesos() {
                     <Users size={16} />
                     <p className="text-xs font-medium">Presencia estudiantes</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-indigo-600">
-                    {formatNoAccesoPercent(seccionMetrics.presenciaEstudiante)}
+                  <p className="mt-2 text-2xl font-bold text-red-700">
+                    -{formatNoAccesoPercent(seccionMetrics.presenciaEstudiante)}
                   </p>
                 </div>
 
@@ -692,8 +728,8 @@ function NoAccesos() {
                     <GraduationCap size={16} />
                     <p className="text-xs font-medium">Logro académico</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-green-700">
-                    {formatNoAccesoPercent(seccionMetrics.logroAcademico)}
+                  <p className="mt-2 text-2xl font-bold text-red-700">
+                    -{formatNoAccesoPercent(seccionMetrics.logroAcademico)}
                   </p>
                 </div>
 
@@ -702,10 +738,35 @@ function NoAccesos() {
                     <Laptop size={16} />
                     <p className="text-xs font-medium">Recursos digitales</p>
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-green-700">
-                    {formatNoAccesoPercent(seccionMetrics.recursosDigitales)}
+                  <p className="mt-2 text-2xl font-bold text-red-700">
+                    -{formatNoAccesoPercent(seccionMetrics.recursosDigitales)}
                   </p>
                 </div>
+
+                {seccionMetrics.hasTasaAccesosDocentesASecciones && (
+                  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <UserCheck size={16} />
+                      <p className="text-xs font-medium">
+                        Tasa de accesos docentes a secciones
+                      </p>
+                    </div>
+
+                    <p className="mt-2 text-2xl font-bold text-red-700">
+                      -
+                      {formatNoAccesoPercent(
+                        porcentajeNoAccesosDocentesASecciones,
+                      )}
+                    </p>
+
+                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                      {totalSecciones.toLocaleString("en-US")} de{" "}
+                      {seccionMetrics.tasaAccesosDocentesASeccionesTotal.toLocaleString(
+                        "en-US",
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
