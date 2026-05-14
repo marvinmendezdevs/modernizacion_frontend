@@ -246,15 +246,22 @@ function limitarPorcentaje(value: number) {
   return Math.min(Math.max(value, 0), 100);
 }
 
-function calcularFaltante(value: number) {
-  return limitarPorcentaje(100 - limitarPorcentaje(value));
+function truncarDosDecimales(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.trunc(value * 100) / 100;
+}
+
+function calcularFaltanteVisual(value: number) {
+  const porcentajeSeccionesMostrado = truncarDosDecimales(
+    limitarPorcentaje(value),
+  );
+
+  return Number((100 - porcentajeSeccionesMostrado).toFixed(2));
 }
 
 function formatNoAccesoPercent(value: number) {
   if (!Number.isFinite(value)) return "0.00%";
-
-  const truncated = Math.trunc(value * 100) / 100;
-  return `${truncated.toFixed(2)}%`;
+  return `${limitarPorcentaje(value).toFixed(2)}%`;
 }
 
 function sumarDetailItems(items: DetailItem[]): DetailItem {
@@ -409,6 +416,11 @@ function NoAccesos() {
       summed.recursosDigitalesTotal,
     );
 
+    const tasaAccesosDocentesASecciones = calcularPorcentaje(
+      summed.tasaAccesosDocentesASecciones ?? 0,
+      summed.tasaAccesosDocentesASeccionesTotal ?? 0,
+    );
+
     const promedioClasesEfectivas =
       (presenciaDocente +
         presenciaEstudiante +
@@ -417,11 +429,14 @@ function NoAccesos() {
       4;
 
     return {
-      clasesEfectivas: calcularFaltante(promedioClasesEfectivas),
-      presenciaDocente: calcularFaltante(presenciaDocente),
-      presenciaEstudiante: calcularFaltante(presenciaEstudiante),
-      logroAcademico: calcularFaltante(logroAcademico),
-      recursosDigitales: calcularFaltante(recursosDigitales),
+      clasesEfectivas: calcularFaltanteVisual(promedioClasesEfectivas),
+      presenciaDocente: calcularFaltanteVisual(presenciaDocente),
+      presenciaEstudiante: calcularFaltanteVisual(presenciaEstudiante),
+      logroAcademico: calcularFaltanteVisual(logroAcademico),
+      recursosDigitales: calcularFaltanteVisual(recursosDigitales),
+      tasaAccesosDocentesASecciones: calcularFaltanteVisual(
+        tasaAccesosDocentesASecciones,
+      ),
       hasTasaAccesosDocentesASecciones,
       tasaAccesosDocentesASeccionesTotal:
         summed.tasaAccesosDocentesASeccionesTotal ?? 0,
@@ -574,16 +589,8 @@ function NoAccesos() {
   const hasGestionNoAccesosChart = pieData.length > 0;
   const hasRespuestasCampaniaChart = pieRespuestasData.length > 0;
 
-  const porcentajeNoAccesosDocentesASecciones = useMemo(() => {
-    if (!seccionMetrics?.hasTasaAccesosDocentesASecciones) return 0;
-
-    return limitarPorcentaje(
-      calcularPorcentaje(
-        totalSecciones,
-        seccionMetrics.tasaAccesosDocentesASeccionesTotal,
-      ),
-    );
-  }, [seccionMetrics, totalSecciones]);
+  const porcentajeNoAccesosDocentesASecciones =
+    seccionMetrics?.tasaAccesosDocentesASecciones ?? 0;
 
   const hasData =
     totalSecciones > 0 ||
