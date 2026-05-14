@@ -21,6 +21,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  LabelList,
 } from "recharts";
 import type { DashboardRecord } from "@/types/dashboard.types";
 
@@ -135,8 +136,14 @@ type TeacherInfoResponse = {
 type LineChartItem = {
   fecha: string;
   accesosDocentes: number;
+  totalDocentes: number;
+  porcentajeDocentes: number;
   accesosEstudiantes: number;
+  totalEstudiantes: number;
+  porcentajeEstudiantes: number;
   clasesEfectivas: number;
+  totalClases: number;
+  porcentajeClasesEfectivas: number;
 };
 
 type ViewMode = "Diario" | "Acumulado";
@@ -619,18 +626,128 @@ function buildLineChartItem(
       ? sumTotals(docentesDiario, grupos, "access")
       : (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0);
 
+  const totalDocentes =
+    docentesDiario.length > 0
+      ? sumTotals(docentesDiario, grupos, "total")
+      : (lenguaje.totalDocentes ?? 0) + (matematica.totalDocentes ?? 0);
+
   const accesosEstudiantes =
     estudiantesDiario.length > 0
       ? sumTotals(estudiantesDiario, grupos, "access")
       : (lenguaje.accesosEstudiantes ?? 0) + (matematica.accesosEstudiantes ?? 0);
 
+  const totalEstudiantes =
+    estudiantesDiario.length > 0
+      ? sumTotals(estudiantesDiario, grupos, "total")
+      : (lenguaje.totalEstudiantes ?? 0) + (matematica.totalEstudiantes ?? 0);
+
+  const clasesEfectivas =
+    (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0);
+
+  const totalClases =
+    (lenguaje.totalClases ?? 0) + (matematica.totalClases ?? 0);
+
   return {
     fecha: label,
     accesosDocentes,
+    totalDocentes,
+    porcentajeDocentes: truncarADecimales(
+      calcularPorcentaje(accesosDocentes, totalDocentes),
+    ),
     accesosEstudiantes,
-    clasesEfectivas:
-      (lenguaje.clasesEfectivas ?? 0) + (matematica.clasesEfectivas ?? 0),
+    totalEstudiantes,
+    porcentajeEstudiantes: truncarADecimales(
+      calcularPorcentaje(accesosEstudiantes, totalEstudiantes),
+    ),
+    clasesEfectivas,
+    totalClases,
+    porcentajeClasesEfectivas: truncarADecimales(
+      calcularPorcentaje(clasesEfectivas, totalClases),
+    ),
   };
+}
+
+
+type BarLabelProps = {
+  x?: number | string;
+  y?: number | string;
+  width?: number | string;
+  value?: number | string | null;
+};
+
+type LineChartRawKey =
+  | "clasesEfectivas"
+  | "accesosDocentes"
+  | "accesosEstudiantes";
+
+type LineChartTotalKey =
+  | "totalClases"
+  | "totalDocentes"
+  | "totalEstudiantes";
+
+type RawTooltipPayloadItem = {
+  value?: number | string;
+  payload?: Partial<LineChartItem>;
+};
+
+type RawTooltipProps = {
+  active?: boolean;
+  payload?: RawTooltipPayloadItem[];
+  label?: string;
+  rawKey: LineChartRawKey;
+  totalKey: LineChartTotalKey;
+  title: string;
+};
+
+function toFiniteNumber(value: unknown) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function PorcentajeBarLabel({ x, y, width, value }: BarLabelProps) {
+  if (value === null || value === undefined) return null;
+
+  const xPosition = toFiniteNumber(x) + toFiniteNumber(width) / 2;
+  const yPosition = toFiniteNumber(y) - 8;
+
+  return (
+    <text
+      x={xPosition}
+      y={yPosition}
+      textAnchor="middle"
+      className="fill-slate-700 text-xs font-semibold"
+    >
+      {`${formatearPorcentajeSinRedondear(toFiniteNumber(value))}%`}
+    </text>
+  );
+}
+
+function RawAccessTooltip({
+  active,
+  payload,
+  label,
+  rawKey,
+  totalKey,
+  title,
+}: RawTooltipProps) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0]?.payload;
+  const porcentaje = toFiniteNumber(payload[0]?.value);
+  const valor = toFiniteNumber(item?.[rawKey]);
+  const total = toFiniteNumber(item?.[totalKey]);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-lg">
+      <p className="mb-1 font-semibold text-slate-800">{label}</p>
+      <p className="text-slate-600">
+        {title}: {valor.toLocaleString("en-US")} de {total.toLocaleString("en-US")}
+      </p>
+      <p className="font-semibold text-slate-900">
+        Porcentaje: {formatearPorcentajeSinRedondear(porcentaje)}%
+      </p>
+    </div>
+  );
 }
 
 function SeccionesClasesDashboard() {
@@ -1489,7 +1606,7 @@ function SeccionesClasesDashboard() {
                     Comportamiento de Clases Efectivas
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    {`Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                    {`Porcentaje de clases efectivas de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
                   </p>
                 </div>
 
@@ -1507,20 +1624,33 @@ function SeccionesClasesDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={lineChartData}
-                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                      margin={{ top: 35, right: 20, left: 0, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="fecha" />
-                      <YAxis />
-                      <Tooltip />
+                      <YAxis
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Tooltip
+                        content={
+                          <RawAccessTooltip
+                            rawKey="clasesEfectivas"
+                            totalKey="totalClases"
+                            title="Clases efectivas"
+                          />
+                        }
+                      />
                       <Legend />
                       <Bar
-                        dataKey="clasesEfectivas"
+                        dataKey="porcentajeClasesEfectivas"
                         name="Clases efectivas"
                         fill="#ea580c"
                         radius={[10, 10, 0, 0]}
                         barSize={45}
-                      />
+                      >
+                        <LabelList content={<PorcentajeBarLabel />} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1534,7 +1664,7 @@ function SeccionesClasesDashboard() {
                     Comportamiento de Docentes
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    {`Total de accesos docentes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                    {`Porcentaje de accesos docentes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
                   </p>
                 </div>
 
@@ -1552,20 +1682,33 @@ function SeccionesClasesDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={lineChartData}
-                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                      margin={{ top: 35, right: 20, left: 0, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="fecha" />
-                      <YAxis />
-                      <Tooltip />
+                      <YAxis
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Tooltip
+                        content={
+                          <RawAccessTooltip
+                            rawKey="accesosDocentes"
+                            totalKey="totalDocentes"
+                            title="Docentes"
+                          />
+                        }
+                      />
                       <Legend />
                       <Bar
-                        dataKey="accesosDocentes"
+                        dataKey="porcentajeDocentes"
                         name="Docentes"
                         fill="#4f46e5"
                         radius={[10, 10, 0, 0]}
                         barSize={45}
-                      />
+                      >
+                        <LabelList content={<PorcentajeBarLabel />} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1579,7 +1722,7 @@ function SeccionesClasesDashboard() {
                     Comportamiento de Estudiantes
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    {`Total de accesos estudiantes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                    {`Porcentaje de accesos estudiantes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
                   </p>
                 </div>
 
@@ -1597,20 +1740,33 @@ function SeccionesClasesDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={lineChartData}
-                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                      margin={{ top: 35, right: 20, left: 0, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="fecha" />
-                      <YAxis />
-                      <Tooltip />
+                      <YAxis
+                        domain={[0, 100]}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Tooltip
+                        content={
+                          <RawAccessTooltip
+                            rawKey="accesosEstudiantes"
+                            totalKey="totalEstudiantes"
+                            title="Estudiantes"
+                          />
+                        }
+                      />
                       <Legend />
                       <Bar
-                        dataKey="accesosEstudiantes"
+                        dataKey="porcentajeEstudiantes"
                         name="Estudiantes"
                         fill="#16a34a"
                         radius={[10, 10, 0, 0]}
                         barSize={45}
-                      />
+                      >
+                        <LabelList content={<PorcentajeBarLabel />} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
