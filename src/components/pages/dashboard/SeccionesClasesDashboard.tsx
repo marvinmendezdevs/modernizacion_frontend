@@ -170,6 +170,21 @@ function calcularPorcentaje(valor: number, total: number) {
   return (valor / total) * 100;
 }
 
+function truncarADecimales(valor: number, decimales = 2) {
+  if (!Number.isFinite(valor)) return 0;
+
+  const factor = 10 ** decimales;
+  return Math.trunc(valor * factor) / factor;
+}
+
+function formatearDecimalSinRedondear(valor: number, decimales = 2) {
+  return truncarADecimales(valor, decimales).toFixed(decimales);
+}
+
+function formatearPorcentajeSinRedondear(valor: number, decimales = 2) {
+  return formatearDecimalSinRedondear(Math.min(valor, 100), decimales);
+}
+
 function sumarClaseItems(items: ClaseItem[]): ClaseItem {
   return items.reduce(
     (acc, item) => ({
@@ -1109,17 +1124,17 @@ function SeccionesClasesDashboard() {
                 {clasesEfectivasResumen.variacion > 0 ? (
                   <p className="flex gap-2 items-center text-xs font-medium text-green-700">
                     <TrendingUp size={16} />
-                    Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                    Variación: {formatearDecimalSinRedondear(clasesEfectivasResumen.variacion)}%
                   </p>
                 ) : (
                   <p className="flex gap-2 items-center text-xs font-medium text-red-700">
                     <TrendingDown size={16} />
-                    Variación: {clasesEfectivasResumen.variacion.toFixed(1)}%
+                    Variación: {formatearDecimalSinRedondear(clasesEfectivasResumen.variacion)}%
                   </p>
                 )}
               </div>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.min(clasesEfectivasResumen.porcentaje, 100).toFixed(2)}%
+                {formatearPorcentajeSinRedondear(clasesEfectivasResumen.porcentaje)}%
               </p>
             </div>
           </div>
@@ -1131,9 +1146,7 @@ function SeccionesClasesDashboard() {
                   Tasa de secciones ejecutadas.
                 </p>
                 <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                  {Math.round(
-                    Math.min(detailsPorcentajes.accesosSecciones, 100),
-                  )}
+                  {formatearPorcentajeSinRedondear(detailsPorcentajes.accesosSecciones)}
                   %
                 </p>
                 <p className="mt-3 text-lg text-gray-500 font-semibold">
@@ -1152,7 +1165,7 @@ function SeccionesClasesDashboard() {
                 Tasa de presencia de docentes unicos
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.presenciaDocente, 100))}
+                {formatearPorcentajeSinRedondear(detailsPorcentajes.presenciaDocente)}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
@@ -1171,9 +1184,7 @@ function SeccionesClasesDashboard() {
                 Tasa de presencia de estudiantes
               </p>
               <p className="mt-2 font-bold text-indigo-600 text-5xl">
-                {Math.round(
-                  Math.min(detailsPorcentajes.presenciaEstudiante, 100),
-                )}
+                {formatearPorcentajeSinRedondear(detailsPorcentajes.presenciaEstudiante)}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
@@ -1192,7 +1203,7 @@ function SeccionesClasesDashboard() {
                 Nivel de logro académico
               </p>
               <p className="mt-2 font-bold text-green-700 text-5xl">
-                {Math.round(Math.min(detailsPorcentajes.logroAcademico, 100))}%
+                {formatearPorcentajeSinRedondear(detailsPorcentajes.logroAcademico)}%
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
                 {detailsResumen.logroAcademico.toLocaleString("en-US")}{" "}
@@ -1208,9 +1219,7 @@ function SeccionesClasesDashboard() {
                 Uso de recursos digitales
               </p>
               <p className="mt-2 font-bold text-green-700 text-5xl">
-                {Math.round(
-                  Math.min(detailsPorcentajes.recursosDigitales, 100),
-                )}
+                {formatearPorcentajeSinRedondear(detailsPorcentajes.recursosDigitales)}
                 %
               </p>
               <p className="mt-3 text-lg text-gray-500 font-semibold">
@@ -1289,12 +1298,12 @@ function SeccionesClasesDashboard() {
                           {variacionMateria.docentes > 0 ? (
                             <p className="flex gap-2 items-center text-xs font-medium text-green-700">
                               <TrendingUp size={16} />
-                              Variación: {variacionMateria.docentes.toFixed(1)}%
+                              Variación: {formatearDecimalSinRedondear(variacionMateria.docentes)}%
                             </p>
                           ) : (
                             <p className="flex gap-2 items-center text-xs font-medium text-red-700">
                               <TrendingDown size={16} />
-                              Variación: {variacionMateria.docentes.toFixed(1)}%
+                              Variación: {formatearDecimalSinRedondear(variacionMateria.docentes)}%
                             </p>
                           )}
                         </div>
@@ -1321,7 +1330,7 @@ function SeccionesClasesDashboard() {
                             />
                           </div>
                           <p className="text-gray-500 text-sm font-semibold">
-                            {Math.round(Math.min(porcentajeDocentes, 100))}%
+                            {formatearPorcentajeSinRedondear(porcentajeDocentes)}%
                           </p>
                         </div>
                       </div>
@@ -1336,13 +1345,13 @@ function SeccionesClasesDashboard() {
                             <p className="flex gap-2 items-center text-xs font-medium text-green-700">
                               <TrendingUp size={16} />
                               Variación:{" "}
-                              {variacionMateria.estudiantes.toFixed(1)}%
+                              {formatearDecimalSinRedondear(variacionMateria.estudiantes)}%
                             </p>
                           ) : (
                             <p className="flex gap-2 items-center text-xs font-medium text-red-700">
                               <TrendingDown size={16} />
                               Variación:{" "}
-                              {variacionMateria.estudiantes.toFixed(1)}%
+                              {formatearDecimalSinRedondear(variacionMateria.estudiantes)}%
                             </p>
                           )}
                         </div>
@@ -1372,7 +1381,7 @@ function SeccionesClasesDashboard() {
                             />
                           </div>
                           <p className="text-gray-500 text-sm font-semibold">
-                            {Math.round(Math.min(porcentajeEstudiantes, 100))}%
+                            {formatearPorcentajeSinRedondear(porcentajeEstudiantes)}%
                           </p>
                         </div>
                       </div>
@@ -1383,49 +1392,141 @@ function SeccionesClasesDashboard() {
             </div>
           </div>
 
-          <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
-            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-4xl font-semibold text-slate-900">
-                  Comportamiento de Clases Efectivas
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {`Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
-                </p>
+          <div className="flex flex-col gap-2">
+            <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
+              <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-3xl font-semibold text-slate-900">
+                    Comportamiento de Clases Efectivas
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {`Tendencia de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                  </p>
+                </div>
+
+                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+                  Últimos 5 días
+                </div>
               </div>
 
-              <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-                Últimos 5 días
-              </div>
+              {lineChartData.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                  No hay datos suficientes para mostrar la información.
+                </div>
+              ) : (
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lineChartData}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="fecha" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="clasesEfectivas"
+                        name="Clases efectivas"
+                        fill="#ea580c"
+                        radius={[10, 10, 0, 0]}
+                        barSize={45}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
-            {lineChartData.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                No hay datos suficientes para mostrar la información.
+            <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
+              <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-3xl font-semibold text-slate-900">
+                    Comportamiento de Docentes
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {`Total de accesos docentes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                  </p>
+                </div>
+
+                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+                  Últimos 5 días
+                </div>
               </div>
-            ) : (
-              <div className="h-[340px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={lineChartData}
-                    margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar
-                      dataKey="clasesEfectivas"
-                      name="Clases efectivas"
-                      fill="#ea580c"
-                      radius={[10, 10, 0, 0]}
-                      barSize={55}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+
+              {lineChartData.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                  No hay datos suficientes para mostrar la información.
+                </div>
+              ) : (
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lineChartData}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="fecha" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="accesosDocentes"
+                        name="Docentes"
+                        fill="#4f46e5"
+                        radius={[10, 10, 0, 0]}
+                        barSize={45}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 md:p-6">
+              <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-3xl font-semibold text-slate-900">
+                    Comportamiento de Estudiantes
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {`Total de accesos estudiantes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
+                  </p>
+                </div>
+
+                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
+                  Últimos 5 días
+                </div>
               </div>
-            )}
+
+              {lineChartData.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                  No hay datos suficientes para mostrar la información.
+                </div>
+              ) : (
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lineChartData}
+                      margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="fecha" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="accesosEstudiantes"
+                        name="Estudiantes"
+                        fill="#16a34a"
+                        radius={[10, 10, 0, 0]}
+                        barSize={45}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
