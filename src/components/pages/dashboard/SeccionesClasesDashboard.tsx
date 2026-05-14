@@ -1603,7 +1603,7 @@ function SeccionesClasesDashboard() {
               <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-3xl font-semibold text-slate-900">
-                    Comportamiento de Clases Efectivas
+                    Clases Efectivas
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     {`Porcentaje de clases efectivas de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
@@ -1661,7 +1661,7 @@ function SeccionesClasesDashboard() {
               <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-3xl font-semibold text-slate-900">
-                    Comportamiento de Docentes
+                    Asistencia Docentes
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     {`Porcentaje de accesos docentes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
@@ -1719,7 +1719,7 @@ function SeccionesClasesDashboard() {
               <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h2 className="text-3xl font-semibold text-slate-900">
-                    Comportamiento de Estudiantes
+                    Asistencia Estudiantes
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     {`Porcentaje de accesos estudiantes de los últimos 5 días para ${etiquetaGrupoActiva.toLowerCase()}.`}
