@@ -78,6 +78,14 @@ type GradoItem = {
   clasesEfectivas: number;
 };
 
+type DailyAccessBlock = {
+  docentes?: DashboardRecord[];
+  secciones?: DashboardRecord[];
+  estudiantes?: DashboardRecord[];
+  "docentes-diario"?: DashboardRecord[];
+  "estudiantes-diario"?: DashboardRecord[];
+};
+
 type SeccionesJson = {
   clases?: {
     grados?: GradoItem[];
@@ -85,9 +93,9 @@ type SeccionesJson = {
     details?: DetailItem[];
     Lenguaje?: ClaseItem[];
     Matematica?: ClaseItem[];
-  };
-  remediacion?: unknown;
-  refuerzo?: unknown;
+  } & DailyAccessBlock;
+  remediacion?: DailyAccessBlock | unknown;
+  refuerzo?: DailyAccessBlock | unknown;
 };
 
 type MetricsRecord = {
@@ -103,14 +111,12 @@ type ApiResponse = {
   cumulative: MetricsRecord[];
 };
 
-type SubtypeBlock = {
-  docentes: DashboardRecord[];
-  secciones: DashboardRecord[];
-  estudiantes: DashboardRecord[];
-};
+type SubtypeBlock = DailyAccessBlock;
 
 type DashboardJsonApi = {
-  clases: SubtypeBlock;
+  clases?: SubtypeBlock;
+  remediacion?: SubtypeBlock;
+  refuerzo?: SubtypeBlock;
 };
 
 type DashboardReportApi = {
@@ -495,13 +501,65 @@ function sumarDetailItemsPorGrupo(items: DetailItem[]): DetailItem[] {
 }
 
 function sumTotals(
-  items: DashboardRecord[],
+  items: DashboardRecord[] = [],
   groups: number[],
   field: "total" | "access" | "demo",
 ) {
   return items
     .filter((item) => groups.includes(item.group))
     .reduce((acc, item) => acc + (item[field] ?? 0), 0);
+}
+
+function isDailyAccessBlock(value: unknown): value is DailyAccessBlock {
+  return typeof value === "object" && value !== null;
+}
+
+function getDailyItemsFromJson(
+  source: DashboardJsonApi | SeccionesJson | null | undefined,
+  key: "docentes-diario" | "estudiantes-diario",
+) {
+  if (!source) return [];
+
+  const blocks = [source.clases, source.remediacion, source.refuerzo];
+
+  for (const block of blocks) {
+    if (!isDailyAccessBlock(block)) continue;
+
+    const items = block[key];
+
+    if (Array.isArray(items) && items.length > 0) {
+      return items;
+    }
+  }
+
+  return [];
+}
+
+function getTeacherDailyItems(
+  teacherData: DashboardReportApi | null | undefined,
+  fallbackJson: SeccionesJson | null | undefined,
+  key: "docentes-diario" | "estudiantes-diario",
+) {
+  const itemsFromTeacherInfo = getDailyItemsFromJson(teacherData?.json, key);
+
+  if (itemsFromTeacherInfo.length > 0) {
+    return itemsFromTeacherInfo;
+  }
+
+  return getDailyItemsFromJson(fallbackJson, key);
+}
+
+
+function hasDailyAccessDataForChart(
+  teacherData?: DashboardReportApi | null,
+  fallbackJson?: SeccionesJson | null,
+) {
+  return (
+    getTeacherDailyItems(teacherData, fallbackJson, "docentes-diario").length >
+      0 ||
+    getTeacherDailyItems(teacherData, fallbackJson, "estudiantes-diario")
+      .length > 0
+  );
 }
 
 function buildAccumulatedData(records: MetricsRecord[]): SeccionesData {
@@ -535,6 +593,7 @@ function buildLineChartItem(
   data: SeccionesData,
   grupos: number[],
   teacherData?: DashboardReportApi | null,
+  fallbackJson?: SeccionesJson | null,
 ): LineChartItem {
   const lenguaje = sumarClaseItems(
     data.clases.Lenguaje.filter((item) => grupos.includes(item.grupo)),
@@ -544,13 +603,26 @@ function buildLineChartItem(
     data.clases.Matematica.filter((item) => grupos.includes(item.grupo)),
   );
 
-  const accesosDocentes = teacherData
-    ? sumTotals(teacherData.json.clases.docentes, grupos, "access")
-    : (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0);
+  const docentesDiario = getTeacherDailyItems(
+    teacherData,
+    fallbackJson,
+    "docentes-diario",
+  );
+  const estudiantesDiario = getTeacherDailyItems(
+    teacherData,
+    fallbackJson,
+    "estudiantes-diario",
+  );
 
-  const accesosEstudiantes = teacherData
-    ? sumTotals(teacherData.json.clases.estudiantes, grupos, "access")
-    : (lenguaje.accesosEstudiantes ?? 0) + (matematica.accesosEstudiantes ?? 0);
+  const accesosDocentes =
+    docentesDiario.length > 0
+      ? sumTotals(docentesDiario, grupos, "access")
+      : (lenguaje.accesosDocentes ?? 0) + (matematica.accesosDocentes ?? 0);
+
+  const accesosEstudiantes =
+    estudiantesDiario.length > 0
+      ? sumTotals(estudiantesDiario, grupos, "access")
+      : (lenguaje.accesosEstudiantes ?? 0) + (matematica.accesosEstudiantes ?? 0);
 
   return {
     fecha: label,
@@ -939,28 +1011,45 @@ function SeccionesClasesDashboard() {
   }, [currentData, previousData, gruposNumerosActivos]);
 
   const lineChartData = useMemo<LineChartItem[]>(() => {
-    if (!orderedRecords.length) return [];
+    const recordsByDate = new Map<string, MetricsRecord>();
+    const teacherRecordsByDate = new Map<string, DashboardReportApi>();
+    const datesWithDailyData = new Set<string>();
 
-    const ultimosCinco = [...orderedRecords]
+    orderedRecords.forEach((record) => {
+      const date = normalizeDate(record.dateReported);
+      recordsByDate.set(date, record);
+
+      if (hasDailyAccessDataForChart(null, record.json)) {
+        datesWithDailyData.add(date);
+      }
+    });
+
+    teacherRecords.forEach((teacherRecord) => {
+      const date = normalizeDate(teacherRecord.dateReported);
+      teacherRecordsByDate.set(date, teacherRecord);
+
+      const fallbackRecord = recordsByDate.get(date);
+
+      if (hasDailyAccessDataForChart(teacherRecord, fallbackRecord?.json)) {
+        datesWithDailyData.add(date);
+      }
+    });
+
+    const ultimosCinco = Array.from(datesWithDailyData)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
       .slice(0, 5)
-      .sort(
-        (a, b) =>
-          new Date(a.dateReported).getTime() -
-          new Date(b.dateReported).getTime(),
-      );
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    return ultimosCinco.map((record) => {
-      const matchedTeacher = teacherRecords.find(
-        (teacherRecord) =>
-          normalizeDate(teacherRecord.dateReported) ===
-          normalizeDate(record.dateReported),
-      );
+    return ultimosCinco.map((date) => {
+      const record = recordsByDate.get(date);
+      const matchedTeacher = teacherRecordsByDate.get(date);
 
       return buildLineChartItem(
-        formatFullDate(record.dateReported),
-        buildDataFromJson(record.json),
+        formatFullDate(record?.dateReported ?? date),
+        buildDataFromJson(record?.json ?? null),
         gruposNumerosActivos,
         matchedTeacher,
+        record?.json ?? null,
       );
     });
   }, [orderedRecords, gruposNumerosActivos, teacherRecords]);
