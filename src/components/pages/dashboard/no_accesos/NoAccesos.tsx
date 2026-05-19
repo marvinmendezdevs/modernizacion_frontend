@@ -848,7 +848,7 @@ function NoAccesos() {
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="mb-5">
                     <h3 className="text-xl font-semibold text-slate-900">
-                      Gestión de no accesos
+                      Gestión de no accesos por secciones
                     </h3>
                     <p className="mt-1 text-sm text-slate-500">
                       Comparativo y distribución de los motivos reportados.
@@ -897,7 +897,7 @@ function NoAccesos() {
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="mb-5">
                     <h3 className="text-xl font-semibold text-slate-900">
-                      Respuestas de campaña
+                      Justificación por número de docentes
                     </h3>
                     <p className="mt-1 text-sm text-slate-500">
                       Comparativo y distribución de respuestas registradas.
