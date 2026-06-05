@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -137,6 +137,8 @@ const PIE_COLORS = [
   "#EC4899",
 ];
 
+const RADIAN = Math.PI / 180;
+
 function normalizeText(value: string) {
   return value
     .trim()
@@ -191,9 +193,30 @@ function formatPercent(value: number) {
   return `${value.toFixed(1)}%`;
 }
 
-function renderPieLabel(props: unknown) {
-  const { value = 0 } = props as { value?: number };
-  return formatPercent(value);
+function renderPieLabel(props: any) {
+  const { cx, cy, midAngle, outerRadius, value, index } = props;
+  const radius = outerRadius + (index % 2 === 0 ? 30 : 70);
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  const lx = cx + outerRadius * Math.cos(-midAngle * RADIAN);
+  const ly = cy + outerRadius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <g>
+      <line x1={lx} y1={ly} x2={x} y2={y} stroke="#94a3b8" strokeWidth={1} />
+      <text
+        x={x}
+        y={y}
+        fill="#475569"
+        textAnchor={x > cx ? "start" : "end"}
+        dominantBaseline="central"
+        className="text-[14px] font-bold"
+      >
+        {formatPercent(value)}
+      </text>
+    </g>
+  );
 }
 
 function CustomPieTooltip({
@@ -307,12 +330,10 @@ function sumarDetailItems(items: DetailItem[]): DetailItem {
 }
 
 function NoAccesos() {
-  const today = new Date().toLocaleDateString("sv-SE");
-
   const [category, setCategory] = useState<"Diario" | "Acumulado">("Diario");
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const { data, isLoading, isError } = useQuery<NoAccesosResponse>({
     queryKey: ["no-accesos", category, selectedDate, startDate, endDate],
@@ -322,10 +343,6 @@ function NoAccesos() {
           ? { category, startDate, endDate }
           : { category, selectedDate },
       ),
-    enabled:
-      category === "Acumulado"
-        ? Boolean(startDate) && Boolean(endDate)
-        : Boolean(selectedDate),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -339,14 +356,22 @@ function NoAccesos() {
       endDate,
     ],
     queryFn: () =>
-      getSeccionClasses(category === "Acumulado" ? endDate : selectedDate),
-    enabled:
-      category === "Acumulado"
-        ? Boolean(startDate) && Boolean(endDate)
-        : Boolean(selectedDate),
+      getSeccionClasses(
+        category === "Acumulado" ? endDate || selectedDate : selectedDate,
+      ),
+    enabled: category === "Acumulado" ? Boolean(endDate) : true,
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (data && data.mode === "Diario" && data.last && !selectedDate) {
+      const date = normalizeDate(data.last.dateReported);
+      setSelectedDate(date);
+      setStartDate(date);
+      setEndDate(date);
+    }
+  }, [data, selectedDate]);
 
   const seccionMetrics = useMemo(() => {
     if (!seccionData) return null;
@@ -564,7 +589,7 @@ function NoAccesos() {
       .map((item) => ({
         name: item.motivo,
         value: calcularPorcentaje(item.secciones, total),
-        rawValue: (item.secciones ?? 0) + (item.docentesUnicos ?? 0),
+        rawValue: item.secciones ?? 0,
         docentesUnicos: item.docentesUnicos,
       }));
   }, [resumenMotivos]);
@@ -857,7 +882,7 @@ function NoAccesos() {
 
                   <div className="grid grid-cols-1 gap-6">
                     <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <ResponsiveContainer width="100%" height={360}>
+                      <ResponsiveContainer width="100%" height={700}>
                         <PieChart>
                           <Pie
                             data={pieData}
@@ -865,8 +890,9 @@ function NoAccesos() {
                             nameKey="name"
                             cx="50%"
                             cy="50%"
-                            outerRadius={115}
-                            paddingAngle={2}
+                            outerRadius={220}
+                            minAngle={15}
+                            paddingAngle={0}
                             labelLine={false}
                             label={renderPieLabel}
                           >
@@ -906,7 +932,7 @@ function NoAccesos() {
 
                   <div className="grid grid-cols-1 gap-6">
                     <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <ResponsiveContainer width="100%" height={360}>
+                      <ResponsiveContainer width="100%" height={700}>
                         <PieChart>
                           <Pie
                             data={pieRespuestasData}
@@ -914,8 +940,9 @@ function NoAccesos() {
                             nameKey="name"
                             cx="50%"
                             cy="50%"
-                            outerRadius={115}
-                            paddingAngle={4}
+                            outerRadius={220}
+                            minAngle={15}
+                            paddingAngle={0}
                             labelLine={false}
                             label={renderPieLabel}
                           >
