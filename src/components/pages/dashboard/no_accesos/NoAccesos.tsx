@@ -135,6 +135,18 @@ const PIE_COLORS = [
   "#A855F7",
   "#84CC16",
   "#EC4899",
+  "#818CF8", 
+  "#22D3EE", 
+  "#A78BFA", 
+  "#FBBF24", 
+  "#34D399", 
+  "#F87171", 
+  "#60A5FA", 
+  "#FB923C", 
+  "#2DD4BF", 
+  "#C084FC", 
+  "#A3E635", 
+  "#F472B6"
 ];
 
 const RADIAN = Math.PI / 180;
@@ -943,15 +955,17 @@ function NoAccesos() {
                             cx="50%"
                             cy="50%"
                             outerRadius={220}
-                            minAngle={15}
+                            minAngle={2}
                             paddingAngle={0}
-                            labelLine={false}
+                            labelLine={true}
                             label={renderPieLabel}
                           >
                             {pieRespuestasData.map((_, index) => (
                               <Cell
                                 key={`respuesta-cell-${index}`}
                                 fill={PIE_COLORS[index % PIE_COLORS.length]}
+                                stroke= {PIE_COLORS[index % PIE_COLORS.length]}
+                                strokeWidth={1}
                               />
                             ))}
                           </Pie>
