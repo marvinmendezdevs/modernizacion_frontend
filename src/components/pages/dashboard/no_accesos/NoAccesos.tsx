@@ -190,7 +190,7 @@ function normalizeRespuestaLabel(value: string) {
 }
 
 function formatPercent(value: number) {
-  return `${value.toFixed(1)}%`;
+  return `${value.toFixed(2)}%`;
 }
 
 function renderPieLabel(props: any) {
@@ -891,15 +891,17 @@ function NoAccesos() {
                             cx="50%"
                             cy="50%"
                             outerRadius={220}
-                            minAngle={15}
+                            minAngle={2}
                             paddingAngle={0}
-                            labelLine={false}
+                            labelLine={true}
                             label={renderPieLabel}
                           >
                             {pieData.map((_, index) => (
                               <Cell
                                 key={`motivo-cell-${index}`}
                                 fill={PIE_COLORS[index % PIE_COLORS.length]}
+                                stroke= {PIE_COLORS[index % PIE_COLORS.length]}
+                                strokeWidth={1}
                               />
                             ))}
                           </Pie>
